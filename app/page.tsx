@@ -1,69 +1,137 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import Navbar from "@/components/Navbar";
+import ParallaxHero from "@/components/ParallaxHero";
+import TesaTeamSection from "@/components/TesaTeamSection";
+import DepartmentEventsGrid from "@/components/DepartmentEventsGrid";
+import Textile3DCenterpiece from "@/components/Textile3DCenterpiece";
+import DepartmentOverviewSection from "@/components/DepartmentOverviewSection";
+import PastEventsSection from "@/components/PastEventsSection";
+import EventRegistrationModal from "@/components/EventRegistrationModal";
 
 export default function Home() {
+  const [isRegModalOpen, setIsRegModalOpen] = useState(false);
+  const [selectedEventTitle, setSelectedEventTitle] = useState("TEX-CONCLAVE 2026");
+
+  const handleOpenRegistration = (eventTitle: string = "TEX-CONCLAVE 2026") => {
+    setSelectedEventTitle(eventTitle);
+    setIsRegModalOpen(true);
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="relative min-h-screen w-full bg-zinc-950 text-slate-100 flex flex-col justify-between selection:bg-purple-500/30 selection:text-purple-200 overflow-x-hidden">
+      {/* Ambient Neon Backlighting Background Layers */}
+      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-30 z-0" />
+      <div className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-purple-700/20 via-indigo-700/10 to-transparent blur-[140px] rounded-full z-0" />
+      <div className="pointer-events-none fixed bottom-0 right-0 w-[600px] h-[500px] bg-cyan-700/10 blur-[150px] rounded-full z-0" />
+
+      {/* =========================================================================
+          NAVIGATION: Minimalist Pill-Shaped Sticky Navbar at Top Center
+          ========================================================================= */}
+      <Navbar onOpenRegister={() => handleOpenRegistration("TEX-CONCLAVE 2026")} />
+
+      {/* =========================================================================
+          SECTION 1: The Parallax Hero
+          - Massive bold background text "WEAVE THE FUTURE"
+          - Row of translucent glassmorphic cards with 3D tilt effect on mouse move
+          - TESA Topics: Upcoming Events, Our Team, Textile Innovations
+          ========================================================================= */}
+      <ParallaxHero onOpenRegister={handleOpenRegistration} />
+
+      {/* =========================================================================
+          SECTION 2: TESA Team Section
+          - 3D parallax scrolling team cards with category filters
+          - Executive Council, Technical Leads, Event Coordinators, Public Relations
+          ========================================================================= */}
+      <TesaTeamSection />
+
+      {/* =========================================================================
+          SECTION 3: The Grid (Department & Past Events)
+          - Masonry-style grid of dark, rounded cards
+          - 1px solid white/10 inner border & glowing hover effect
+          - Faculty, Staff, and Past Events with sequential scroll animations
+          ========================================================================= */}
+      <DepartmentEventsGrid />
+
+      {/* =========================================================================
+          SECTION 4: The 3D Textile Centerpiece
+          - Large purple gradient background
+          - React Three Fiber canvas rendering a highly reflective metallic 3D fabric mesh
+            undulating and rotating slowly mimicking silk / composite fibers
+          - Bold text to the left: "Build beyond every limit"
+          ========================================================================= */}
+      <Textile3DCenterpiece onOpenRegister={handleOpenRegistration} />
+
+      {/* =========================================================================
+          SECTION 5: Department Overview
+          - Faculty, Staff, Curriculum, and 6 Laboratory Facilities
+          - Tabbed interface with detailed cards
+          ========================================================================= */}
+      <DepartmentOverviewSection />
+
+      {/* =========================================================================
+          SECTION 6: Past Events History
+          - Filterable event archives with detail modals
+          - Category and Year filters
+          ========================================================================= */}
+      <PastEventsSection />
+
+      {/* =========================================================================
+          INTERACTIVE REGISTRATION MODAL
+          ========================================================================= */}
+      <EventRegistrationModal
+        isOpen={isRegModalOpen}
+        onClose={() => setIsRegModalOpen(false)}
+        defaultEventTitle={selectedEventTitle}
+      />
+
+      {/* =========================================================================
+          HYPER-MODERN FOOTER
+          ========================================================================= */}
+      <footer className="relative z-20 w-full border-t border-white/[0.08] bg-[#070512]/90 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-center sm:text-left">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+              <span className="text-white font-bold text-sm tracking-wide">
+                TESA • SGGSIE&amp;T NANDED
+              </span>
+            </div>
+            <span className="hidden sm:inline text-slate-600">|</span>
+            <span className="text-[11px] text-slate-400">
+              Department of Textile Technology • Est. 1987
+            </span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-5 text-slate-300">
+            <a href="#hero" className="hover:text-purple-300 transition-colors">
+              Hero Top
+            </a>
+            <a href="#cards" className="hover:text-purple-300 transition-colors">
+              3D Cards
+            </a>
+            <a href="#grid" className="hover:text-purple-300 transition-colors">
+              Faculty &amp; Events
+            </a>
+            <a href="#centerpiece" className="hover:text-purple-300 transition-colors">
+              3D Fiber Mesh
+            </a>
+            <Link
+              href="/admin"
+              className="px-3 py-1 rounded-full bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-300 hover:text-white transition-all flex items-center gap-1.5"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              <span>🔒</span>
+              <span>Admin Console</span>
+            </Link>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="border-t border-white/[0.04] py-3 text-center text-[10px] font-mono text-slate-600">
+          © 2026 Textile Engineering Students Association, SGGSIE&amp;T. All rights reserved.
         </div>
-      </main>
+      </footer>
     </div>
   );
 }
