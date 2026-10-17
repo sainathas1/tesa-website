@@ -1,311 +1,65 @@
 "use client";
 
-import React, { useRef, useMemo, useEffect } from "react";
+import React, { useRef, useMemo, useState, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 // ============================================================================
-// PARTICLE COUNT & COLOR PALETTE CONSTANTS (Deep Sea Bioluminescence)
+// 1. MODULE-LEVEL CONSTANTS (Primitive Values - No External Object Instantiation)
 // ============================================================================
 const PARTICLE_COUNT = 2400;
 
-// Curated bioluminescent spectrum: Deep Sea Cyan, Neon Teal, Electric Blue, Ethereal Violet
-const PALETTE = [
-  new THREE.Color("#00f0ff"), // Vivid Cyan
-  new THREE.Color("#0ea5e9"), // Electric Sky
-  new THREE.Color("#2dd4bf"), // Bioluminescent Teal
-  new THREE.Color("#38bdf8"), // Soft Cyan
-  new THREE.Color("#818cf8"), // Ethereal Indigo
-  new THREE.Color("#a855f7"), // Bioluminescent Violet
+// Curated RGB values for Deep Sea Bioluminescence (normalized 0.0 - 1.0)
+// Using primitive numbers prevents TDZ or module-evaluation race conditions
+const BIOLUMINESCENT_PALETTE: readonly (readonly [number, number, number])[] = [
+  [0.0, 0.94, 1.0],   // Vivid Cyan (#00f0ff)
+  [0.05, 0.65, 0.91], // Electric Sky (#0ea5e9)
+  [0.18, 0.83, 0.75], // Bioluminescent Teal (#2dd4bf)
+  [0.22, 0.74, 0.97], // Soft Cyan (#38bdf8)
+  [0.51, 0.55, 0.97], // Ethereal Indigo (#818cf8)
+  [0.66, 0.33, 0.97], // Bioluminescent Violet (#a855f7)
 ];
 
-// Helper: Circular soft particle texture generated dynamically with Canvas API
-function createGlowPointTexture() {
-  if (typeof document === "undefined") return null;
-  const canvas = document.createElement("canvas");
-  canvas.width = 64;
-  canvas.height = 64;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return null;
+// ============================================================================
+// 2. HELPER FUNCTIONS (Declared Strictly Above All Components & Hooks)
+// ============================================================================
 
-  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
-  gradient.addColorStop(0.2, "rgba(0, 240, 255, 0.85)");
-  gradient.addColorStop(0.5, "rgba(14, 165, 233, 0.4)");
-  gradient.addColorStop(0.8, "rgba(45, 212, 191, 0.15)");
-  gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+/**
+ * Safely creates a circular glow particle texture on the client side.
+ * Returns null if executed during SSR or if document is unavailable.
+ */
+function createGlowPointTexture(): THREE.CanvasTexture | null {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return null;
+  }
 
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 64, 64);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.needsUpdate = true;
-  return texture;
+    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
+    gradient.addColorStop(0.2, "rgba(0, 240, 255, 0.85)");
+    gradient.addColorStop(0.5, "rgba(14, 165, 233, 0.4)");
+    gradient.addColorStop(0.8, "rgba(45, 212, 191, 0.15)");
+    gradient.addColorStop(1, "rgba(0, 0, 0, 0)");
+
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 64, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.needsUpdate = true;
+    return texture;
+  } catch {
+    return null;
+  }
 }
 
 // ============================================================================
-// BIOLUMINESCENT PARTICLES FLOW (Liquid Ether & Deep-Sea Creatures Swarm)
-// ============================================================================
-function BioluminescentParticleFlow({
-  mouseRef,
-  scrollRef,
-}: {
-  mouseRef: React.MutableRefObject<{ x: number; y: number; targetX: number; targetY: number }>;
-  scrollRef: React.MutableRefObject<{ y: number; speed: number }>;
-}) {
-  const pointsRef = useRef<THREE.Points>(null);
-  const glowTexture = useMemo(() => createGlowPointTexture(), []);
-
-  // Initialize particle positions, original anchors, velocities, colors, and phases
-  const { positions, originalPositions, colors, phases, speeds } = useMemo(() => {
-    const pos = new Float32Array(PARTICLE_COUNT * 3);
-    const orig = new Float32Array(PARTICLE_COUNT * 3);
-    const col = new Float32Array(PARTICLE_COUNT * 3);
-    const ph = new Float32Array(PARTICLE_COUNT);
-    const sp = new Float32Array(PARTICLE_COUNT);
-
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const i3 = i * 3;
-      // Cylinder / fluid flow distribution
-      const radius = 2.5 + Math.random() * 8.5;
-      const angle = Math.random() * Math.PI * 2;
-      const z = (Math.random() - 0.5) * 22;
-      const x = Math.cos(angle) * radius;
-      const y = Math.sin(angle) * radius * 0.7;
-
-      pos[i3] = x;
-      pos[i3 + 1] = y;
-      pos[i3 + 2] = z;
-
-      orig[i3] = x;
-      orig[i3 + 1] = y;
-      orig[i3 + 2] = z;
-
-      // Pick organic bioluminescent color
-      const color = PALETTE[Math.floor(Math.random() * PALETTE.length)];
-      col[i3] = color.r;
-      col[i3 + 1] = color.g;
-      col[i3 + 2] = color.b;
-
-      phases[i] = Math.random() * Math.PI * 2;
-      sp[i] = 0.4 + Math.random() * 0.8;
-    }
-
-    return {
-      positions: pos,
-      originalPositions: orig,
-      colors: col,
-      phases: ph,
-      speeds: sp,
-    };
-  }, []);
-
-  useFrame(({ clock }) => {
-    if (!pointsRef.current) return;
-    const t = clock.getElapsedTime();
-    const posAttr = pointsRef.current.geometry.attributes.position;
-    const array = posAttr.array as Float32Array;
-
-    const mx = mouseRef.current.x * 4.5;
-    const my = mouseRef.current.y * 3.5;
-    const scrollOffset = scrollRef.current.y * 0.003;
-    const scrollSpeed = scrollRef.current.speed * 0.02;
-
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const i3 = i * 3;
-      const ox = originalPositions[i3];
-      const oy = originalPositions[i3 + 1];
-      const oz = originalPositions[i3 + 2];
-      const phase = phases[i];
-      const speed = speeds[i];
-
-      // Organic fluid swirling motion (sinusoidal ocean current drift)
-      const currentX = Math.sin(t * 0.35 * speed + phase + oz * 0.2) * 1.2;
-      const currentY = Math.cos(t * 0.28 * speed + phase + ox * 0.25) * 1.0;
-      const currentZ = Math.sin(t * 0.4 * speed + phase) * 1.5;
-
-      // Cursor vortex attractor/repulsor influence
-      const dx = ox + currentX - mx;
-      const dy = oy + currentY - my;
-      const distSq = dx * dx + dy * dy;
-      let mouseInfluenceX = 0;
-      let mouseInfluenceY = 0;
-
-      if (distSq < 16) {
-        const factor = (16 - distSq) / 16;
-        // Swirling vortex curl around the mouse
-        mouseInfluenceX = (-dy * 0.6 + dx * 0.3) * factor;
-        mouseInfluenceY = (dx * 0.6 + dy * 0.3) * factor;
-      }
-
-      // Dynamic position calculation
-      array[i3] = ox + currentX + mouseInfluenceX;
-      // Scroll velocity causes organic vertical & depth surge
-      array[i3 + 1] = oy + currentY + mouseInfluenceY - (scrollOffset * speed * 2) % 18;
-      if (array[i3 + 1] < -10) array[i3 + 1] += 20;
-      if (array[i3 + 1] > 10) array[i3 + 1] -= 20;
-
-      array[i3 + 2] = oz + currentZ + scrollSpeed * 0.5;
-      if (array[i3 + 2] < -12) array[i3 + 2] += 24;
-      if (array[i3 + 2] > 12) array[i3 + 2] -= 24;
-    }
-
-    posAttr.needsUpdate = true;
-
-    // Subtle breathing pulse rotation
-    pointsRef.current.rotation.z = Math.sin(t * 0.1) * 0.15;
-    pointsRef.current.rotation.y = Math.cos(t * 0.08) * 0.12;
-  });
-
-  return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          args={[colors, 3]}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.16}
-        vertexColors
-        transparent
-        opacity={0.85}
-        blending={THREE.AdditiveBlending}
-        depthWrite={false}
-        map={glowTexture || undefined}
-      />
-    </points>
-  );
-}
-
-// ============================================================================
-// DEEP-SEA CREATURE TENTACLES / ETHER FLUID RIBBONS (Siphonophore Undulation)
-// ============================================================================
-function DeepSeaCreatureRibbons({
-  mouseRef,
-  scrollRef,
-}: {
-  mouseRef: React.MutableRefObject<{ x: number; y: number; targetX: number; targetY: number }>;
-  scrollRef: React.MutableRefObject<{ y: number; speed: number }>;
-}) {
-  const ribbon1Ref = useRef<THREE.Mesh>(null);
-  const ribbon2Ref = useRef<THREE.Mesh>(null);
-  const creatureSpineRef = useRef<THREE.Group>(null);
-
-  // Generate ribbon plane geometries for fluid undulating tentacles
-  const geom1 = useMemo(() => new THREE.PlaneGeometry(14, 1.8, 64, 16), []);
-  const geom2 = useMemo(() => new THREE.PlaneGeometry(16, 1.4, 64, 16), []);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    const mx = mouseRef.current.x;
-    const my = mouseRef.current.y;
-    const scrollDelta = scrollRef.current.y * 0.001;
-
-    // Follow mouse with organic creature inertia
-    if (creatureSpineRef.current) {
-      creatureSpineRef.current.position.x = THREE.MathUtils.lerp(
-        creatureSpineRef.current.position.x,
-        mx * 3.5,
-        0.03
-      );
-      creatureSpineRef.current.position.y = THREE.MathUtils.lerp(
-        creatureSpineRef.current.position.y,
-        my * 2.5 - scrollDelta * 0.5,
-        0.03
-      );
-      creatureSpineRef.current.rotation.z = THREE.MathUtils.lerp(
-        creatureSpineRef.current.rotation.z,
-        -mx * 0.4 + Math.sin(t * 0.4) * 0.15,
-        0.04
-      );
-    }
-
-    // Undulate Primary Ribbon (Creature Siphonophore fin)
-    if (ribbon1Ref.current) {
-      const pos = ribbon1Ref.current.geometry.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const u = pos.getX(i);
-        const v = pos.getY(i);
-        // Harmonic waves travelling down creature's body
-        const wave =
-          Math.sin(u * 0.8 - t * 2.2) * 0.6 +
-          Math.cos(v * 1.5 + t * 1.5) * 0.3 +
-          Math.sin((u + v) * 0.5 - t * 1.8) * 0.25;
-        pos.setZ(i, wave);
-      }
-      pos.needsUpdate = true;
-      ribbon1Ref.current.geometry.computeVertexNormals();
-    }
-
-    // Undulate Secondary Ribbon
-    if (ribbon2Ref.current) {
-      const pos = ribbon2Ref.current.geometry.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        const u = pos.getX(i);
-        const v = pos.getY(i);
-        const wave =
-          Math.cos(u * 0.7 - t * 1.9 + 1.2) * 0.55 +
-          Math.sin(v * 1.8 + t * 1.7) * 0.25 +
-          Math.cos((u - v) * 0.6 - t * 2.1) * 0.2;
-        pos.setZ(i, wave);
-      }
-      pos.needsUpdate = true;
-      ribbon2Ref.current.geometry.computeVertexNormals();
-    }
-  });
-
-  return (
-    <group ref={creatureSpineRef} position={[0, 0, -2]}>
-      {/* Primary Bioluminescent Ether Fin */}
-      <mesh ref={ribbon1Ref} geometry={geom1} rotation={[-0.4, 0.3, 0.1]}>
-        <meshPhysicalMaterial
-          color="#00f0ff"
-          emissive="#0284c7"
-          emissiveIntensity={0.6}
-          roughness={0.2}
-          metalness={0.8}
-          transmission={0.4}
-          transparent
-          opacity={0.35}
-          side={THREE.DoubleSide}
-          wireframe={false}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {/* Secondary Ethereal Violet-Cyan Ribbon Tentacle */}
-      <mesh
-        ref={ribbon2Ref}
-        geometry={geom2}
-        rotation={[0.35, -0.4, -0.2]}
-        position={[0, -0.8, -1.2]}
-      >
-        <meshPhysicalMaterial
-          color="#2dd4bf"
-          emissive="#7c3aed"
-          emissiveIntensity={0.45}
-          roughness={0.25}
-          metalness={0.7}
-          transmission={0.5}
-          transparent
-          opacity={0.3}
-          side={THREE.DoubleSide}
-          blending={THREE.AdditiveBlending}
-          depthWrite={false}
-        />
-      </mesh>
-    </group>
-  );
-}
-
-// ============================================================================
-// CAMERA CONTROLLER & MOUSE/SCROLL INTERACTION RIG
+// 3. SCENE RIG (Camera & Parallax Controller)
 // ============================================================================
 function SceneRig({
   mouseRef,
@@ -343,7 +97,281 @@ function SceneRig({
 }
 
 // ============================================================================
-// MAIN LIQUID ETHER BACKGROUND COMPONENT
+// 4. BIOLUMINESCENT PARTICLES FLOW COMPONENT
+// ============================================================================
+function BioluminescentParticleFlow({
+  mouseRef,
+  scrollRef,
+}: {
+  mouseRef: React.MutableRefObject<{ x: number; y: number; targetX: number; targetY: number }>;
+  scrollRef: React.MutableRefObject<{ y: number; speed: number }>;
+}) {
+  const pointsRef = useRef<THREE.Points>(null);
+
+  // Safely initialize texture on client mount (prevents render-phase side effects in useMemo)
+  const [glowTexture, setGlowTexture] = useState<THREE.CanvasTexture | null>(null);
+
+  useEffect(() => {
+    const tex = createGlowPointTexture();
+    if (tex) {
+      setGlowTexture(tex);
+    }
+    return () => {
+      tex?.dispose();
+    };
+  }, []);
+
+  // Compute particle buffers in useMemo with all variables cleanly initialized first
+  const particleBuffers = useMemo(() => {
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const originalPositions = new Float32Array(PARTICLE_COUNT * 3);
+    const colors = new Float32Array(PARTICLE_COUNT * 3);
+    const phases = new Float32Array(PARTICLE_COUNT);
+    const speeds = new Float32Array(PARTICLE_COUNT);
+
+    const paletteLength = BIOLUMINESCENT_PALETTE.length;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
+
+      // Cylinder / vortex distribution
+      const radius = 2.5 + Math.random() * 8.5;
+      const angle = Math.random() * Math.PI * 2;
+      const z = (Math.random() - 0.5) * 22;
+      const x = Math.cos(angle) * radius;
+      const y = Math.sin(angle) * radius * 0.7;
+
+      positions[i3] = x;
+      positions[i3 + 1] = y;
+      positions[i3 + 2] = z;
+
+      originalPositions[i3] = x;
+      originalPositions[i3 + 1] = y;
+      originalPositions[i3 + 2] = z;
+
+      // Pick organic bioluminescent color from pre-declared palette
+      const colorIndex = Math.floor(Math.random() * paletteLength);
+      const chosenColor = BIOLUMINESCENT_PALETTE[colorIndex];
+
+      colors[i3] = chosenColor[0];
+      colors[i3 + 1] = chosenColor[1];
+      colors[i3 + 2] = chosenColor[2];
+
+      phases[i] = Math.random() * Math.PI * 2;
+      speeds[i] = 0.4 + Math.random() * 0.8;
+    }
+
+    return {
+      positions,
+      originalPositions,
+      colors,
+      phases,
+      speeds,
+    };
+  }, []);
+
+  useFrame(({ clock }) => {
+    if (!pointsRef.current) return;
+    const posAttr = pointsRef.current.geometry.attributes.position;
+    if (!posAttr) return;
+
+    const t = clock.getElapsedTime();
+    const array = posAttr.array as Float32Array;
+
+    const mx = mouseRef.current.x * 4.5;
+    const my = mouseRef.current.y * 3.5;
+    const scrollOffset = scrollRef.current.y * 0.003;
+    const scrollSpeed = scrollRef.current.speed * 0.02;
+
+    const { originalPositions, phases, speeds } = particleBuffers;
+
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const i3 = i * 3;
+      const ox = originalPositions[i3];
+      const oy = originalPositions[i3 + 1];
+      const oz = originalPositions[i3 + 2];
+      const phase = phases[i];
+      const speed = speeds[i];
+
+      // Organic fluid swirling motion (sinusoidal ocean current drift)
+      const currentX = Math.sin(t * 0.35 * speed + phase + oz * 0.2) * 1.2;
+      const currentY = Math.cos(t * 0.28 * speed + phase + ox * 0.25) * 1.0;
+      const currentZ = Math.sin(t * 0.4 * speed + phase) * 1.5;
+
+      // Cursor vortex attractor/repulsor influence
+      const dx = ox + currentX - mx;
+      const dy = oy + currentY - my;
+      const distSq = dx * dx + dy * dy;
+      let mouseInfluenceX = 0;
+      let mouseInfluenceY = 0;
+
+      if (distSq < 16) {
+        const factor = (16 - distSq) / 16;
+        mouseInfluenceX = (-dy * 0.6 + dx * 0.3) * factor;
+        mouseInfluenceY = (dx * 0.6 + dy * 0.3) * factor;
+      }
+
+      array[i3] = ox + currentX + mouseInfluenceX;
+      array[i3 + 1] = oy + currentY + mouseInfluenceY - (scrollOffset * speed * 2) % 18;
+      if (array[i3 + 1] < -10) array[i3 + 1] += 20;
+      if (array[i3 + 1] > 10) array[i3 + 1] -= 20;
+
+      array[i3 + 2] = oz + currentZ + scrollSpeed * 0.5;
+      if (array[i3 + 2] < -12) array[i3 + 2] += 24;
+      if (array[i3 + 2] > 12) array[i3 + 2] -= 24;
+    }
+
+    posAttr.needsUpdate = true;
+
+    // Subtle breathing pulse rotation
+    pointsRef.current.rotation.z = Math.sin(t * 0.1) * 0.15;
+    pointsRef.current.rotation.y = Math.cos(t * 0.08) * 0.12;
+  });
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          args={[particleBuffers.positions, 3]}
+        />
+        <bufferAttribute
+          attach="attributes-color"
+          args={[particleBuffers.colors, 3]}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.16}
+        vertexColors
+        transparent
+        opacity={0.85}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
+        map={glowTexture || undefined}
+      />
+    </points>
+  );
+}
+
+// ============================================================================
+// 5. DEEP-SEA CREATURE TENTACLES / ETHER FLUID RIBBONS
+// ============================================================================
+function DeepSeaCreatureRibbons({
+  mouseRef,
+  scrollRef,
+}: {
+  mouseRef: React.MutableRefObject<{ x: number; y: number; targetX: number; targetY: number }>;
+  scrollRef: React.MutableRefObject<{ y: number; speed: number }>;
+}) {
+  const ribbon1Ref = useRef<THREE.Mesh>(null);
+  const ribbon2Ref = useRef<THREE.Mesh>(null);
+  const creatureSpineRef = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const mx = mouseRef.current.x;
+    const my = mouseRef.current.y;
+    const scrollDelta = scrollRef.current.y * 0.001;
+
+    // Follow mouse with organic creature inertia
+    if (creatureSpineRef.current) {
+      creatureSpineRef.current.position.x = THREE.MathUtils.lerp(
+        creatureSpineRef.current.position.x,
+        mx * 3.5,
+        0.03
+      );
+      creatureSpineRef.current.position.y = THREE.MathUtils.lerp(
+        creatureSpineRef.current.position.y,
+        my * 2.5 - scrollDelta * 0.5,
+        0.03
+      );
+      creatureSpineRef.current.rotation.z = THREE.MathUtils.lerp(
+        creatureSpineRef.current.rotation.z,
+        -mx * 0.4 + Math.sin(t * 0.4) * 0.15,
+        0.04
+      );
+    }
+
+    // Undulate Primary Ribbon (Creature Siphonophore fin)
+    if (ribbon1Ref.current?.geometry?.attributes?.position) {
+      const pos = ribbon1Ref.current.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const u = pos.getX(i);
+        const v = pos.getY(i);
+        const wave =
+          Math.sin(u * 0.8 - t * 2.2) * 0.6 +
+          Math.cos(v * 1.5 + t * 1.5) * 0.3 +
+          Math.sin((u + v) * 0.5 - t * 1.8) * 0.25;
+        pos.setZ(i, wave);
+      }
+      pos.needsUpdate = true;
+      ribbon1Ref.current.geometry.computeVertexNormals();
+    }
+
+    // Undulate Secondary Ribbon
+    if (ribbon2Ref.current?.geometry?.attributes?.position) {
+      const pos = ribbon2Ref.current.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const u = pos.getX(i);
+        const v = pos.getY(i);
+        const wave =
+          Math.cos(u * 0.7 - t * 1.9 + 1.2) * 0.55 +
+          Math.sin(v * 1.8 + t * 1.7) * 0.25 +
+          Math.cos((u - v) * 0.6 - t * 2.1) * 0.2;
+        pos.setZ(i, wave);
+      }
+      pos.needsUpdate = true;
+      ribbon2Ref.current.geometry.computeVertexNormals();
+    }
+  });
+
+  return (
+    <group ref={creatureSpineRef} position={[0, 0, -2]}>
+      {/* Primary Bioluminescent Ether Fin with declarative geometry */}
+      <mesh ref={ribbon1Ref} rotation={[-0.4, 0.3, 0.1]}>
+        <planeGeometry args={[14, 1.8, 64, 16]} />
+        <meshPhysicalMaterial
+          color="#00f0ff"
+          emissive="#0284c7"
+          emissiveIntensity={0.6}
+          roughness={0.2}
+          metalness={0.8}
+          transmission={0.4}
+          transparent
+          opacity={0.35}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Secondary Ethereal Violet-Cyan Ribbon Tentacle with declarative geometry */}
+      <mesh
+        ref={ribbon2Ref}
+        rotation={[0.35, -0.4, -0.2]}
+        position={[0, -0.8, -1.2]}
+      >
+        <planeGeometry args={[16, 1.4, 64, 16]} />
+        <meshPhysicalMaterial
+          color="#2dd4bf"
+          emissive="#7c3aed"
+          emissiveIntensity={0.45}
+          roughness={0.25}
+          metalness={0.7}
+          transmission={0.5}
+          transparent
+          opacity={0.3}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+// ============================================================================
+// 6. MAIN EXPORT COMPONENT (Declared After All Child Components)
 // ============================================================================
 export default function LiquidEtherBackground() {
   const mouseRef = useRef({ x: 0, y: 0, targetX: 0, targetY: 0 });
@@ -351,7 +379,7 @@ export default function LiquidEtherBackground() {
   const lastScrollY = useRef(0);
 
   useEffect(() => {
-    // Passive cursor tracking on window (never interrupts or blocks clicks/scrolls)
+    // Passive cursor tracking on window (never interrupts touch/click events)
     const handlePointerMove = (e: MouseEvent | TouchEvent) => {
       let clientX = 0;
       let clientY = 0;
