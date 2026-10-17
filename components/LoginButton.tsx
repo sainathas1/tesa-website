@@ -245,8 +245,15 @@ export default function LoginButton() {
             </svg>
           )}
 
-          <span>
-            {signingIn ? "CONNECTING..." : "GOOGLE LOGIN"}
+          <span className="text-xs">
+            {signingIn ? (
+              "CONNECTING..."
+            ) : (
+              <>
+                <span className="hidden sm:inline">GOOGLE LOGIN</span>
+                <span className="sm:hidden">LOGIN</span>
+              </>
+            )}
           </span>
         </button>
       )}

@@ -351,7 +351,7 @@ export default function Home() {
           ========================================================================= */}
       <section
         id="hero"
-        className="relative min-h-[90vh] sm:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 pt-32 pb-24 z-10"
+        className="relative min-h-[90vh] sm:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 pb-20 sm:pb-24 z-10"
       >
         <div className="max-w-4xl mx-auto flex flex-col items-center">
           {/* Subtle Glow Pill Badge */}
