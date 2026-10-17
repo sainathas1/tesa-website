@@ -11,7 +11,7 @@ import {
 interface MouseTiltCardProps {
   children: React.ReactNode;
   className?: string;
-  glowColor?: string; // Electric blue or neon purple
+  glowColor?: string;
   borderColor?: string;
   onClick?: () => void;
 }
@@ -19,8 +19,8 @@ interface MouseTiltCardProps {
 export default function MouseTiltCard({
   children,
   className = "",
-  glowColor = "rgba(0, 240, 255, 0.45)",
-  borderColor = "rgba(0, 240, 255, 0.6)",
+  glowColor = "rgba(168, 85, 247, 0.4)",
+  borderColor = "rgba(168, 85, 247, 0.5)",
   onClick,
 }: MouseTiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
@@ -29,15 +29,15 @@ export default function MouseTiltCard({
   const x = useMotionValue(0);
   const y = useMotionValue(0);
 
-  // Physics springs for natural response
-  const mouseXSpring = useSpring(x, { stiffness: 260, damping: 24 });
-  const mouseYSpring = useSpring(y, { stiffness: 260, damping: 24 });
+  // Physics springs for organic response
+  const mouseXSpring = useSpring(x, { stiffness: 240, damping: 24 });
+  const mouseYSpring = useSpring(y, { stiffness: 240, damping: 24 });
 
-  // Deep, responsive 3D tilt mapping
-  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["18deg", "-18deg"]);
-  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-18deg", "18deg"]);
+  // Subtle responsive 3D tilt
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
 
-  // Interactive dynamic specular shine coordinates
+  // Dynamic specular shine coordinates
   const spotlightX = useTransform(mouseXSpring, [-0.5, 0.5], ["10%", "90%"]);
   const spotlightY = useTransform(mouseYSpring, [-0.5, 0.5], ["10%", "90%"]);
 
@@ -47,7 +47,6 @@ export default function MouseTiltCard({
     const width = rect.width;
     const height = rect.height;
 
-    // Calculate mouse position relative to card center
     const normalizedX = (e.clientX - rect.left) / width - 0.5;
     const normalizedY = (e.clientY - rect.top) / height - 0.5;
 
@@ -73,35 +72,26 @@ export default function MouseTiltCard({
           transformStyle: "preserve-3d",
         }}
         whileHover={{
-          scale: 1.04,
-          y: -8,
-          transition: { duration: 0.3 },
+          scale: 1.015,
+          y: -6,
+          transition: { duration: 0.25 },
         }}
-        className={`relative rounded-2xl p-5 sm:p-6 backdrop-blur-xl bg-white/[0.04] border border-white/15 hover:border-cyan-400 transition-all duration-300 shadow-2xl hover:shadow-[0_25px_50px_rgba(0,240,255,0.25)] ${className}`}
+        className={`bento-card group relative rounded-3xl p-6 overflow-hidden ${className}`}
       >
-        {/* Subtle Woven Texture Overlay */}
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-woven-texture opacity-25" />
+        {/* Top-Right Ambient Radial Glow (Illuminates on hover) */}
+        <div className="bento-glow" />
 
-        {/* Dynamic Specular Sheen / Spotlight tracking mouse */}
+        {/* Dynamic Specular Spotlight tracking cursor */}
         <motion.div
-          className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           style={{
             background: `radial-gradient(circle at ${spotlightX} ${spotlightY}, ${glowColor}, transparent 65%)`,
           }}
         />
 
-        {/* Glowing Cyan Accent Border */}
+        {/* Content with 3D Z-Depth Translation */}
         <div
-          className="pointer-events-none absolute -inset-px rounded-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-300"
-          style={{
-            border: `1px solid ${borderColor}`,
-            boxShadow: `inset 0 0 16px ${glowColor}, 0 0 20px ${glowColor}`,
-          }}
-        />
-
-        {/* Content with true 3D Z-Depth Translation */}
-        <div
-          style={{ transform: "translateZ(45px)" }}
+          style={{ transform: "translateZ(20px)" }}
           className="relative z-10 h-full flex flex-col justify-between"
         >
           {children}

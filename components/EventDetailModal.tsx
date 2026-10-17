@@ -453,31 +453,31 @@ export default function EventDetailModal({
           prn: prn.trim().toUpperCase(),
           year,
           status: "pending",
-          submissionFileUrl,
-          customAnswers: finalCustomAnswers,
           registeredAt: new Date().toISOString().slice(0, 10),
+          submissionFileUrl,
+          paymentScreenshotUrl,
+          customAnswers: finalCustomAnswers,
         },
         ...prev,
       ]);
 
       setSubmittedRegId(regId);
       setViewMode("success");
-      if (onRegister) {
-        onRegister(event.title);
-      }
     } catch (err: any) {
-      console.error("Registration error:", err);
-      setErrorMessage(err?.message || "Registration submission failed. Please try again.");
+      console.error("Registration submission failed:", err);
+      setErrorMessage(
+        err.message || "Failed to submit registration. Please verify your connection and try again."
+      );
     } finally {
       setIsSubmitting(false);
       setSubmittingStep("");
     }
   };
 
-  // Filter registered participants for search query
+  // Filter participants by search query
   const filteredParticipants = registeredParticipants.filter((p) => {
-    const q = participantSearch.toLowerCase().trim();
-    if (!q) return true;
+    if (!participantSearch.trim()) return true;
+    const q = participantSearch.toLowerCase();
     return (
       p.fullName.toLowerCase().includes(q) ||
       p.prn.toLowerCase().includes(q) ||
@@ -496,41 +496,32 @@ export default function EventDetailModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={!isSubmitting ? handleModalClose : undefined}
-            className="fixed inset-0 bg-black/85 backdrop-blur-md z-40"
+            className="fixed inset-0 bg-black/80 backdrop-blur-md z-40"
             aria-hidden="true"
           />
 
-          {/* Modal Container */}
+          {/* Modal Container: Command Center Aesthetic */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            initial={{ opacity: 0, scale: 0.94, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 15 }}
+            exit={{ opacity: 0, scale: 0.96, y: 15 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-modal-title"
-            className="relative z-50 w-full max-w-2xl rounded-3xl border border-white/15 bg-slate-950/80 backdrop-blur-xl p-6 sm:p-8 shadow-2xl overflow-hidden my-8 selvedge-card group"
+            className="relative z-50 w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0b0c10]/95 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_0_80px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden my-8 group"
           >
-            <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-cyan-500/10 blur-3xl rounded-full" />
-
-            {/* Industrial Serged Seam Top Edge */}
-            <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
-
-            {/* Corner Crosshair HUD Accents */}
-            <span className="pointer-events-none absolute top-3 left-3 font-mono text-[10px] text-cyan-500/40">
-              +
-            </span>
-            <span className="pointer-events-none absolute bottom-3 right-3 font-mono text-[10px] text-cyan-500/40">
-              +
-            </span>
+            {/* Ambient Aurora Glow in Corners */}
+            <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-violet-600/20 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" />
+            <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-gradient-to-tr from-indigo-600/15 via-purple-600/10 to-transparent blur-3xl rounded-full" />
 
             {/* Top Close (X) Button (Minimum 44x44px touch target) */}
             <button
               onClick={handleModalClose}
               disabled={isSubmitting}
               aria-label="Close modal"
-              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/60 hover:bg-red-950/80 hover:border-red-500/50 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-lg disabled:opacity-40"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xl shadow-lg disabled:opacity-40"
             >
               <svg
                 className="w-4 h-4"
@@ -545,15 +536,6 @@ export default function EventDetailModal({
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-
-            {/* Corner Selvedge Telemetry */}
-            <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-3 uppercase pr-14">
-              <span className="flex items-center gap-1">
-                <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
-                LOOM MATRIX ACTIVE • CONCLAVE BUS
-              </span>
-              <span className="text-slate-500 hidden sm:inline">DENIER: 900D • TENSILE VERIFIED</span>
-            </div>
 
             {/* Content Switcher based on viewMode */}
             <AnimatePresence mode="wait">
@@ -570,7 +552,7 @@ export default function EventDetailModal({
                 >
                   {/* Event Media / Banner */}
                   {event.mediaUrl ? (
-                    <div className="relative w-full h-48 sm:h-56 rounded-2xl overflow-hidden border border-cyan-500/30 mb-6 shadow-xl">
+                    <div className="relative w-full h-48 sm:h-56 rounded-2xl overflow-hidden border border-white/10 mb-6 shadow-xl">
                       <Image
                         src={event.mediaUrl}
                         alt={event.title}
@@ -578,20 +560,20 @@ export default function EventDetailModal({
                         sizes="(max-width: 640px) 100vw, 680px"
                         className="object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-[#0b0c10]/30 to-transparent pointer-events-none" />
 
                       {/* Overlaid Badges */}
                       <div className="absolute top-3 left-3 flex items-center gap-2">
-                        <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 backdrop-blur-md uppercase tracking-wider font-semibold care-label-badge">
+                        <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-black/70 text-purple-300 border border-purple-500/30 backdrop-blur-md uppercase tracking-wider font-semibold">
                           {event.category}
                         </span>
                         <span
-                          className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border backdrop-blur-md font-semibold care-label-badge ${
+                          className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border backdrop-blur-md font-semibold ${
                             isOpen
-                              ? "bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
                               : isUpcoming
-                              ? "bg-amber-950/80 text-amber-300 border-amber-500/50"
-                              : "bg-slate-900/80 text-slate-400 border-slate-700/50"
+                              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                              : "bg-zinc-900/80 text-zinc-400 border-zinc-700/50"
                           }`}
                         >
                           {isOpen ? "● REGISTRATION OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
@@ -599,7 +581,7 @@ export default function EventDetailModal({
                       </div>
                     </div>
                   ) : (
-                    <div className="w-full h-20 rounded-2xl bg-cyan-950/30 border border-cyan-500/20 mb-6 flex items-center justify-center font-mono text-xs text-cyan-400">
+                    <div className="w-full h-20 rounded-2xl bg-purple-950/20 border border-purple-500/20 mb-6 flex items-center justify-center font-mono text-xs text-purple-400">
                       OFFICIAL TESA NATIONAL CONCLAVE ARCHIVE
                     </div>
                   )}
@@ -613,38 +595,38 @@ export default function EventDetailModal({
                   </h3>
 
                   {/* Key Information Badges */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] mb-5 font-mono text-xs">
-                    <div className="flex items-center gap-2.5 text-slate-300">
-                      <span className="text-cyan-400 text-sm">📅</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.08] mb-5 font-mono text-xs">
+                    <div className="flex items-center gap-2.5 text-zinc-300">
+                      <span className="text-purple-400 text-sm">📅</span>
                       <div>
-                        <span className="text-[10px] text-slate-500 block">EVENT DATE</span>
+                        <span className="text-[10px] text-zinc-500 block">EVENT DATE</span>
                         <span className="font-semibold text-white">{event.date}</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5 text-slate-300">
-                      <span className="text-cyan-400 text-sm">📍</span>
+                    <div className="flex items-center gap-2.5 text-zinc-300">
+                      <span className="text-purple-400 text-sm">📍</span>
                       <div>
-                        <span className="text-[10px] text-slate-500 block">VENUE / LOCATION</span>
+                        <span className="text-[10px] text-zinc-500 block">VENUE / LOCATION</span>
                         <span className="font-semibold text-white truncate">{event.venue}</span>
                       </div>
                     </div>
 
                     {event.deadline && (
-                      <div className="flex items-center gap-2.5 text-slate-300">
+                      <div className="flex items-center gap-2.5 text-zinc-300">
                         <span className="text-amber-400 text-sm">⏳</span>
                         <div>
-                          <span className="text-[10px] text-slate-500 block">REGISTRATION DEADLINE</span>
+                          <span className="text-[10px] text-zinc-500 block">REGISTRATION DEADLINE</span>
                           <span className="font-semibold text-white">{event.deadline}</span>
                         </div>
                       </div>
                     )}
 
                     {event.capacity && (
-                      <div className="flex items-center gap-2.5 text-slate-300">
+                      <div className="flex items-center gap-2.5 text-zinc-300">
                         <span className="text-purple-400 text-sm">👥</span>
                         <div>
-                          <span className="text-[10px] text-slate-500 block">SEAT CAPACITY</span>
+                          <span className="text-[10px] text-zinc-500 block">SEAT CAPACITY</span>
                           <span className="font-semibold text-white">{event.capacity} Delegates</span>
                         </div>
                       </div>
@@ -653,18 +635,18 @@ export default function EventDetailModal({
 
                   {/* Full Event Description */}
                   <div className="mb-5">
-                    <span className="text-[10px] font-mono uppercase text-slate-400 tracking-wider block mb-1.5">
+                    <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider block mb-1.5">
                       FULL EVENT BRIEFING &amp; OBJECTIVES:
                     </span>
-                    <p className="text-sm text-slate-300 leading-relaxed font-sans font-normal">
+                    <p className="text-sm text-zinc-300 leading-relaxed font-sans font-normal">
                       {event.summary}
                     </p>
                   </div>
 
                   {/* Highlights Pill */}
                   {event.highlights && (
-                    <div className="p-3 rounded-xl bg-cyan-950/25 border border-cyan-500/30 text-xs font-mono text-cyan-200 mb-6 flex items-center gap-2.5 shadow-[0_0_15px_rgba(0,240,255,0.1)]">
-                      <span className="text-cyan-400 text-base">✦</span>
+                    <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/25 text-xs font-mono text-purple-200 mb-6 flex items-center gap-2.5 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
+                      <span className="text-purple-400 text-base">✦</span>
                       <span className="leading-snug">{event.highlights}</span>
                     </div>
                   )}
@@ -673,10 +655,10 @@ export default function EventDetailModal({
                   {event.galleryUrls && event.galleryUrls.length > 0 && (
                     <div className="mb-6">
                       <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[10px] font-mono uppercase text-cyan-400 tracking-wider">
+                        <span className="text-[10px] font-mono uppercase text-purple-400 tracking-wider">
                           EVENT PHOTO ARCHIVE ({event.galleryUrls.length} PHOTOGRAPHS):
                         </span>
-                        <span className="text-[10px] font-mono text-slate-500">CLICK TO VIEW ORIGINAL</span>
+                        <span className="text-[10px] font-mono text-zinc-500">CLICK TO VIEW ORIGINAL</span>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                         {event.galleryUrls.map((imgUrl, idx) => (
@@ -685,7 +667,7 @@ export default function EventDetailModal({
                             href={imgUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="relative aspect-[4/3] rounded-xl overflow-hidden border border-cyan-500/30 hover:border-cyan-400 group/img transition-all block shadow-md"
+                            className="relative aspect-[4/3] rounded-xl overflow-hidden border border-white/10 hover:border-purple-500/50 group/img transition-all block shadow-md"
                           >
                             <Image
                               src={imgUrl}
@@ -709,14 +691,14 @@ export default function EventDetailModal({
                     {isOpen || isUpcoming ? (
                       <button
                         onClick={() => setViewMode("register")}
-                        className="flex-1 min-h-[44px] py-3.5 px-6 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-400 to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-black font-mono font-bold text-sm uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(0,240,255,0.45)] hover:shadow-[0_0_35px_rgba(0,240,255,0.65)] flex items-center justify-center gap-2 cursor-pointer"
+                        className="flex-1 min-h-[44px] py-3.5 px-6 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-sm uppercase tracking-wider transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_0_25px_rgba(139,92,246,0.4)] flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <span>{isOpen ? "Register Now" : "Pre-Register / Reserve Seat"}</span>
                         <span className="text-base">→</span>
                       </button>
                     ) : (
-                      <div className="flex-1 py-3 rounded-xl bg-slate-900/80 border border-white/10 text-center font-mono text-xs text-slate-400 flex items-center justify-center gap-2">
-                        <span className="text-cyan-400">■</span>
+                      <div className="flex-1 py-3 rounded-xl bg-zinc-900/80 border border-white/10 text-center font-mono text-xs text-zinc-400 flex items-center justify-center gap-2">
+                        <span className="text-purple-400">■</span>
                         <span>Archive Recorded • Concluded</span>
                       </div>
                     )}
@@ -724,7 +706,7 @@ export default function EventDetailModal({
                     <button
                       type="button"
                       onClick={() => setViewMode("verifiedList")}
-                      className="min-h-[44px] py-3.5 px-5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/90 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                      className="min-h-[44px] py-3.5 px-5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>📋 Check Registration &amp; Verified List</span>
                     </button>
@@ -732,7 +714,7 @@ export default function EventDetailModal({
                 </motion.div>
               ) : viewMode === "register" ? (
                 /* =============================================================
-                   VIEW 2: FUNCTIONAL REGISTRATION WITH CUSTOM FORMS & PPT UPLOAD
+                   VIEW 2: COMMAND-CENTER REGISTRATION WITH CUSTOM FORMS & PPT UPLOAD
                    ============================================================= */
                 <motion.div
                   key="view-register"
@@ -747,7 +729,7 @@ export default function EventDetailModal({
                       type="button"
                       onClick={() => setViewMode("detail")}
                       disabled={isSubmitting}
-                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-xs font-mono text-cyan-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-mono text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
                     >
                       <span>←</span>
                       <span>Event Briefing</span>
@@ -757,7 +739,7 @@ export default function EventDetailModal({
                       type="button"
                       onClick={() => setViewMode("verifiedList")}
                       disabled={isSubmitting}
-                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-[11px] font-mono transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
+                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
                     >
                       <span>📋 Check Verified List</span>
                     </button>
@@ -767,12 +749,12 @@ export default function EventDetailModal({
                   <div className="mb-5">
                     <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
                       <span>Delegate Registration</span>
-                      <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                      <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                         VERIFICATION STEP
                       </span>
                     </h3>
-                    <p className="text-xs text-slate-300 mt-1 font-sans leading-relaxed">
-                      Please enter your collegiate credentials, attach your presentation / media file, and provide your payment screenshot for verification.
+                    <p className="text-xs text-zinc-300 mt-1 font-sans leading-relaxed">
+                      Please enter your credentials, attach your presentation / media file, and provide your payment screenshot for verification.
                     </p>
                   </div>
 
@@ -789,8 +771,8 @@ export default function EventDetailModal({
                     {/* Full Name & Student ID/PRN */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
-                        <label className="text-[11px] text-slate-400 block mb-1">
-                          FULL NAME <span className="text-cyan-400">*</span>
+                        <label className="text-[11px] text-zinc-400 block mb-1">
+                          FULL NAME <span className="text-purple-400">*</span>
                         </label>
                         <input
                           type="text"
@@ -799,13 +781,13 @@ export default function EventDetailModal({
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           placeholder="e.g. Rahul Sharma"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-sans text-sm disabled:opacity-50"
+                          className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-sans text-sm disabled:opacity-50"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] text-slate-400 block mb-1">
-                          STUDENT ID / PRN <span className="text-cyan-400">*</span>
+                        <label className="text-[11px] text-zinc-400 block mb-1">
+                          STUDENT ID / PRN <span className="text-purple-400">*</span>
                         </label>
                         <input
                           type="text"
@@ -814,7 +796,7 @@ export default function EventDetailModal({
                           value={prn}
                           onChange={(e) => setPrn(e.target.value)}
                           placeholder="e.g. 2023BTE042"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all uppercase text-sm disabled:opacity-50"
+                          className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all uppercase text-sm font-sans disabled:opacity-50"
                         />
                       </div>
                     </div>
@@ -822,15 +804,15 @@ export default function EventDetailModal({
                     {/* Year of Study & Contact Number */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
-                        <label className="text-[11px] text-slate-400 block mb-1">
-                          YEAR OF STUDY <span className="text-cyan-400">*</span>
+                        <label className="text-[11px] text-zinc-400 block mb-1">
+                          YEAR OF STUDY <span className="text-purple-400">*</span>
                         </label>
                         <select
                           required
                           disabled={isSubmitting}
                           value={year}
                           onChange={(e) => setYear(e.target.value)}
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/15 text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all text-xs disabled:opacity-50 cursor-pointer"
+                          className="w-full px-4 py-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-xs disabled:opacity-50 cursor-pointer"
                         >
                           <option value="First Year B.Tech">First Year B.Tech</option>
                           <option value="Second Year B.Tech">Second Year B.Tech</option>
@@ -842,8 +824,8 @@ export default function EventDetailModal({
                       </div>
 
                       <div>
-                        <label className="text-[11px] text-slate-400 block mb-1">
-                          CONTACT NUMBER (WHATSAPP) <span className="text-cyan-400">*</span>
+                        <label className="text-[11px] text-zinc-400 block mb-1">
+                          CONTACT NUMBER (WHATSAPP) <span className="text-purple-400">*</span>
                         </label>
                         <input
                           type="tel"
@@ -852,18 +834,18 @@ export default function EventDetailModal({
                           value={contactNumber}
                           onChange={(e) => setContactNumber(e.target.value)}
                           placeholder="e.g. 9876543210"
-                          className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all text-sm font-sans disabled:opacity-50"
+                          className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-sm font-sans disabled:opacity-50"
                         />
                       </div>
                     </div>
 
                     {/* Dedicated Media Upload Field: PPT, PDF, or Image */}
-                    <div className="p-3.5 rounded-2xl border border-cyan-500/30 bg-cyan-950/20 space-y-2">
+                    <div className="p-4 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[11px] text-cyan-300 block font-semibold">
+                        <label className="text-xs text-purple-300 block font-semibold">
                           Upload Project Media / Presentation (PPT, PDF, or Image)
                         </label>
-                        <span className="text-[10px] text-cyan-400/80 font-mono">
+                        <span className="text-[10px] text-zinc-500 font-mono">
                           .ppt, .pptx, .pdf, images
                         </span>
                       </div>
@@ -874,15 +856,15 @@ export default function EventDetailModal({
                         accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,.webp"
                         disabled={isSubmitting}
                         onChange={handlePresentationFileChange}
-                        className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                        className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer disabled:opacity-50"
                       />
 
                       {presentationFile ? (
-                        <div className="flex items-center justify-between p-2 rounded-lg bg-black/60 border border-cyan-500/30 text-xs">
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-purple-500/30 text-xs">
                           <div className="flex items-center gap-2 text-white truncate">
                             <span>📄</span>
                             <span className="truncate">{presentationFile.name}</span>
-                            <span className="text-slate-400 text-[10px]">
+                            <span className="text-zinc-400 text-[10px]">
                               ({(presentationFile.size / (1024 * 1024)).toFixed(2)} MB)
                             </span>
                           </div>
@@ -892,13 +874,13 @@ export default function EventDetailModal({
                               setPresentationFile(null);
                               if (presentationInputRef.current) presentationInputRef.current.value = "";
                             }}
-                            className="text-red-400 hover:text-red-300 text-[10px] px-2 py-0.5 rounded bg-red-950/60"
+                            className="text-red-400 hover:text-red-300 text-[10px] px-2.5 py-1 rounded bg-red-950/60 border border-red-500/30 transition-colors"
                           >
                             ✕ Remove
                           </button>
                         </div>
                       ) : (
-                        <p className="text-[10px] text-slate-400 font-sans">
+                        <p className="text-[10px] text-zinc-400 font-sans">
                           Attach your slide deck (PPTX/PPT), research summary document (PDF), or poster banner (Image). Uploaded to Cloudinary (/auto/upload).
                         </p>
                       )}
@@ -908,7 +890,7 @@ export default function EventDetailModal({
                     {event.customFormFields && event.customFormFields.length > 0 && (
                       <div className="pt-3 border-t border-white/10 space-y-3.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 uppercase">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 uppercase">
                             EVENT CUSTOM FIELDS
                           </span>
                           <span className="text-[11px] font-bold text-white uppercase tracking-wider">
@@ -918,7 +900,7 @@ export default function EventDetailModal({
 
                         {event.customFormFields.map((field) => (
                           <div key={field.id} className="space-y-1">
-                            <label className="text-[11px] text-slate-300 block font-semibold">
+                            <label className="text-[11px] text-zinc-300 block font-semibold">
                               {field.questionTitle}{" "}
                               {field.required && <span className="text-red-400">*</span>}
                             </label>
@@ -936,7 +918,7 @@ export default function EventDetailModal({
                                   }))
                                 }
                                 placeholder={`Enter your ${field.questionTitle.toLowerCase()}...`}
-                                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 text-sm font-sans disabled:opacity-50"
+                                className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-sm font-sans disabled:opacity-50 transition-all"
                               />
                             )}
 
@@ -953,7 +935,7 @@ export default function EventDetailModal({
                                   }))
                                 }
                                 placeholder={`Provide details for ${field.questionTitle.toLowerCase()}...`}
-                                className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.04] border border-white/15 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 text-xs font-sans disabled:opacity-50"
+                                className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-xs font-sans disabled:opacity-50 transition-all"
                               />
                             )}
 
@@ -968,7 +950,7 @@ export default function EventDetailModal({
                                     [field.questionTitle]: e.target.value,
                                   }))
                                 }
-                                className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-white/15 text-white focus:outline-none focus:border-cyan-400 text-xs cursor-pointer font-sans disabled:opacity-50"
+                                className="w-full px-4 py-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-xs cursor-pointer font-sans disabled:opacity-50 transition-all"
                               >
                                 <option value="">-- Select an option --</option>
                                 {field.options
@@ -984,7 +966,7 @@ export default function EventDetailModal({
                             )}
 
                             {field.fieldType === "File Upload (PPT/PDF/Image)" && (
-                              <div className="p-3 rounded-xl border border-white/15 bg-white/[0.02]">
+                              <div className="p-3.5 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all">
                                 <input
                                   type="file"
                                   required={field.required && !customFiles[field.questionTitle]}
@@ -996,10 +978,10 @@ export default function EventDetailModal({
                                       e.target.files?.[0] || null
                                     )
                                   }
-                                  className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                                  className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer disabled:opacity-50"
                                 />
                                 {customFiles[field.questionTitle] && (
-                                  <div className="mt-2 text-[10px] text-cyan-300 font-mono flex items-center justify-between">
+                                  <div className="mt-2 text-[10px] text-purple-300 font-mono flex items-center justify-between p-2 rounded-lg bg-white/[0.04] border border-purple-500/30">
                                     <span>✓ Selected: {customFiles[field.questionTitle].name}</span>
                                     <button
                                       type="button"
@@ -1020,17 +1002,17 @@ export default function EventDetailModal({
                     )}
 
                     {/* Payment Instruction Pill */}
-                    <div className="p-3 rounded-xl bg-cyan-950/20 border border-cyan-500/25 flex items-center justify-between gap-3 text-[11px]">
-                      <div className="flex items-center gap-2 text-cyan-300">
-                        <span className="text-cyan-400 text-sm">💳</span>
+                    <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/25 flex items-center justify-between gap-3 text-[11px]">
+                      <div className="flex items-center gap-2 text-purple-300">
+                        <span className="text-purple-400 text-sm">💳</span>
                         <span>Fee: ₹150 / ₹250 (UPI ID: <span className="font-bold text-white">tesa@sggs</span>)</span>
                       </div>
-                      <span className="text-[10px] text-slate-400">Scan &amp; Pay via GPay/PhonePe</span>
+                      <span className="text-[10px] text-zinc-400">Scan &amp; Pay via GPay/PhonePe</span>
                     </div>
 
                     {/* Payment Screenshot File Input */}
                     <div>
-                      <label className="text-[11px] text-slate-300 block mb-1 font-semibold">
+                      <label className="text-[11px] text-zinc-300 block mb-1 font-semibold">
                         Upload Payment Screenshot (Required for Participation Fee) <span className="text-red-400">*</span>
                       </label>
 
@@ -1045,9 +1027,9 @@ export default function EventDetailModal({
                       />
 
                       {previewUrl ? (
-                        <div className="p-3 rounded-2xl border border-cyan-500/50 bg-cyan-950/30 flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(0,240,255,0.15)]">
+                        <div className="p-3 rounded-2xl border border-purple-500/40 bg-white/[0.02] flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="relative w-16 h-14 rounded-lg overflow-hidden border border-cyan-400/40 shrink-0 bg-black">
+                            <div className="relative w-16 h-14 rounded-lg overflow-hidden border border-purple-400/40 shrink-0 bg-black">
                               <Image
                                 src={previewUrl}
                                 alt="Payment proof preview"
@@ -1063,7 +1045,7 @@ export default function EventDetailModal({
                               <span className="text-[10px] text-emerald-400 flex items-center gap-1">
                                 <span>✓ Ready to upload to Cloudinary</span>
                                 {paymentFile && (
-                                  <span className="text-slate-400">
+                                  <span className="text-zinc-400">
                                     ({(paymentFile.size / 1024).toFixed(0)} KB)
                                   </span>
                                 )}
@@ -1074,7 +1056,7 @@ export default function EventDetailModal({
                           <div className="flex items-center gap-2">
                             <label
                               htmlFor="payment-screenshot-input"
-                              className="px-2.5 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-[10px] text-slate-200 cursor-pointer transition-colors"
+                              className="px-2.5 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-[10px] text-zinc-200 cursor-pointer transition-colors"
                             >
                               Change
                             </label>
@@ -1091,57 +1073,38 @@ export default function EventDetailModal({
                       ) : (
                         <label
                           htmlFor="payment-screenshot-input"
-                          className="w-full p-5 rounded-2xl border-2 border-dashed border-cyan-500/30 hover:border-cyan-400 bg-white/[0.02] hover:bg-cyan-500/[0.03] flex flex-col items-center justify-center gap-2 transition-all cursor-pointer group shadow-inner"
+                          className="w-full p-6 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] hover:bg-purple-500/[0.03] flex flex-col items-center justify-center gap-2 transition-all cursor-pointer group shadow-inner"
                         >
-                          <div className="w-10 h-10 rounded-full bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center text-cyan-300 text-lg group-hover:scale-110 transition-transform">
+                          <div className="w-10 h-10 rounded-full bg-purple-950/60 border border-purple-500/40 flex items-center justify-center text-purple-300 text-lg group-hover:scale-110 transition-transform">
                             📷
                           </div>
                           <div className="text-center">
                             <span className="text-xs text-white font-semibold block">
-                              Click or tap to upload payment screenshot
+                              Click to select Payment Screenshot
                             </span>
-                            <span className="text-[10px] text-slate-400">
-                              PNG, JPG, JPEG, or WEBP (Cloudinary auto verification)
+                            <span className="text-[10px] text-zinc-400">
+                              PNG, JPG, JPEG, WEBP up to 8MB
                             </span>
                           </div>
                         </label>
                       )}
                     </div>
 
-                    {/* Progress Bar / Uploading Indicator */}
-                    {isSubmitting && (
-                      <div className="p-3.5 rounded-xl bg-cyan-950/60 border border-cyan-500/50 flex items-center gap-3 text-cyan-300 animate-pulse">
-                        <span className="w-4 h-4 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin shrink-0" />
-                        <span className="text-xs">
-                          {submittingStep || "Uploading Media... Uploading files to Cloudinary & saving registration..."}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Action Buttons */}
-                    <div className="pt-2 flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setViewMode("detail")}
-                        disabled={isSubmitting}
-                        className="w-1/3 min-h-[44px] py-3 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-slate-300 hover:text-white transition-all text-center cursor-pointer disabled:opacity-40"
-                      >
-                        Cancel
-                      </button>
-
+                    {/* Submit Registration Button */}
+                    <div className="pt-2">
                       <button
                         type="submit"
                         disabled={isSubmitting}
-                        className="w-2/3 min-h-[44px] py-3 px-5 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-400 to-sky-500 hover:from-cyan-400 hover:to-sky-400 text-black font-bold tracking-wider uppercase transition-all shadow-[0_0_25px_rgba(0,240,255,0.4)] hover:shadow-[0_0_35px_rgba(0,240,255,0.6)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-sm uppercase tracking-wider transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_0_30px_rgba(139,92,246,0.45)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                       >
                         {isSubmitting ? (
                           <>
-                            <span className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
-                            <span>Uploading Media...</span>
+                            <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                            <span>{submittingStep || "Uploading to Cloudinary..."}</span>
                           </>
                         ) : (
                           <>
-                            <span>Submit Registration</span>
+                            <span>Complete Event Registration</span>
                             <span>→</span>
                           </>
                         )}
@@ -1151,7 +1114,7 @@ export default function EventDetailModal({
                 </motion.div>
               ) : viewMode === "verifiedList" ? (
                 /* =============================================================
-                   VIEW 3: "CHECK REGISTRATION & VERIFIED LIST" (PUBLIC VIEW)
+                   VIEW 3: "CHECK REGISTRATION & VERIFIED LIST" (PUBLIC COMMAND CENTER)
                    ============================================================= */
                 <motion.div
                   key="view-verified"
@@ -1166,7 +1129,7 @@ export default function EventDetailModal({
                     <button
                       type="button"
                       onClick={() => setViewMode("detail")}
-                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 text-xs text-cyan-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>←</span>
                       <span>Back to Briefing</span>
@@ -1176,7 +1139,7 @@ export default function EventDetailModal({
                       <button
                         type="button"
                         onClick={() => setViewMode("register")}
-                        className="min-h-[36px] px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold transition-all flex items-center gap-1 cursor-pointer"
+                        className="min-h-[36px] px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all flex items-center gap-1 cursor-pointer shadow-[0_0_15px_rgba(147,51,234,0.4)]"
                       >
                         <span>Register Now →</span>
                       </button>
@@ -1186,17 +1149,17 @@ export default function EventDetailModal({
                   {/* Header */}
                   <div className="mb-5">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40">
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
                         PUBLIC VERIFICATION PORTAL
                       </span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-zinc-400">
                         Live Firestore Sync
                       </span>
                     </div>
                     <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
                       Check Registration &amp; Verified List
                     </h3>
-                    <p className="text-xs text-slate-300 font-sans mt-0.5">
+                    <p className="text-xs text-zinc-300 font-sans mt-0.5">
                       Verify your participation status for <span className="text-white font-semibold">{event.title}</span>. Search by your Name or PRN to view your response dossier.
                     </p>
                   </div>
@@ -1208,13 +1171,13 @@ export default function EventDetailModal({
                       placeholder="Search by your Name, Student PRN, or Registration ID..."
                       value={participantSearch}
                       onChange={(e) => setParticipantSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-black/60 border border-cyan-500/30 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all font-sans text-xs"
+                      className="w-full pl-9 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-sans text-xs"
                     />
-                    <span className="absolute left-3 top-3 text-slate-500 text-sm">🔍</span>
+                    <span className="absolute left-3 top-3.5 text-zinc-500 text-sm">🔍</span>
                     {participantSearch && (
                       <button
                         onClick={() => setParticipantSearch("")}
-                        className="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs px-1.5 py-0.5 rounded bg-white/10"
+                        className="absolute right-3 top-3 text-zinc-400 hover:text-white text-xs px-1.5 py-0.5 rounded bg-white/10"
                       >
                         ✕
                       </button>
@@ -1222,10 +1185,10 @@ export default function EventDetailModal({
                   </div>
 
                   {/* Attendees List */}
-                  <div className="max-h-[360px] overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-cyan-500/30">
+                  <div className="max-h-[360px] overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-purple-500/30">
                     {isFetchingParticipants ? (
-                      <div className="p-8 text-center text-slate-400">
-                        <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mx-auto mb-2" />
+                      <div className="p-8 text-center text-zinc-400">
+                        <div className="w-5 h-5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mx-auto mb-2" />
                         <span>Querying Firestore live verification records...</span>
                       </div>
                     ) : filteredParticipants.length > 0 ? (
@@ -1236,40 +1199,40 @@ export default function EventDetailModal({
                         return (
                           <div
                             key={p.registrationId || idx}
-                            className="p-3.5 rounded-xl border border-white/10 bg-white/[0.02] hover:border-cyan-500/40 hover:bg-cyan-950/10 transition-all space-y-2"
+                            className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/40 hover:bg-white/[0.04] transition-all space-y-2.5"
                           >
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div>
                                 <span className="font-bold text-white text-sm block">
                                   {p.fullName}
                                 </span>
-                                <span className="text-[11px] text-cyan-300">
-                                  PRN: {p.prn} • <span className="text-slate-400">{p.year}</span>
+                                <span className="text-[11px] text-purple-300">
+                                  PRN: {p.prn} • <span className="text-zinc-400">{p.year}</span>
                                 </span>
                               </div>
 
-                              {/* Live Status Badge */}
+                              {/* Live Glowing Neon Status Badge */}
                               <div>
                                 {isVerified ? (
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/60 font-bold text-[10px] shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] shadow-[0_0_15px_rgba(16,185,129,0.3)]">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                                     <span>✔ VERIFIED</span>
                                   </span>
                                 ) : isPending ? (
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/50 font-bold text-[10px]">
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold text-[10px] shadow-[0_0_15px_rgba(245,158,11,0.25)]">
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
                                     <span>⏳ PENDING VERIFICATION</span>
                                   </span>
                                 ) : (
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/80 text-red-300 border border-red-500/50 font-bold text-[10px]">
+                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 font-bold text-[10px]">
                                     <span>✖ REJECTED</span>
                                   </span>
                                 )}
                               </div>
                             </div>
 
-                            {/* Details & Actions Row (Privacy Enforced: Sensitive Phone & Raw Payment Proof Hidden) */}
-                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/5 text-[10px] text-slate-400">
+                            {/* Details & Actions Row */}
+                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/5 text-[10px] text-zinc-400">
                               <div className="flex items-center gap-3">
                                 <span>
                                   Payment Status:{" "}
@@ -1283,7 +1246,7 @@ export default function EventDetailModal({
                                     href={p.submissionFileUrl}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-cyan-300 hover:text-cyan-200 underline flex items-center gap-1 font-semibold"
+                                    className="text-purple-300 hover:text-purple-200 underline flex items-center gap-1 font-semibold"
                                   >
                                     <span>📄 Presentation Link ↗</span>
                                   </a>
@@ -1293,7 +1256,7 @@ export default function EventDetailModal({
                               <button
                                 type="button"
                                 onClick={() => setActiveDossierReg(p)}
-                                className="px-2.5 py-1 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-cyan-300 text-[10px] transition-colors cursor-pointer"
+                                className="px-3 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-purple-300 text-[10px] transition-colors cursor-pointer border border-white/10"
                               >
                                 View Submitted Responses →
                               </button>
@@ -1302,9 +1265,9 @@ export default function EventDetailModal({
                         );
                       })
                     ) : (
-                      <div className="p-8 text-center text-slate-500 border border-dashed border-white/10 rounded-xl">
-                        <p className="text-slate-400 font-semibold mb-1">No registered participants found.</p>
-                        <p className="text-[11px] text-slate-600">
+                      <div className="p-8 text-center text-zinc-500 border border-dashed border-white/10 rounded-2xl">
+                        <p className="text-zinc-400 font-semibold mb-1">No registered participants found.</p>
+                        <p className="text-[11px] text-zinc-600">
                           Try searching another Name or PRN, or register using the &quot;Register Now&quot; button above.
                         </p>
                       </div>
@@ -1313,10 +1276,10 @@ export default function EventDetailModal({
 
                   {/* Participant Submission Dossier Modal View */}
                   {activeDossierReg && (
-                    <div className="mt-4 p-4 rounded-2xl border border-cyan-500/40 bg-black/80 space-y-3 shadow-xl">
+                    <div className="mt-4 p-4 rounded-2xl border border-purple-500/40 bg-black/80 space-y-3 shadow-xl">
                       <div className="flex items-center justify-between pb-2 border-b border-white/10">
                         <div>
-                          <span className="text-[10px] text-cyan-400 font-bold uppercase">
+                          <span className="text-[10px] text-purple-400 font-bold uppercase">
                             SUBMITTED FORM RESPONSES
                           </span>
                           <h4 className="text-white font-bold text-sm">
@@ -1326,7 +1289,7 @@ export default function EventDetailModal({
                         <button
                           type="button"
                           onClick={() => setActiveDossierReg(null)}
-                          className="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded bg-white/10"
+                          className="text-zinc-400 hover:text-white text-xs px-2 py-0.5 rounded bg-white/10"
                         >
                           ✕ Close
                         </button>
@@ -1334,28 +1297,28 @@ export default function EventDetailModal({
 
                       <div className="space-y-1.5 text-xs">
                         <div className="flex justify-between py-1 border-b border-white/5">
-                          <span className="text-slate-400">Academic Year:</span>
+                          <span className="text-zinc-400">Academic Year:</span>
                           <span className="text-white">{activeDossierReg.year}</span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-white/5">
-                          <span className="text-slate-400">Verification Status:</span>
+                          <span className="text-zinc-400">Verification Status:</span>
                           <span className={activeDossierReg.status === "verified" || activeDossierReg.status === "approved" ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
                             {activeDossierReg.status.toUpperCase()}
                           </span>
                         </div>
                         <div className="flex justify-between py-1 border-b border-white/5">
-                          <span className="text-slate-400">Registration ID:</span>
-                          <span className="text-cyan-300 font-mono">{activeDossierReg.registrationId}</span>
+                          <span className="text-zinc-400">Registration ID:</span>
+                          <span className="text-purple-300 font-mono">{activeDossierReg.registrationId}</span>
                         </div>
 
                         {activeDossierReg.submissionFileUrl && (
                           <div className="flex justify-between py-1 border-b border-white/5 items-center">
-                            <span className="text-slate-400">Project Presentation / Media:</span>
+                            <span className="text-zinc-400">Project Presentation / Media:</span>
                             <a
                               href={activeDossierReg.submissionFileUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-cyan-300 hover:text-white underline font-semibold flex items-center gap-1"
+                              className="text-purple-300 hover:text-white underline font-semibold flex items-center gap-1"
                             >
                               <span>Open Uploaded File (PPT/PDF/Image) ↗</span>
                             </a>
@@ -1365,16 +1328,16 @@ export default function EventDetailModal({
                         {/* Custom Answers */}
                         {activeDossierReg.customAnswers && Object.keys(activeDossierReg.customAnswers).length > 0 && (
                           <div className="pt-2">
-                            <span className="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">
+                            <span className="text-[10px] text-zinc-400 block mb-1 uppercase font-semibold">
                               Custom Questions &amp; Answers:
                             </span>
                             <div className="space-y-1 p-2 rounded-lg bg-white/[0.02] border border-white/5">
                               {Object.entries(activeDossierReg.customAnswers).map(([k, v], vIdx) => (
                                 <div key={vIdx} className="flex flex-col sm:flex-row sm:justify-between py-0.5 text-[11px]">
-                                  <span className="text-slate-400">{k}:</span>
+                                  <span className="text-zinc-400">{k}:</span>
                                   <span className="text-white font-medium break-all">
                                     {typeof v === "string" && (v.startsWith("http://") || v.startsWith("https://")) ? (
-                                      <a href={v} target="_blank" rel="noopener noreferrer" className="text-cyan-300 underline">
+                                      <a href={v} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline">
                                         View Attachment ↗
                                       </a>
                                     ) : (
@@ -1403,7 +1366,7 @@ export default function EventDetailModal({
                   className="text-center py-6 sm:py-8 font-mono text-xs"
                 >
                   {/* Glowing Emerald Checkmark Icon */}
-                  <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-400 flex items-center justify-center text-emerald-400 shadow-[0_0_40px_rgba(16,185,129,0.5)] mx-auto mb-5 animate-pulse">
+                  <div className="w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-400/80 flex items-center justify-center text-emerald-400 shadow-[0_0_40px_rgba(16,185,129,0.4)] mx-auto mb-5 animate-pulse">
                     <svg
                       className="w-10 h-10"
                       fill="none"
@@ -1415,7 +1378,7 @@ export default function EventDetailModal({
                     </svg>
                   </div>
 
-                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-mono text-xs mb-3 shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs mb-3 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                     <span>PROOF RECEIVED • VERIFICATION QUEUED</span>
                   </div>
@@ -1424,33 +1387,33 @@ export default function EventDetailModal({
                     Registration Submitted for Verification
                   </h3>
 
-                  <p className="text-sm text-slate-300 max-w-md mx-auto leading-relaxed mb-6 font-sans font-normal">
+                  <p className="text-sm text-zinc-300 max-w-md mx-auto leading-relaxed mb-6 font-sans font-normal">
                     Your delegate information, project presentation, and payment screenshot have been successfully uploaded to Cloudinary and dispatched to the TESA Council.
                   </p>
 
                   {/* Submission Receipt Box */}
-                  <div className="p-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] max-w-md mx-auto mb-7 text-left font-mono text-xs space-y-2.5">
-                    <div className="flex justify-between items-center text-slate-400 pb-1.5 border-b border-white/5">
+                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] max-w-md mx-auto mb-7 text-left font-mono text-xs space-y-2.5">
+                    <div className="flex justify-between items-center text-zinc-400 pb-1.5 border-b border-white/5">
                       <span>REGISTRATION ID:</span>
-                      <span className="text-cyan-300 font-bold">{submittedRegId || "REG-CONFIRMED"}</span>
+                      <span className="text-purple-300 font-bold">{submittedRegId || "REG-CONFIRMED"}</span>
                     </div>
 
-                    <div className="flex justify-between items-center text-slate-400">
+                    <div className="flex justify-between items-center text-zinc-400">
                       <span>EVENT:</span>
                       <span className="text-white font-semibold truncate max-w-[220px]">{event.title}</span>
                     </div>
 
-                    <div className="flex justify-between items-center text-slate-400">
+                    <div className="flex justify-between items-center text-zinc-400">
                       <span>DELEGATE NAME:</span>
                       <span className="text-white font-semibold">{fullName}</span>
                     </div>
 
-                    <div className="flex justify-between items-center text-slate-400">
+                    <div className="flex justify-between items-center text-zinc-400">
                       <span>STUDENT PRN:</span>
-                      <span className="text-cyan-300 font-semibold">{prn.toUpperCase()}</span>
+                      <span className="text-purple-300 font-semibold">{prn.toUpperCase()}</span>
                     </div>
 
-                    <div className="flex justify-between items-center text-slate-400 pt-1.5 border-t border-white/5">
+                    <div className="flex justify-between items-center text-zinc-400 pt-1.5 border-t border-white/5">
                       <span>PAYMENT PROOF:</span>
                       <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
                         <span>✓ Cloudinary Verified</span>
@@ -1462,7 +1425,7 @@ export default function EventDetailModal({
                     <button
                       type="button"
                       onClick={() => setViewMode("verifiedList")}
-                      className="w-full sm:w-auto min-h-[44px] px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 text-cyan-300 font-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                      className="w-full sm:w-auto min-h-[44px] px-6 py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-purple-300 font-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
                     >
                       Check Live Status in Verified List →
                     </button>
@@ -1470,7 +1433,7 @@ export default function EventDetailModal({
                     <button
                       type="button"
                       onClick={handleModalClose}
-                      className="w-full sm:w-auto min-h-[44px] px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(16,185,129,0.45)] cursor-pointer"
+                      className="w-full sm:w-auto min-h-[44px] px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(16,185,129,0.4)] cursor-pointer"
                     >
                       Done &amp; Close Window
                     </button>

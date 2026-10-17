@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
+  --background: #050508;
   --foreground: #f4f4f5;
 }
 
@@ -14,152 +14,110 @@
 
 html,
 body {
-  background: #09090b;
+  background: #050508;
   color: #f4f4f5;
   font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   overflow-x: hidden;
   max-width: 100vw;
   width: 100%;
-  selection-background-color: rgba(168, 85, 247, 0.35);
-  selection-color: #f3e8ff;
-}
-
-/* Woven Technical Carbon Fiber & Loom Grid Texture */
-.bg-woven-texture {
-  background-image: 
-    radial-gradient(rgba(168, 85, 247, 0.15) 1px, transparent 1px),
-    linear-gradient(45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
-    linear-gradient(-45deg, rgba(255, 255, 255, 0.02) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%),
-    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.02) 75%);
-  background-size: 32px 32px, 16px 16px, 16px 16px, 16px 16px, 16px 16px;
+  selection-background-color: rgba(124, 58, 237, 0.35);
+  selection-color: #f5f3ff;
 }
 
 /* ============================================================================
-   TEXTILE ENGINEERING & SMART FABRIC UI ENHANCEMENTS
+   AWWWARDS DARK CREATIVE STUDIO THEME TOKENS & UTILITIES
    ============================================================================ */
 
-/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */
-.warp-weft-grid {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.15;
-  background-image:
-    /* Vertical Warp Threads (Cyan 400nm glow) */
-    linear-gradient(90deg, rgba(0, 240, 255, 0.22) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.06) 2px, transparent 2px),
-    /* Horizontal Weft Threads (Violet glow) */
-    linear-gradient(0deg, rgba(168, 85, 247, 0.22) 1px, transparent 1px),
-    linear-gradient(0deg, rgba(168, 85, 247, 0.06) 2px, transparent 2px),
-    /* Crossover Interlacing Knots / Optical Micro-Sensors */
-    radial-gradient(circle at 16px 16px, rgba(0, 240, 255, 0.85) 1.2px, transparent 2px),
-    radial-gradient(circle at 32px 32px, rgba(192, 132, 252, 0.85) 1.2px, transparent 2px);
-  background-size: 16px 16px, 32px 32px, 16px 16px, 32px 32px, 32px 32px, 32px 32px;
+/* Studio Micro-Dot Mesh Texture */
+.studio-dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+  background-size: 28px 28px;
 }
 
-/* 2. Kinetic Twill Weave Diagonal Pattern for Active Buttons & Tabs */
-.bg-twill-pattern {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(255, 255, 255, 0.12) 0px,
-    rgba(255, 255, 255, 0.12) 2px,
-    transparent 2px,
-    transparent 6px
-  );
-}
-
-.bg-twill-cyan {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(0, 240, 255, 0.25) 0px,
-    rgba(0, 240, 255, 0.25) 2px,
-    transparent 2px,
-    transparent 7px
-  );
-}
-
-.bg-twill-violet {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(168, 85, 247, 0.25) 0px,
-    rgba(168, 85, 247, 0.25) 2px,
-    transparent 2px,
-    transparent 7px
-  );
-}
-
-.bg-twill-emerald {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgba(16, 185, 129, 0.25) 0px,
-    rgba(16, 185, 129, 0.25) 2px,
-    transparent 2px,
-    transparent 7px
-  );
-}
-
-/* 3. Jacquard Industrial Precision Stitched / Selvedge Card Border */
-.selvedge-card {
+/* Linear/Raycast Bento Card Styling */
+.bento-card {
   position: relative;
+  background: rgba(11, 12, 16, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
+    0 20px 40px -15px rgba(0, 0, 0, 0.8);
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.selvedge-card::after {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  pointer-events: none;
-  border: 1.5px dashed transparent;
-  transition: all 0.35s ease;
-  z-index: 25;
-}
-
-.selvedge-card:hover::after {
-  border-color: rgba(0, 240, 255, 0.7);
+.bento-card:hover {
+  border-color: rgba(168, 85, 247, 0.35);
+  transform: translateY(-4px);
   box-shadow: 
-    0 0 20px rgba(0, 240, 255, 0.25),
-    inset 0 0 20px rgba(0, 240, 255, 0.08);
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    0 25px 50px -12px rgba(124, 58, 237, 0.25);
 }
 
-/* Overlock Serged Seam Stitch Accent along Top of Cards */
-.serged-seam {
-  background-image: repeating-linear-gradient(
-    90deg,
-    rgba(0, 240, 255, 0.5) 0px,
-    rgba(0, 240, 255, 0.5) 4px,
-    transparent 4px,
-    transparent 8px
-  );
-  height: 2px;
-  width: 100%;
+/* Top-Right Inner Radial Glow on Hover */
+.bento-glow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle at top right, rgba(168, 85, 247, 0.14), transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  border-radius: inherit;
 }
 
-/* 4. Fabric Care / Spec Label Badge */
-.care-label-badge {
+.group:hover .bento-glow {
+  opacity: 1;
+}
+
+/* Primary Glow Button with Inner Specular Highlight */
+.glow-button-primary {
   position: relative;
-  border: 1px dashed rgba(0, 240, 255, 0.45);
-  font-family: var(--font-mono, monospace);
-  letter-spacing: 0.06em;
-  transition: all 0.25s ease;
-  backdrop-filter: blur(8px);
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%);
+  color: #ffffff;
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
+    0 0 25px rgba(124, 58, 237, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.care-label-badge:hover {
-  border-color: rgba(0, 240, 255, 0.95);
-  box-shadow: 0 0 14px rgba(0, 240, 255, 0.4);
+.glow-button-primary:hover {
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
+    0 0 35px rgba(139, 92, 246, 0.6);
   transform: translateY(-1px);
 }
 
-/* Woven Glassmorphism */
-.woven-glass {
-  background: rgba(15, 12, 28, 0.65);
+/* Secondary Dark Glass Button */
+.glass-button-secondary {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  color: #e4e4e7;
+  transition: all 0.25s ease;
+}
+
+.glass-button-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #ffffff;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+}
+
+/* Floating Glass Pill Navbar */
+.glass-pill-navbar {
+  background: rgba(9, 9, 11, 0.75);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
+    0 20px 45px rgba(0, 0, 0, 0.75);
 }
 
 /* 3D Perspective and Transform-style */
@@ -171,17 +129,64 @@ body {
   transform-style: preserve-3d;
 }
 
-/* Custom Scrollbar */
+/* Aurora Float Keyframes */
+@keyframes aurora-drift-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(60px, -40px) scale(1.12);
+  }
+  66% {
+    transform: translate(-40px, 50px) scale(0.92);
+  }
+}
+
+@keyframes aurora-drift-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(-50px, 40px) scale(1.08);
+  }
+  66% {
+    transform: translate(40px, -60px) scale(0.95);
+  }
+}
+
+@keyframes aurora-drift-3 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(30px, 45px) scale(1.15);
+  }
+}
+
+.animate-aurora-1 {
+  animation: aurora-drift-1 22s ease-in-out infinite;
+}
+
+.animate-aurora-2 {
+  animation: aurora-drift-2 26s ease-in-out infinite;
+}
+
+.animate-aurora-3 {
+  animation: aurora-drift-3 18s ease-in-out infinite;
+}
+
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: #050508;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.3);
-  border-radius: 4px;
+  background: rgba(124, 58, 237, 0.35);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 240, 255, 0.6);
+  background: rgba(168, 85, 247, 0.7);
 }

@@ -4,56 +4,48 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { onAuthStateChanged, User } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import LoginButton from "./LoginButton";
-import FabricSwatchPicker from "./FabricSwatchPicker";
 
 interface NavbarProps {
   onOpenRegister: () => void;
   onOpenVerifiedList?: () => void;
 }
 
-export default function Navbar({ onOpenRegister, onOpenVerifiedList }: NavbarProps) {
-  const [user, setUser] = useState<User | null>(null);
+export default function Navbar({
+  onOpenRegister,
+  onOpenVerifiedList,
+}: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("hero");
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
+      setIsScrolled(window.scrollY > 30);
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setMobileMenuOpen(false);
+      // Detect current section in view
+      const sections = ["hero", "events", "team"];
+      const scrollPosition = window.scrollY + 200;
+      for (const section of sections) {
+        const el = document.getElementById(section);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            setActiveTab(section);
+            break;
+          }
+        }
       }
     };
-    window.addEventListener("resize", handleResize);
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setMobileMenuOpen(false);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("keydown", handleKeyDown);
-      unsubscribe();
-    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Smooth scroll handler that closes the mobile menu
   const handleNavClick = (sectionId: string) => {
     setMobileMenuOpen(false);
+    setActiveTab(sectionId);
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
@@ -61,125 +53,132 @@ export default function Navbar({ onOpenRegister, onOpenVerifiedList }: NavbarPro
   };
 
   const navLinks = [
-    { label: "Home", href: "#hero", id: "hero", icon: "✦" },
-    { label: "Events", href: "#events", id: "events", icon: "📅" },
-    { label: "TESA Team", href: "#team", id: "team", icon: "👥" },
+    { label: "Home", id: "hero" },
+    { label: "Events", id: "events" },
+    { label: "TESA Team", id: "team" },
   ];
 
   return (
     <>
+      {/* Floating Pill-Shaped Glass Navbar */}
       <header
-        className={`fixed top-0 left-0 right-0 z-50 w-full h-16 sm:h-20 transition-all duration-300 ${
-          isScrolled || mobileMenuOpen
-            ? "bg-slate-950/90 backdrop-blur-2xl border-b border-cyan-500/25 shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_20px_rgba(0,240,255,0.12)]"
-            : "bg-slate-950/70 backdrop-blur-xl border-b border-white/[0.08]"
+        className={`fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-5xl rounded-full transition-all duration-300 ${
+          isScrolled
+            ? "bg-zinc-950/85 backdrop-blur-2xl border border-white/15 px-4 sm:px-6 py-2 sm:py-2.5 shadow-[0_10px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(124,58,237,0.15)]"
+            : "bg-zinc-950/70 backdrop-blur-2xl border border-white/10 px-4 sm:px-6 py-2.5 sm:py-3 shadow-[0_0_40px_rgba(0,0,0,0.8)]"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-between gap-4">
-          {/* Left: Brand Identity with Official TESA Logo */}
+        <div className="flex items-center justify-between gap-3 sm:gap-4 w-full">
+          {/* Brand Identity with Official TESA Logo */}
           <Link
             href="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 sm:gap-3 group shrink-0 min-h-[44px]"
+            className="flex items-center gap-2.5 group shrink-0 min-h-[40px]"
           >
-            <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-cyan-400/50 p-0.5 overflow-hidden bg-slate-950 group-hover:scale-105 group-hover:border-cyan-300 transition-all shadow-[0_0_15px_rgba(0,240,255,0.35)] shrink-0">
+            <div className="relative w-8 h-8 rounded-full border border-white/20 p-0.5 overflow-hidden bg-black/60 group-hover:scale-105 group-hover:border-purple-400 transition-all shadow-[0_0_15px_rgba(124,58,237,0.25)] shrink-0">
               <Image
                 src="/tesa-logo.png"
-                alt="TESA Official Emblem Logo"
-                width={36}
-                height={36}
+                alt="TESA Logo"
+                width={32}
+                height={32}
                 className="w-full h-full object-cover rounded-full"
                 priority
               />
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-xs sm:text-sm tracking-wider text-white group-hover:text-cyan-300 transition-colors">
+              <span className="font-bold text-xs sm:text-sm tracking-wide text-white group-hover:text-purple-300 transition-colors">
                 TESA
               </span>
-              <span className="text-[9px] font-mono text-cyan-300/80 -mt-0.5 tracking-tight hidden sm:block">
-                SGGSIE&amp;T NANDED
+              <span className="text-[9px] font-mono text-zinc-400 -mt-0.5 tracking-tight hidden sm:block">
+                SGGSIE&amp;T
               </span>
             </div>
           </Link>
 
-          {/* Center: Standard Text Navigation Links (Hidden on mobile < md) */}
+          {/* Center Navigation Links with Smooth Active Indicator */}
           <nav
             aria-label="Desktop Navigation"
-            className="hidden md:flex items-center gap-8 text-xs font-mono tracking-wider text-slate-300"
+            className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1 rounded-full border border-white/[0.06]"
           >
-            {navLinks.map((link) => (
-              <a
-                key={link.id}
-                href={link.href}
-                className="relative py-2 hover:text-cyan-300 transition-colors duration-200 group min-h-[44px] flex items-center"
-              >
-                <span>{link.label}</span>
-                <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-gradient-to-r from-cyan-400 to-teal-300 group-hover:w-full transition-all duration-300 rounded-full" />
-              </a>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = activeTab === link.id;
+              return (
+                <button
+                  key={link.id}
+                  onClick={() => handleNavClick(link.id)}
+                  className={`relative px-4 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all duration-300 cursor-pointer ${
+                    isActive
+                      ? "text-white"
+                      : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="nav-pill"
+                      className="absolute inset-0 rounded-full bg-white/[0.08] border border-white/15 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.15)]"
+                      transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10">{link.label}</span>
+                </button>
+              );
+            })}
           </nav>
 
-          {/* Right: Actions (3D Fabric Swatch Picker, Auth, Register Button, & Mobile Hamburger Menu) */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <FabricSwatchPicker />
-
+          {/* Right Action Buttons */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
             <LoginButton />
 
             {onOpenVerifiedList && (
               <button
                 type="button"
                 onClick={onOpenVerifiedList}
-                className="hidden lg:inline-flex items-center gap-1.5 px-3.5 min-h-[44px] rounded-full text-xs font-mono font-semibold text-emerald-300 hover:text-white bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 hover:border-emerald-400 transition-all shadow-[0_0_12px_rgba(16,185,129,0.25)] cursor-pointer shrink-0"
+                className="hidden lg:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] cursor-pointer shrink-0"
               >
-                <span>✔</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span>Verified List</span>
               </button>
             )}
 
             <button
               onClick={onOpenRegister}
-              className="relative group overflow-hidden px-4 sm:px-5 min-h-[44px] rounded-full text-xs font-semibold text-white tracking-wide transition-all duration-300 shadow-[0_0_15px_rgba(0,240,255,0.35)] hover:shadow-[0_0_25px_rgba(0,240,255,0.55)] border border-cyan-400/40 cursor-pointer shrink-0 inline-flex items-center justify-center"
+              className="relative group overflow-hidden px-4 sm:px-5 py-2 rounded-full text-xs font-semibold text-white tracking-wide transition-all duration-300 glow-button-primary cursor-pointer shrink-0 inline-flex items-center justify-center gap-1.5"
             >
-              <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-sky-600 to-purple-600 transition-transform duration-300 group-hover:scale-105" />
-              <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="relative flex items-center gap-1.5">
-                <span>Register</span>
-                <svg
-                  className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform hidden sm:block"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
-                </svg>
-              </span>
+              <span>Register</span>
+              <svg
+                className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
             </button>
 
-            {/* Mobile Hamburger Toggle Button (Minimum 44x44px touch target) */}
+            {/* Mobile Hamburger Toggle */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
-              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
-              aria-expanded={mobileMenuOpen}
-              className="md:hidden relative min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl bg-white/[0.04] border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-white flex flex-col items-center justify-center gap-1.5 p-2 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-400/40 shrink-0"
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              className="md:hidden min-w-[38px] min-h-[38px] w-9 h-9 rounded-full bg-white/[0.05] border border-white/10 text-zinc-300 hover:text-white flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
             >
               <span
-                className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center ${
-                  mobileMenuOpen ? "rotate-45 translate-y-2" : ""
+                className={`w-3.5 h-0.5 bg-current rounded-full transition-transform duration-300 ${
+                  mobileMenuOpen ? "rotate-45 translate-y-1.5" : ""
                 }`}
               />
               <span
-                className={`w-4 h-0.5 bg-current rounded-full transition-opacity duration-200 ${
+                className={`w-3.5 h-0.5 bg-current rounded-full transition-opacity duration-200 ${
                   mobileMenuOpen ? "opacity-0" : "opacity-100"
                 }`}
               />
               <span
-                className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center ${
-                  mobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
+                className={`w-3.5 h-0.5 bg-current rounded-full transition-transform duration-300 ${
+                  mobileMenuOpen ? "-rotate-45 -translate-y-1.5" : ""
                 }`}
               />
             </button>
@@ -187,70 +186,46 @@ export default function Navbar({ onOpenRegister, onOpenVerifiedList }: NavbarPro
         </div>
       </header>
 
-      {/* =========================================================================
-          MOBILE SLIDE-OUT / DROPDOWN SHEET
-          ========================================================================= */}
+      {/* Mobile Glass Dropdown Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            {/* Backdrop Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
               onClick={() => setMobileMenuOpen(false)}
-              className="fixed inset-0 top-16 bg-black/70 backdrop-blur-sm z-40 md:hidden"
-              aria-hidden="true"
+              className="fixed inset-0 bg-black/80 backdrop-blur-md z-40 md:hidden"
             />
-
-            {/* Mobile Dropdown Menu Container */}
             <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-16 left-0 right-0 z-50 md:hidden border-b border-cyan-500/30 bg-[#07090f]/95 backdrop-blur-2xl shadow-[0_25px_50px_rgba(0,0,0,0.95),0_0_35px_rgba(0,240,255,0.15)] px-4 sm:px-6 py-6 font-mono"
+              className="fixed top-20 left-4 right-4 z-50 md:hidden rounded-3xl border border-white/15 bg-zinc-950/90 backdrop-blur-2xl p-5 shadow-[0_25px_50px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.2)]"
             >
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] uppercase text-cyan-400/70 tracking-widest px-3 mb-1">
-                  NAVIGATION DIRECTORY
+                <span className="text-[10px] uppercase text-zinc-500 font-mono tracking-widest px-2 mb-1">
+                  Directory
                 </span>
-
                 {navLinks.map((link) => (
                   <button
                     key={link.id}
                     onClick={() => handleNavClick(link.id)}
-                    className="w-full text-left min-h-[48px] py-3 px-4 rounded-xl text-sm font-semibold tracking-wide text-slate-200 hover:text-cyan-300 bg-white/[0.03] hover:bg-cyan-950/50 border border-white/[0.06] hover:border-cyan-500/40 transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full text-left py-3 px-4 rounded-2xl text-sm font-medium text-zinc-200 hover:text-white bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] transition-all flex items-center justify-between cursor-pointer"
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-cyan-400 group-hover:scale-110 transition-transform">
-                        {link.icon}
-                      </span>
-                      <span>{link.label}</span>
-                    </div>
-                    <span className="text-cyan-400/60 group-hover:text-cyan-300 group-hover:translate-x-1 transition-all text-xs">
-                      →
-                    </span>
+                    <span>{link.label}</span>
+                    <span className="text-purple-400 text-xs">→</span>
                   </button>
                 ))}
 
-                {/* Mobile 3D Fabric Theme Switcher */}
-                <div className="py-2 px-1">
-                  <span className="text-[10px] uppercase text-cyan-400/80 tracking-widest block mb-2 font-bold">
-                    3D FABRIC SWATCH PRESET
-                  </span>
-                  <FabricSwatchPicker />
-                </div>
-
-                {/* Mobile Conclave Registration & Verified List Actions */}
-                <div className="pt-3 mt-2 border-t border-white/[0.08] space-y-2.5">
+                <div className="pt-3 border-t border-white/10 space-y-2 mt-1">
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
                       onOpenRegister();
                     }}
-                    className="w-full min-h-[48px] py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(0,240,255,0.4)] flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full py-3 px-4 rounded-2xl glow-button-primary text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>Register for Conclave &amp; Events</span>
                     <span>→</span>
@@ -262,18 +237,11 @@ export default function Navbar({ onOpenRegister, onOpenVerifiedList }: NavbarPro
                         setMobileMenuOpen(false);
                         onOpenVerifiedList();
                       }}
-                      className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full py-2.5 px-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span>✔ Check Registration &amp; Verified List</span>
+                      <span>✔ Check Verified Registrations</span>
                     </button>
                   )}
-                </div>
-
-                {/* Council tenure footnote */}
-                <div className="pt-3 text-center">
-                  <span className="text-[10px] text-slate-500 font-mono">
-                    SGGSIE&amp;T TEXTILE COUNCIL • 2025–2026 TENURE
-                  </span>
                 </div>
               </div>
             </motion.div>

@@ -1,24 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
-import MouseTiltCard from "@/components/MouseTiltCard";
+import AuroraBackground from "@/components/AuroraBackground";
 import TeamDetailModal from "@/components/TeamDetailModal";
 import EventDetailModal, { CustomFormField } from "@/components/EventDetailModal";
-import ConductiveThreadDivider from "@/components/ConductiveThreadDivider";
-import { useFabricTheme } from "@/context/FabricThemeContext";
-
-// Client-only dynamic WebGL 3D Live Textile & Woven Fabric Simulation (ssr: false prevents hydration mismatches)
-const TextileCanvas3D = dynamic(
-  () => import("@/components/TextileCanvas3D"),
-  { ssr: false }
-);
 
 // ============================================================================
 // DATA INTERFACES
@@ -201,7 +192,7 @@ const DEFAULT_TEAM: TeamMember[] = [
     skills: ["E-Textiles", "Project Leadership", "Research & Dev"],
     photoPlaceholder: "AD",
     photoUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80",
-    accentColor: "from-cyan-500/20 to-blue-600/30",
+    accentColor: "from-violet-500/20 to-purple-600/30",
   },
   {
     id: "lead-2",
@@ -215,7 +206,7 @@ const DEFAULT_TEAM: TeamMember[] = [
     skills: ["Electrospinning", "Lab Coordination", "Strategy"],
     photoPlaceholder: "SK",
     photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-    accentColor: "from-teal-500/20 to-emerald-600/30",
+    accentColor: "from-fuchsia-500/20 to-rose-600/30",
   },
   {
     id: "lead-3",
@@ -228,7 +219,7 @@ const DEFAULT_TEAM: TeamMember[] = [
     specialization: "Automated Weaving Systems",
     skills: ["Electronic Jacquard", "Event Management", "CAD"],
     photoPlaceholder: "RP",
-    accentColor: "from-blue-500/20 to-indigo-600/30",
+    accentColor: "from-indigo-500/20 to-purple-600/30",
   },
   {
     id: "lead-4",
@@ -241,7 +232,7 @@ const DEFAULT_TEAM: TeamMember[] = [
     specialization: "Eco-Friendly Wet Processing",
     skills: ["Bio-Dyeing", "Spectroscopy", "Material Testing"],
     photoPlaceholder: "PS",
-    accentColor: "from-indigo-500/20 to-purple-600/30",
+    accentColor: "from-purple-500/20 to-pink-600/30",
   },
   {
     id: "lead-5",
@@ -254,7 +245,7 @@ const DEFAULT_TEAM: TeamMember[] = [
     specialization: "Industrial Automation in Textiles",
     skills: ["Hackathon Ops", "Public Relations", "Stage Logistics"],
     photoPlaceholder: "TJ",
-    accentColor: "from-amber-500/20 to-orange-600/30",
+    accentColor: "from-amber-500/20 to-rose-600/30",
   },
   {
     id: "lead-6",
@@ -267,7 +258,7 @@ const DEFAULT_TEAM: TeamMember[] = [
     specialization: "Quality Assurance & Tensile Analytics",
     skills: ["Financial Modeling", "Corporate Sponsor", "Auditing"],
     photoPlaceholder: "AS",
-    accentColor: "from-emerald-500/20 to-cyan-600/30",
+    accentColor: "from-emerald-500/20 to-teal-600/30",
   },
   {
     id: "lead-7",
@@ -280,7 +271,7 @@ const DEFAULT_TEAM: TeamMember[] = [
     specialization: "Textile CAD/CAM & UI/UX Design",
     skills: ["Textile CAD", "Creative Direction", "Web Tech"],
     photoPlaceholder: "VK",
-    accentColor: "from-cyan-500/20 to-teal-600/30",
+    accentColor: "from-violet-500/20 to-indigo-600/30",
   },
   {
     id: "lead-8",
@@ -293,7 +284,7 @@ const DEFAULT_TEAM: TeamMember[] = [
     specialization: "Medical Textiles & Geotextiles",
     skills: ["Alumni Relations", "Communications", "Media"],
     photoPlaceholder: "MG",
-    accentColor: "from-purple-500/20 to-pink-600/30",
+    accentColor: "from-pink-500/20 to-rose-600/30",
   },
 ];
 
@@ -313,21 +304,19 @@ const containerVariants: Variants = {
 };
 
 const cardSlideUpVariants: Variants = {
-  hidden: { opacity: 0, y: 35, filter: "blur(6px)" },
+  hidden: { opacity: 0, y: 30, filter: "blur(6px)" },
   visible: {
     opacity: 1,
     y: 0,
     filter: "blur(0px)",
     transition: {
-      duration: 0.75,
+      duration: 0.65,
       ease: [0.16, 1, 0.3, 1] as const,
     },
   },
 };
 
 export default function Home() {
-  const { config: fabricTheme } = useFabricTheme();
-
   // State for events & team data
   const [eventsList, setEventsList] = useState<EventItem[]>(DEFAULT_EVENTS);
   const [teamList, setTeamList] = useState<TeamMember[]>(DEFAULT_TEAM);
@@ -342,6 +331,9 @@ export default function Home() {
   const [modalInitialMode, setModalInitialMode] = useState<"detail" | "register" | "verifiedList">("detail");
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+
+  // Interactive Lightbox Modal State for Past Events Gallery
+  const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; index: number } | null>(null);
 
   // Fetch data cleanly from Firebase with localStorage caching
   useEffect(() => {
@@ -398,13 +390,23 @@ export default function Home() {
 
     syncFirestoreData();
 
-    // Safety timeout: Ensure pulse skeleton stops after at most 1.2s to prevent lingering spinners
     const timeoutId = setTimeout(() => {
       setIsDataLoading(false);
     }, 1200);
 
     return () => clearTimeout(timeoutId);
   }, []);
+
+  // Keyboard escape handler for lightbox
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && lightboxImage) {
+        setLightboxImage(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxImage]);
 
   const handleOpenRegistration = (eventTitle: string = "TEX-CONCLAVE 2026") => {
     const matched =
@@ -457,45 +459,47 @@ export default function Home() {
       : teamList.filter((m) => m.category === teamCategoryFilter);
 
   return (
-    <main className="overflow-x-hidden max-w-full w-full bg-transparent text-white min-h-screen relative selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* Live Interactive 3D Textile & Woven Fabric Simulation */}
-      <TextileCanvas3D />
+    <main className="overflow-x-hidden max-w-full w-full bg-[#050508] text-zinc-100 min-h-screen relative selection:bg-purple-500/30 selection:text-purple-200">
+      {/* 1. Deep Obsidian Canvas with Ambient Aurora Light Orbs & Micro-Dot Grid */}
+      <AuroraBackground />
 
-      {/* Minimalist Top Sticky Navigation Bar */}
+      {/* 2. Floating Pill-Shaped Glass Navbar */}
       <Navbar
         onOpenRegister={() => handleOpenRegistration("TEX-CONCLAVE 2026")}
         onOpenVerifiedList={() => handleOpenVerifiedList("TEX-CONCLAVE 2026")}
       />
 
       {/* =========================================================================
-          SECTION 1: ULTRA-CLEAN HERO SECTION
+          SECTION 1: EDITORIAL HERO SECTION (High-Contrast Kinetic Typography)
           ========================================================================= */}
       <section
         id="hero"
-        className="relative min-h-[90vh] sm:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 pb-20 sm:pb-24 z-10"
+        className="relative min-h-[92vh] sm:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 pt-32 sm:pt-40 pb-20 sm:pb-28 z-10"
       >
         <div className="max-w-4xl mx-auto flex flex-col items-center">
-          {/* Subtle Glow Pill Badge */}
+          {/* Subtle Studio Pill Badge */}
           <motion.div
             initial={{ opacity: 0, y: -16, filter: "blur(6px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-6 backdrop-blur-md shadow-[0_0_20px_rgba(0,240,255,0.25)] care-label-badge"
+            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.03] text-[11px] sm:text-xs font-mono text-zinc-300 mb-8 backdrop-blur-2xl shadow-[0_0_30px_rgba(0,0,0,0.6)]"
           >
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
+            <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shadow-[0_0_10px_#a855f7]" />
             <span>SGGSIE&amp;T • TEXTILE ENGINEERING STUDENTS ASSOCIATION</span>
-            <span className="text-[9px] text-cyan-400/60 font-mono hidden sm:inline">||| █ || 280 GSM</span>
+            <span className="text-[10px] text-zinc-500 hidden sm:inline">• EST. 1987</span>
           </motion.div>
 
-          {/* Main Bold TESA Headline */}
+          {/* Main Headline: Metallic Silver-to-Zinc Gradient with Violet-Rose Accent Word */}
           <motion.h1
             initial={{ opacity: 0, y: 24, filter: "blur(10px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.85, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight text-white mb-6 leading-[1.08]"
+            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight mb-6 leading-[1.08]"
           >
-            WEAVE THE{" "}
-            <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(0,240,255,0.4)]">
+            <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
+              WEAVE THE{" "}
+            </span>
+            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-rose-400 bg-clip-text text-transparent drop-shadow-[0_0_45px_rgba(168,85,247,0.45)]">
               FUTURE
             </span>
           </motion.h1>
@@ -505,39 +509,42 @@ export default function Home() {
             initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.85, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="text-base sm:text-lg md:text-xl text-slate-300 font-normal max-w-2xl mx-auto leading-relaxed mb-9"
+            className="text-base sm:text-lg md:text-xl text-zinc-400 font-normal max-w-2xl mx-auto leading-relaxed mb-10"
           >
-            Pioneering smart conductive fibers, electrospun nanofiltration membranes, and autonomous electronic rapier looms at SGGSIE&amp;T Nanded.
+            Pioneering conductive smart fibers, electrospun nanofiltration membranes, and autonomous electronic rapier looms at SGGSIE&amp;T Nanded.
           </motion.p>
 
-          {/* Clean Action Buttons */}
+          {/* Action Buttons: Specular Inner Highlight + Magnetic Glow */}
           <motion.div
             initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.85, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-wrap items-center justify-center gap-4 text-xs font-mono"
+            className="flex flex-wrap items-center justify-center gap-3.5 text-xs font-mono"
           >
             <a
               href="#events"
-              className="min-h-[44px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_25px_rgba(0,240,255,0.4)] hover:shadow-[0_0_35px_rgba(0,240,255,0.6)] cursor-pointer"
+              className="glow-button-primary min-h-[46px] inline-flex items-center justify-center px-7 py-3 rounded-full text-white font-bold tracking-wide transition-all duration-300 cursor-pointer"
             >
               Explore Events →
             </a>
+
             <a
               href="#team"
-              className="min-h-[44px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-cyan-500/40 text-slate-200 hover:text-white transition-all backdrop-blur-md cursor-pointer"
+              className="glass-button-secondary min-h-[46px] inline-flex items-center justify-center px-6 py-3 rounded-full text-zinc-300 hover:text-white transition-all duration-300 cursor-pointer"
             >
               Meet the Team
             </a>
+
             <button
               onClick={() => handleOpenRegistration("TEX-CONCLAVE 2026")}
-              className="min-h-[44px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-purple-950/70 hover:bg-purple-900 border border-purple-500/40 text-purple-300 hover:text-white transition-all backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.25)] cursor-pointer"
+              className="min-h-[46px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 hover:border-purple-400 text-purple-300 hover:text-white transition-all duration-300 backdrop-blur-xl shadow-[0_0_20px_rgba(168,85,247,0.25)] cursor-pointer"
             >
               Register for Conclave &apos;26
             </button>
+
             <button
               onClick={() => handleOpenVerifiedList("TEX-CONCLAVE 2026")}
-              className="min-h-[44px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 hover:text-white transition-all backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer gap-2"
+              className="min-h-[46px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 transition-all duration-300 backdrop-blur-xl shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer gap-2"
             >
               <span>✔</span>
               <span>Check Registration &amp; Verified List</span>
@@ -546,18 +553,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CONDUCTIVE THREAD SECTION DIVIDER 1: HERO -> EVENTS */}
-      <ConductiveThreadDivider
-        label="CONDUCTIVE WEFT FILAMENT // BUS 01"
-        subLabel="OPTICAL YARN WAVEGUIDE • 400nm • SMART FABRIC MATRIX"
-      />
+      {/* Subtle Studio Accent Divider */}
+      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      </div>
 
       {/* =========================================================================
-          SECTION 2: UPCOMING & PAST EVENTS (Minimalist Responsive Layout)
+          SECTION 2: BENTO-GRID UPCOMING & PAST EVENTS
           ========================================================================= */}
       <section
         id="events"
-        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 border-t border-white/[0.08] z-10"
+        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10"
       >
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
@@ -566,42 +572,41 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center max-w-3xl mx-auto mb-12"
+            className="text-center max-w-3xl mx-auto mb-14"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-950/30 text-[11px] sm:text-xs font-mono text-purple-300 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
               <span>EXPERIENCE &amp; INNOVATE</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
               TESA{" "}
-              <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-sky-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,240,255,0.35)]">
+              <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-rose-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(168,85,247,0.35)]">
                 EVENTS &amp; CONCLAVES
               </span>
             </h2>
 
-            <p className="mt-3 text-sm sm:text-base text-slate-300 font-normal leading-relaxed">
+            <p className="mt-3.5 text-sm sm:text-base text-zinc-400 font-normal leading-relaxed">
               Explore national symposiums, hands-on fabrication sprints, and historical milestones organized by the Textile Engineering Students Association.
             </p>
 
-            {/* Distinct Tabs & Prominent Check Verified List Action with Twill Weave & Care-Label Aesthetics */}
+            {/* Distinct Bento Tabs & Check Verified List Action */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <div className="inline-flex p-1.5 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-[0_0_25px_rgba(0,240,255,0.15)] care-label-badge">
+              <div className="inline-flex p-1.5 rounded-2xl bg-zinc-950/80 border border-white/10 backdrop-blur-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)]">
                 <button
                   onClick={() => setEventTab("upcoming")}
                   className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
                     eventTab === "upcoming"
-                      ? "bg-gradient-to-r from-cyan-500 to-teal-400 bg-twill-cyan text-black shadow-[0_0_20px_rgba(0,240,255,0.5)] border border-cyan-300"
-                      : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                      ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] border border-white/20"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
-                  <span className="text-xs">☷</span>
                   <span>⚡ UPCOMING EVENTS</span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full ${
                       eventTab === "upcoming"
-                        ? "bg-black/30 text-black font-extrabold"
-                        : "bg-white/10 text-cyan-300"
+                        ? "bg-black/40 text-white font-extrabold"
+                        : "bg-white/10 text-purple-300"
                     }`}
                   >
                     {upcomingEvents.length}
@@ -612,17 +617,16 @@ export default function Home() {
                   onClick={() => setEventTab("past")}
                   className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
                     eventTab === "past"
-                      ? "bg-gradient-to-r from-purple-500 to-pink-500 bg-twill-violet text-white shadow-[0_0_20px_rgba(168,85,247,0.5)] border border-purple-300"
-                      : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                      ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-[0_0_20px_rgba(192,38,211,0.5)] border border-white/20"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
-                  <span className="text-xs">☷</span>
-                  <span>📸 PAST EVENTS &amp; GALLERIES</span>
+                  <span>📸 PAST GALLERIES</span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full ${
                       eventTab === "past"
-                        ? "bg-black/30 text-white font-extrabold"
-                        : "bg-white/10 text-cyan-300"
+                        ? "bg-black/40 text-white font-extrabold"
+                        : "bg-white/10 text-purple-300"
                     }`}
                   >
                     {pastEvents.length}
@@ -632,33 +636,32 @@ export default function Home() {
 
               <button
                 onClick={() => handleOpenVerifiedList()}
-                className="min-h-[48px] px-5 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 bg-emerald-950/80 hover:bg-emerald-900 bg-twill-emerald border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer care-label-badge"
+                className="min-h-[48px] px-5 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400 hover:text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer backdrop-blur-xl"
               >
-                <span>✔ CHECK REGISTRATION &amp; VERIFIED LIST</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200">
+                <span>✔ CHECK REGISTRATION LIST</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
                   LIVE STATUS
                 </span>
               </button>
             </div>
 
-            {/* Sub-filter for upcoming events with Care/Spec Label Styling */}
+            {/* Sub-filter for upcoming events */}
             {eventTab === "upcoming" && upcomingEvents.length > 0 && (
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
                 {[
-                  { id: "all", label: "ALL UPCOMING", spec: "100% FIBER" },
-                  { id: "open", label: "REGISTRATION OPEN", spec: "SEATS ACTIVE" },
-                  { id: "upcoming", label: "ANNOUNCED SOON", spec: "LOOM PREP" },
+                  { id: "all", label: "ALL UPCOMING" },
+                  { id: "open", label: "REGISTRATION OPEN" },
+                  { id: "upcoming", label: "ANNOUNCED SOON" },
                 ].map((sub) => (
                   <button
                     key={sub.id}
                     onClick={() => setUpcomingSubFilter(sub.id as any)}
-                    className={`min-h-[36px] px-3.5 py-1.5 rounded-xl border text-[11px] transition-all cursor-pointer care-label-badge flex items-center gap-1.5 ${
+                    className={`min-h-[36px] px-4 py-1.5 rounded-xl border text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
                       upcomingSubFilter === sub.id
-                        ? "bg-cyan-950/90 bg-twill-cyan text-cyan-300 border-cyan-400 font-semibold shadow-[0_0_12px_rgba(0,240,255,0.25)]"
-                        : "bg-black/50 text-slate-400 border-white/10 hover:text-slate-200"
+                        ? "bg-purple-500/15 text-purple-300 border-purple-500/40 font-semibold shadow-[0_0_15px_rgba(168,85,247,0.25)]"
+                        : "bg-white/[0.02] text-zinc-400 border-white/10 hover:text-zinc-200"
                     }`}
                   >
-                    <span className="text-[9px] opacity-70">||| █</span>
                     <span>{sub.label}</span>
                   </button>
                 ))}
@@ -666,46 +669,41 @@ export default function Home() {
             )}
           </motion.div>
 
-          {/* Clean Glassmorphic Events Layout or Pulsing Skeleton */}
+          {/* Bento-Grid Events Layout or Skeleton */}
           {isDataLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
               {[1, 2, 3].map((n) => (
                 <div
                   key={`event-skel-${n}`}
-                  className="relative flex flex-col justify-between rounded-2xl border border-cyan-500/15 bg-slate-950/70 p-6 sm:p-7 overflow-hidden animate-pulse min-h-[380px] shadow-[0_20px_50px_rgba(0,0,0,0.85)]"
+                  className="bento-card relative flex flex-col justify-between rounded-3xl p-6 sm:p-7 overflow-hidden animate-pulse min-h-[380px]"
                 >
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <div className="h-5 w-28 rounded-full bg-slate-800/80" />
-                      <div className="h-4 w-16 rounded-full bg-slate-800/60" />
+                      <div className="h-5 w-28 rounded-full bg-white/5" />
+                      <div className="h-4 w-16 rounded-full bg-white/5" />
                     </div>
                     <div className="space-y-2 pt-2">
-                      <div className="h-6 w-5/6 rounded-lg bg-slate-800/90" />
-                      <div className="h-6 w-3/5 rounded-lg bg-slate-800/70" />
+                      <div className="h-6 w-5/6 rounded-lg bg-white/10" />
+                      <div className="h-6 w-3/5 rounded-lg bg-white/5" />
                     </div>
                     <div className="space-y-2 pt-2">
-                      <div className="h-4 w-40 rounded bg-slate-800/60" />
-                      <div className="h-4 w-48 rounded bg-slate-800/60" />
-                    </div>
-                    <div className="space-y-2 pt-3">
-                      <div className="h-3.5 w-full rounded bg-slate-800/40" />
-                      <div className="h-3.5 w-4/5 rounded bg-slate-800/40" />
-                      <div className="h-3.5 w-2/3 rounded bg-slate-800/40" />
+                      <div className="h-4 w-40 rounded bg-white/5" />
+                      <div className="h-4 w-48 rounded bg-white/5" />
                     </div>
                   </div>
                   <div className="pt-4 border-t border-white/[0.08]">
-                    <div className="h-11 w-full rounded-xl bg-slate-800/80" />
+                    <div className="h-11 w-full rounded-xl bg-white/5" />
                   </div>
                 </div>
               ))}
             </div>
           ) : eventTab === "upcoming" ? (
-            /* ================= TAB 1: UPCOMING EVENTS ================= */
+            /* ================= TAB 1: UPCOMING EVENTS BENTO GRID ================= */
             displayedUpcomingEvents.length === 0 ? (
-              <div className="text-center py-16 px-6 rounded-3xl border border-cyan-500/20 bg-slate-950/50 backdrop-blur-xl">
+              <div className="text-center py-16 px-6 rounded-3xl border border-white/10 bg-[#0b0c10]/80 backdrop-blur-xl">
                 <span className="text-3xl mb-3 block">🗓️</span>
                 <h3 className="text-xl font-mono font-bold text-white mb-2">No Upcoming Events In This Category</h3>
-                <p className="text-sm text-slate-400 font-sans max-w-md mx-auto">
+                <p className="text-sm text-zinc-400 font-sans max-w-md mx-auto">
                   New student symposiums, hackathons, and laboratory workshops will be published here soon.
                 </p>
               </div>
@@ -726,51 +724,30 @@ export default function Home() {
                         key={event.id}
                         variants={cardSlideUpVariants}
                         layout
-                        whileHover={{ y: -8, rotateX: 2, transition: { duration: 0.3 } }}
                         onClick={() => {
                           setSelectedEvent(event);
                           setModalInitialMode("detail");
                         }}
-                        className="selvedge-card group relative flex flex-col justify-between rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-6 sm:p-7 overflow-hidden shadow-2xl hover:border-cyan-400 hover:shadow-[0_20px_50px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
+                        className="bento-card group relative flex flex-col justify-between rounded-3xl p-6 sm:p-7 overflow-hidden cursor-pointer"
                       >
-                        {/* Woven background texture */}
-                        <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
-
-                        {/* Overlock Serged Seam Precision Stitch Accent along top edge */}
-                        <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
-
-                        {/* Textile Engineering Telemetry Header */}
-                        <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/50 uppercase tracking-widest mb-3 pt-1 border-b border-white/[0.04]">
-                          <span className="flex items-center gap-1">
-                            <span className="w-1 h-1 rounded-full bg-cyan-400" />
-                            <span>WARP // WEFT SYNC</span>
-                          </span>
-                          <span>DENIER: 900D • LOOM MATRIX ACTIVE</span>
-                        </div>
-
-                        {/* Corner Accent Decorator */}
-                        <span className="pointer-events-none absolute top-4 left-3 font-mono text-[9px] text-cyan-500/40">
-                          +
-                        </span>
-                        <span className="pointer-events-none absolute top-4 right-3 font-mono text-[9px] text-cyan-500/40">
-                          +
-                        </span>
+                        {/* Top-Right Ambient Radial Glow on Hover */}
+                        <div className="bento-glow" />
 
                         <div className="relative z-10">
                           {/* Status & Category Row */}
                           <div className="flex items-center justify-between gap-2 mb-4">
-                            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider care-label-badge flex items-center gap-1">
-                              <span className="text-[8px] opacity-75">☷</span>
-                              <span>{event.category}</span>
+                            <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-white/[0.04] text-purple-300 border border-purple-500/30 uppercase tracking-wider font-semibold">
+                              {event.category}
                             </span>
 
+                            {/* Glowing Neon Status Badge */}
                             <span
-                              className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border care-label-badge ${
+                              className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border ${
                                 isOpen
-                                  ? "bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
                                   : isUpcoming
-                                  ? "bg-amber-950/70 text-amber-300 border-amber-500/40"
-                                  : "bg-slate-900/80 text-slate-400 border-slate-700/50"
+                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                                  : "bg-zinc-900/80 text-zinc-400 border-zinc-700/50"
                               }`}
                             >
                               {isOpen ? "● REGISTRATION OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
@@ -779,7 +756,7 @@ export default function Home() {
 
                           {/* Event Media Banner */}
                           {event.mediaUrl && (
-                            <div className="relative w-full h-36 rounded-xl overflow-hidden mb-4 border border-cyan-500/20 group-hover:border-cyan-400/50 transition-colors">
+                            <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-4 border border-white/10 group-hover:border-purple-500/40 transition-colors">
                               <Image
                                 src={event.mediaUrl}
                                 alt={event.title}
@@ -788,45 +765,39 @@ export default function Home() {
                                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                               />
-                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent pointer-events-none" />
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-transparent to-transparent pointer-events-none" />
                             </div>
                           )}
 
                           {/* Event Title */}
-                          <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight mb-2">
+                          <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-purple-300 transition-colors tracking-tight mb-2">
                             {event.title}
                           </h3>
 
                           {/* Date & Venue Badges */}
-                          <div className="flex flex-col gap-1.5 text-xs font-mono text-slate-400 mb-4">
+                          <div className="flex flex-col gap-1.5 text-xs font-mono text-zinc-400 mb-4">
                             <div className="flex items-center gap-2">
-                              <span className="text-cyan-400">📅</span>
+                              <span className="text-purple-400">📅</span>
                               <span>{event.date}</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-cyan-400">📍</span>
+                              <span className="text-purple-400">📍</span>
                               <span className="truncate">{event.venue}</span>
                             </div>
                           </div>
 
                           {/* Event Summary */}
-                          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5 font-normal">
+                          <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed mb-5 font-normal">
                             {event.summary}
                           </p>
 
                           {/* Highlights Pill */}
                           {event.highlights && (
-                            <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-4 flex items-center gap-2 care-label-badge">
-                              <span className="text-cyan-400">✦</span>
+                            <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.08] text-[11px] font-mono text-zinc-300 mb-4 flex items-center gap-2">
+                              <span className="text-purple-400">✦</span>
                               <span className="leading-snug">{event.highlights}</span>
                             </div>
                           )}
-
-                          {/* Card click hint with Textile telemetry */}
-                          <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors py-1.5 border-t border-white/[0.05] mb-2">
-                            <span>TENSILE: 4.8 GPa // EXPAND DOSSIER</span>
-                            <span>🔍</span>
-                          </div>
                         </div>
 
                         {/* Bottom CTA & Registration Action */}
@@ -837,7 +808,7 @@ export default function Home() {
                                 e.stopPropagation();
                                 handleOpenRegistration(event.title);
                               }}
-                              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5 cursor-pointer"
+                              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-bold tracking-wide transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2),0_0_20px_rgba(139,92,246,0.35)] flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               <span>Register</span>
                               <span>→</span>
@@ -848,7 +819,7 @@ export default function Home() {
                                 e.stopPropagation();
                                 handleOpenRegistration(event.title);
                               }}
-                              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-purple-300 border border-purple-500/30 hover:border-purple-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               <span>Pre-Register</span>
                               <span>→</span>
@@ -861,7 +832,7 @@ export default function Home() {
                               setSelectedEvent(event);
                               setModalInitialMode("verifiedList");
                             }}
-                            className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white font-mono text-[11px] font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                            className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 font-mono text-[11px] font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
                             title="Check Verified Registration List"
                           >
                             <span>✔ Status</span>
@@ -874,12 +845,12 @@ export default function Home() {
               </motion.div>
             )
           ) : (
-            /* ================= TAB 2: PAST EVENTS & HORIZONTAL GALLERIES ================= */
+            /* ================= TAB 2: PAST EVENTS & BENTO FILMSTRIP ================= */
             pastEvents.length === 0 ? (
-              <div className="text-center py-16 px-6 rounded-3xl border border-cyan-500/20 bg-slate-950/50 backdrop-blur-xl">
+              <div className="text-center py-16 px-6 rounded-3xl border border-white/10 bg-[#0b0c10]/80 backdrop-blur-xl">
                 <span className="text-3xl mb-3 block">📸</span>
                 <h3 className="text-xl font-mono font-bold text-white mb-2">No Past Events In Archives</h3>
-                <p className="text-sm text-slate-400 font-sans max-w-md mx-auto">
+                <p className="text-sm text-zinc-400 font-sans max-w-md mx-auto">
                   Historical symposiums and conclaves will be documented here once concluded.
                 </p>
               </div>
@@ -904,53 +875,31 @@ export default function Home() {
                         key={event.id}
                         variants={cardSlideUpVariants}
                         layout
-                        whileHover={{ y: -8, rotateX: 2, transition: { duration: 0.3 } }}
                         onClick={() => {
                           setSelectedEvent(event);
                           setModalInitialMode("detail");
                         }}
-                        className="selvedge-card group relative rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-6 sm:p-8 overflow-hidden shadow-2xl hover:border-cyan-400/80 hover:shadow-[0_25px_60px_rgba(0,240,255,0.2)] transition-all duration-300 cursor-pointer"
+                        className="bento-card group relative rounded-3xl p-6 sm:p-8 overflow-hidden cursor-pointer"
                       >
-                        {/* Woven background texture */}
-                        <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-20" />
-
-                        {/* Overlock Serged Seam Precision Stitch Accent along top edge */}
-                        <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
-
-                        {/* Textile Engineering Telemetry Header */}
-                        <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/50 uppercase tracking-widest mb-3 pt-1 border-b border-white/[0.04]">
-                          <span className="flex items-center gap-1">
-                            <span className="w-1 h-1 rounded-full bg-purple-400" />
-                            <span>WARP // WEFT ARCHIVE BUS</span>
-                          </span>
-                          <span>DENIER: 1200D • COMPOSITE SELVEDGE RECORD</span>
-                        </div>
-
-                        {/* Corner Accents */}
-                        <span className="pointer-events-none absolute top-4 left-4 font-mono text-[10px] text-cyan-500/40">
-                          +
-                        </span>
-                        <span className="pointer-events-none absolute top-4 right-4 font-mono text-[10px] text-cyan-500/40">
-                          +
-                        </span>
+                        {/* Top-Right Ambient Glow */}
+                        <div className="bento-glow" />
 
                         <div className="relative z-10">
-                          {/* Top Tag & Status Row (Notice: No Registration Button!) */}
+                          {/* Top Tag & Status Row */}
                           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider font-semibold care-label-badge flex items-center gap-1">
-                                <span className="text-[8px] opacity-75">☷</span>
-                                <span>{event.category}</span>
+                              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-white/[0.04] text-purple-300 border border-purple-500/30 uppercase tracking-wider font-semibold">
+                                {event.category}
                               </span>
-                              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-slate-900/90 text-slate-300 border border-slate-700 font-semibold flex items-center gap-1.5 care-label-badge">
-                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-zinc-900/90 text-zinc-400 border border-zinc-700/60 font-semibold flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
                                 <span>CONCLUDED ARCHIVE</span>
                               </span>
                             </div>
 
                             {/* Gallery Photo Counter Badge */}
                             {gallery.length > 0 && (
-                              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30">
                                 📸 {gallery.length} ARCHIVAL PHOTOGRAPHS
                               </span>
                             )}
@@ -959,25 +908,25 @@ export default function Home() {
                           {/* Event Title & Metadata */}
                           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-6">
                             <div className="lg:col-span-2">
-                              <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-cyan-300 transition-colors tracking-tight mb-2">
+                              <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-purple-300 transition-colors tracking-tight mb-2">
                                 {event.title}
                               </h3>
-                              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+                              <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-normal">
                                 {event.summary}
                               </p>
                             </div>
 
-                            <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs font-mono">
-                              <div className="flex items-center gap-2 text-slate-300">
-                                <span className="text-cyan-400">📅</span>
+                            <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] text-xs font-mono">
+                              <div className="flex items-center gap-2 text-zinc-300">
+                                <span className="text-purple-400">📅</span>
                                 <span>{event.date}</span>
                               </div>
-                              <div className="flex items-center gap-2 text-slate-300">
-                                <span className="text-cyan-400">📍</span>
+                              <div className="flex items-center gap-2 text-zinc-300">
+                                <span className="text-purple-400">📍</span>
                                 <span className="truncate">{event.venue}</span>
                               </div>
                               {event.highlights && (
-                                <div className="text-[11px] text-cyan-300 pt-1 border-t border-white/[0.06] flex items-center gap-1.5">
+                                <div className="text-[11px] text-purple-300 pt-1.5 border-t border-white/[0.06] flex items-center gap-1.5">
                                   <span>✦</span>
                                   <span>{event.highlights}</span>
                                 </div>
@@ -985,26 +934,34 @@ export default function Home() {
                             </div>
                           </div>
 
-                          {/* Sleek Horizontal Scrolling Image Gallery */}
+                          {/* Bento Horizontal Photo Gallery Filmstrip with Zoom & Lightbox */}
                           <div className="pt-2 pb-2">
                             <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center gap-2">
-                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                                <span className="text-[11px] font-mono uppercase text-cyan-300 tracking-wider font-semibold">
-                                  EVENT PHOTO GALLERY
+                                <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                                <span className="text-[11px] font-mono uppercase text-purple-300 tracking-wider font-semibold">
+                                  INTERACTIVE PHOTO FILMSTRIP
                                 </span>
                               </div>
-                              <span className="text-[10px] font-mono text-slate-400 hidden sm:inline-block">
-                                ⇄ SCROLL HORIZONTALLY TO BROWSE
+                              <span className="text-[10px] font-mono text-zinc-400 hidden sm:inline-block">
+                                ⇄ SCROLL HORIZONTALLY • CLICK TO EXPAND LIGHTBOX
                               </span>
                             </div>
 
                             {gallery.length > 0 ? (
-                              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-slate-900/40 -mx-1 px-1">
+                              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x scrollbar-thin scrollbar-thumb-purple-500/30 scrollbar-track-zinc-950/40 -mx-1 px-1">
                                 {gallery.map((photoUrl, pIdx) => (
                                   <div
                                     key={pIdx}
-                                    className="relative w-64 sm:w-80 h-44 sm:h-52 flex-shrink-0 rounded-2xl overflow-hidden border border-cyan-500/30 hover:border-cyan-400 group/item shadow-xl snap-start transition-all duration-300 bg-slate-900"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLightboxImage({
+                                        url: photoUrl,
+                                        title: event.title,
+                                        index: pIdx + 1,
+                                      });
+                                    }}
+                                    className="relative w-64 sm:w-80 h-44 sm:h-52 flex-shrink-0 rounded-2xl overflow-hidden border border-white/10 hover:border-purple-400 group/item shadow-xl snap-start transition-all duration-300 bg-zinc-950 cursor-zoom-in"
                                   >
                                     <Image
                                       src={photoUrl}
@@ -1015,31 +972,32 @@ export default function Home() {
                                       className="object-cover group-hover/item:scale-105 transition-transform duration-500"
                                     />
                                     {/* Bottom gradient & caption */}
-                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-80 group-hover/item:opacity-90 transition-opacity pointer-events-none" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 group-hover/item:opacity-95 transition-opacity pointer-events-none" />
 
                                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white font-mono text-[10px]">
-                                      <span className="px-2 py-0.5 rounded bg-black/60 border border-white/20 backdrop-blur-md">
+                                      <span className="px-2.5 py-0.5 rounded-full bg-black/60 border border-white/20 backdrop-blur-md">
                                         PHOTO #{String(pIdx + 1).padStart(2, "0")}
                                       </span>
-                                      <span className="text-cyan-300 opacity-0 group-hover/item:opacity-100 transition-opacity">
-                                        🔍 EXPAND
+                                      <span className="text-purple-300 opacity-0 group-hover/item:opacity-100 transition-opacity flex items-center gap-1 font-semibold">
+                                        <span>🔍</span>
+                                        <span>LIGHTBOX</span>
                                       </span>
                                     </div>
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <div className="w-full py-8 rounded-2xl border border-white/10 bg-slate-900/40 text-center font-mono text-xs text-slate-400">
+                              <div className="w-full py-8 rounded-2xl border border-white/10 bg-white/[0.02] text-center font-mono text-xs text-zinc-400">
                                 ✦ Archival Photographs for this Conclave will be synchronized soon.
                               </div>
                             )}
                           </div>
 
-                          {/* Footer Action Bar: NO Registration Button! */}
+                          {/* Footer Action Bar */}
                           <div className="mt-4 pt-3 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
-                            <span className="text-slate-400 text-[11px] flex items-center gap-1.5">
+                            <span className="text-zinc-400 text-[11px] flex items-center gap-1.5">
                               <span className="text-emerald-400">✓</span>
-                              <span>Event successfully concluded • All proceedings documented in SGGSIE&amp;T records</span>
+                              <span>Concluded • Documented in SGGSIE&amp;T archival records</span>
                             </span>
 
                             <div className="flex items-center gap-2">
@@ -1049,7 +1007,7 @@ export default function Home() {
                                   setSelectedEvent(event);
                                   setModalInitialMode("verifiedList");
                                 }}
-                                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer text-[11px]"
+                                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 transition-all flex items-center gap-1.5 cursor-pointer text-[11px]"
                               >
                                 <span>✔ Attendee Registry</span>
                               </button>
@@ -1060,7 +1018,7 @@ export default function Home() {
                                   setSelectedEvent(event);
                                   setModalInitialMode("detail");
                                 }}
-                                className="min-h-[44px] px-4 sm:px-5 py-2 rounded-xl bg-white/[0.05] hover:bg-cyan-500/10 border border-white/15 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer text-xs"
+                                className="min-h-[44px] px-4 sm:px-5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-purple-400 text-purple-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer text-xs"
                               >
                                 <span>View Full Conclave Dossier</span>
                                 <span>🔍</span>
@@ -1078,19 +1036,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CONDUCTIVE THREAD SECTION DIVIDER 2: EVENTS -> TEAM */}
-      <ConductiveThreadDivider
-        label="JACQUARD LOOM MATRIX // PHASE 02"
-        subLabel="TENSILE STRENGTH 4.8 GPa • SGGSIE&T TEXTILE LABS"
-        accent="violet"
-      />
+      {/* Subtle Studio Accent Divider */}
+      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      </div>
 
       {/* =========================================================================
-          SECTION 3: TESA TEAM (3D Tilt Cards & Responsive 1/3-Column Grid)
+          SECTION 3: BENTO-GRID TESA TEAM SECTION
           ========================================================================= */}
       <section
         id="team"
-        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 border-t border-white/[0.08] z-10"
+        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10"
       >
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
@@ -1101,74 +1057,62 @@ export default function Home() {
             transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
             className="text-center max-w-3xl mx-auto mb-14"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)] care-label-badge">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-950/30 text-[11px] sm:text-xs font-mono text-purple-300 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
               <span>TESA STUDENT COUNCIL • 2025–2026 TENURE</span>
-              <span className="text-[9px] text-cyan-400/60 font-mono hidden sm:inline">||| █ || CAM-04</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
               MEET THE{" "}
-              <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-sky-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,240,255,0.35)]">
+              <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-rose-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(168,85,247,0.35)]">
                 TESA TEAM
               </span>
             </h2>
 
-            <p className="mt-3 text-sm sm:text-base text-slate-300 font-normal leading-relaxed">
+            <p className="mt-3.5 text-sm sm:text-base text-zinc-400 font-normal leading-relaxed">
               The visionary student leaders, researchers, and coordinators driving textile engineering excellence and technological innovation at SGGSIE&amp;T.
             </p>
 
-            {/* Interactive Category Filter with Woven Care-Label & Twill Aesthetics */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 text-xs font-mono">
+            {/* Interactive Category Filter Pills */}
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 text-xs font-mono">
               {[
-                { id: "all", label: "ALL MEMBERS", spec: "100% COUNCIL" },
-                { id: "core", label: "CORE COUNCIL", spec: "EXECUTIVE" },
-                { id: "technical", label: "TECHNICAL & RESEARCH", spec: "LAB DEV" },
-                { id: "events", label: "EVENTS & HACKATHONS", spec: "LOGISTICS" },
-                { id: "outreach", label: "PUBLIC RELATIONS", spec: "ALUMNI BUS" },
+                { id: "all", label: "ALL MEMBERS" },
+                { id: "core", label: "CORE COUNCIL" },
+                { id: "technical", label: "TECHNICAL & RESEARCH" },
+                { id: "events", label: "EVENTS & HACKATHONS" },
+                { id: "outreach", label: "PUBLIC RELATIONS" },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setTeamCategoryFilter(tab.id)}
-                  className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border transition-all duration-200 cursor-pointer care-label-badge ${
+                  className={`min-h-[42px] inline-flex items-center justify-center px-4 py-2 rounded-xl border transition-all duration-200 cursor-pointer ${
                     teamCategoryFilter === tab.id
-                      ? "bg-cyan-500 bg-twill-pattern text-black border-cyan-300 font-bold shadow-[0_0_15px_rgba(6,182,212,0.5)]"
-                      : "bg-slate-950/70 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
+                      ? "bg-purple-600 text-white border-purple-400 font-bold shadow-[0_0_20px_rgba(168,85,247,0.45)]"
+                      : "bg-white/[0.02] text-zinc-300 border-white/10 hover:border-purple-500/40 hover:text-white"
                   }`}
                 >
-                  <span className="text-[10px] opacity-75">☷</span>
                   <span>{tab.label}</span>
                 </button>
               ))}
             </div>
           </motion.div>
 
-          {/* Medium-Sized Staggered 3D Tilt Card Grid or Pulsing Skeleton */}
+          {/* Staggered Bento Team Grid or Pulsing Skeleton */}
           {isDataLoading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
               {[1, 2, 3, 4].map((n) => (
                 <div
                   key={`team-skel-${n}`}
-                  className="relative flex flex-col justify-between rounded-2xl border border-cyan-500/15 bg-slate-950/70 p-4 sm:p-5 overflow-hidden animate-pulse min-h-[440px] shadow-[0_20px_50px_rgba(0,0,0,0.85)]"
+                  className="bento-card relative flex flex-col justify-between rounded-3xl p-5 overflow-hidden animate-pulse min-h-[440px]"
                 >
                   <div>
-                    {/* Portrait Frame Skeleton */}
-                    <div className="w-full h-52 sm:h-56 mb-4 rounded-xl bg-slate-800/80" />
-                    <div className="h-4 w-20 rounded bg-slate-800/70 mb-2" />
-                    <div className="h-5 w-36 rounded bg-slate-800/90 mb-2" />
-                    <div className="h-3.5 w-28 rounded bg-slate-800/60 mb-3" />
-                    <div className="space-y-1.5 mb-4">
-                      <div className="h-3 w-full rounded bg-slate-800/40" />
-                      <div className="h-3 w-4/5 rounded bg-slate-800/40" />
-                    </div>
+                    <div className="w-full h-52 sm:h-56 mb-4 rounded-2xl bg-white/5" />
+                    <div className="h-4 w-20 rounded bg-white/5 mb-2" />
+                    <div className="h-5 w-36 rounded bg-white/10 mb-2" />
+                    <div className="h-3.5 w-28 rounded bg-white/5 mb-3" />
                   </div>
                   <div className="pt-3 border-t border-white/[0.08] space-y-2">
-                    <div className="h-3 w-24 rounded bg-slate-800/50" />
-                    <div className="flex gap-1.5">
-                      <div className="h-4 w-12 rounded bg-slate-800/60" />
-                      <div className="h-4 w-14 rounded bg-slate-800/60" />
-                      <div className="h-4 w-10 rounded bg-slate-800/60" />
-                    </div>
+                    <div className="h-3 w-24 rounded bg-white/5" />
                   </div>
                 </div>
               ))}
@@ -1187,106 +1131,88 @@ export default function Home() {
                     key={member.id}
                     variants={cardSlideUpVariants}
                     layout
-                    className="h-full"
+                    onClick={() => setSelectedMember(member)}
+                    className="bento-card group relative flex flex-col justify-between rounded-3xl p-5 sm:p-6 overflow-hidden cursor-pointer"
                   >
-                    <MouseTiltCard
-                      glowColor="rgba(0, 240, 255, 0.4)"
-                      borderColor="rgba(0, 240, 255, 0.55)"
-                      onClick={() => setSelectedMember(member)}
-                      className="h-full border-cyan-500/30 cursor-pointer selvedge-card relative overflow-hidden group"
-                    >
-                      {/* Industrial Serged Seam Top Edge */}
-                      <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+                    {/* Top-Right Ambient Glow on Hover */}
+                    <div className="bento-glow" />
 
-                      <div className="flex flex-col justify-between h-full">
-                        <div>
-                          {/* Corner Selvedge Telemetry */}
-                          <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-2.5 uppercase">
-                            <span className="flex items-center gap-1">
-                              <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
-                              WARP // WEFT SYNC
-                            </span>
-                            <span className="text-slate-500">DENIER: 900D</span>
-                          </div>
-
-                          {/* Upper: Member Medium Portrait Frame */}
-                          <div className="relative w-full h-52 sm:h-56 mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
-                            {member.photoUrl ? (
-                              <div className="relative w-full h-full">
-                                <Image
-                                  src={member.photoUrl}
-                                  alt={member.name}
-                                  fill
-                                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                                  className="object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
-                                />
-                                {/* Dark Theme Vignette & Gradient Overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
-                                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
-                              </div>
-                            ) : (
-                              <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
-                                <div className="w-14 h-14 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
-                                  {member.photoPlaceholder || "TE"}
-                                </div>
-                                <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase">
-                                  PORTRAIT ARCHIVE
-                                </span>
-                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
-                              </div>
-                            )}
-
-                            {/* Member Year Badge */}
-                            <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-cyan-300 border border-cyan-500/40 shadow-md">
-                              {member.year}
-                            </span>
-
-                            {/* Accent glow line at bottom of photo */}
-                            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
-                          </div>
-
-                          {/* Name & Role Designation */}
-                          <div className="mb-2.5">
-                            <div className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 uppercase tracking-wider mb-1 care-label-badge">
-                              {member.role}
+                    <div className="relative z-10 flex flex-col justify-between h-full">
+                      <div>
+                        {/* Member Portrait Frame */}
+                        <div className="relative w-full h-52 sm:h-56 mb-4 rounded-2xl border border-white/10 bg-[#050508] overflow-hidden group-hover:border-purple-500/50 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                          {member.photoUrl ? (
+                            <div className="relative w-full h-full">
+                              <Image
+                                src={member.photoUrl}
+                                alt={member.name}
+                                fill
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                className="object-cover contrast-105 group-hover:scale-105 transition-all duration-700 ease-out"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-transparent to-transparent pointer-events-none" />
+                              <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
                             </div>
-                            <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
-                              {member.name}
-                            </h3>
-                            <p className="text-[11px] font-mono text-slate-400 mt-0.5 truncate">
-                              {member.designation}
-                            </p>
-                          </div>
+                          ) : (
+                            <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-[#0b0c10] to-purple-950/40 flex flex-col items-center justify-center p-4 text-center">
+                              <div className="w-14 h-14 rounded-xl border border-purple-500/40 bg-purple-950/40 flex items-center justify-center font-mono text-xl font-black text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.25)] mb-2">
+                                {member.photoPlaceholder || "TE"}
+                              </div>
+                              <span className="text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
+                                PORTRAIT ARCHIVE
+                              </span>
+                            </div>
+                          )}
 
-                          {/* Bio Description */}
-                          <p className="text-xs text-slate-300 leading-relaxed mb-3 line-clamp-2">
-                            {member.bio}
+                          {/* Member Year Badge */}
+                          <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-purple-300 border border-purple-500/30 shadow-md">
+                            {member.year}
+                          </span>
+
+                          {/* Accent glow line at bottom of photo */}
+                          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
+                        </div>
+
+                        {/* Name & Role Designation */}
+                        <div className="mb-2.5">
+                          <div className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-[9px] font-mono text-purple-300 uppercase tracking-wider mb-1.5">
+                            {member.role}
+                          </div>
+                          <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-purple-300 transition-colors tracking-tight">
+                            {member.name}
+                          </h3>
+                          <p className="text-[11px] font-mono text-zinc-400 mt-0.5 truncate">
+                            {member.designation}
                           </p>
                         </div>
 
-                        {/* Lower: Focus Area & Skills Badges */}
-                        <div className="pt-2.5 border-t border-white/[0.08]">
-                          <div className="text-[9px] font-mono text-cyan-400/80 uppercase tracking-wider mb-1.5 truncate flex items-center justify-between">
-                            <span>FOCUS: {member.specialization}</span>
-                            <span className="text-[8px] text-slate-500">TENSILE: 4.8 GPa</span>
-                          </div>
-                          <div className="flex flex-wrap gap-1 mb-2">
-                            {member.skills.slice(0, 3).map((skill, sIdx) => (
-                              <span
-                                key={sIdx}
-                                className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/[0.04] text-slate-300 border border-white/[0.08] care-label-badge"
-                              >
-                                {skill}
-                              </span>
-                            ))}
-                          </div>
-                          <div className="flex items-center justify-between text-[9px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors pt-1.5 border-t border-white/[0.04]">
-                            <span>VIEW MEMBER DOSSIER</span>
-                            <span>→</span>
-                          </div>
+                        {/* Bio Description */}
+                        <p className="text-xs text-zinc-300 leading-relaxed mb-3 line-clamp-2">
+                          {member.bio}
+                        </p>
+                      </div>
+
+                      {/* Lower: Focus Area & Skills Badges */}
+                      <div className="pt-2.5 border-t border-white/[0.08]">
+                        <div className="text-[9px] font-mono text-purple-400/90 uppercase tracking-wider mb-1.5 truncate">
+                          FOCUS: {member.specialization}
+                        </div>
+                        <div className="flex flex-wrap gap-1 mb-2">
+                          {member.skills.slice(0, 3).map((skill, sIdx) => (
+                            <span
+                              key={sIdx}
+                              className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-white/[0.03] text-zinc-300 border border-white/10"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] font-mono text-purple-400/80 group-hover:text-purple-300 transition-colors pt-1.5 border-t border-white/[0.04]">
+                          <span>VIEW MEMBER DOSSIER</span>
+                          <span>→</span>
                         </div>
                       </div>
-                    </MouseTiltCard>
+                    </div>
                   </motion.div>
                 ))}
               </AnimatePresence>
@@ -1295,13 +1221,56 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CONDUCTIVE THREAD SECTION DIVIDER 3: TEAM -> FOOTER */}
-      <ConductiveThreadDivider
-        label="SMART FABRIC ARCHIVE // BUS 03"
-        subLabel="CONTINUOUS CONDUCTIVE FILAMENT • TENSILE VERIFIED • SGGSIE&T"
-        accent="emerald"
-      />
+      {/* =========================================================================
+          INTERACTIVE FULLSCREEN LIGHTBOX MODAL FOR GALLERY PHOTOS
+          ========================================================================= */}
+      <AnimatePresence>
+        {lightboxImage && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-8 bg-black/95 backdrop-blur-2xl">
+            {/* Backdrop click closes */}
+            <div
+              className="absolute inset-0"
+              onClick={() => setLightboxImage(null)}
+            />
 
+            {/* Lightbox Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.94 }}
+              transition={{ duration: 0.25 }}
+              className="relative z-10 max-w-5xl w-full max-h-[90vh] flex flex-col items-center"
+            >
+              {/* Top Bar with Title & Close Button */}
+              <div className="w-full flex items-center justify-between pb-4 font-mono text-xs text-zinc-400">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-400" />
+                  <span className="text-white font-bold">{lightboxImage.title}</span>
+                  <span>• Archival Photo #{lightboxImage.index}</span>
+                </div>
+                <button
+                  onClick={() => setLightboxImage(null)}
+                  className="px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white transition-colors cursor-pointer"
+                >
+                  ✕ Close (Esc)
+                </button>
+              </div>
+
+              {/* Main Expanded Image */}
+              <div className="relative w-full h-[65vh] sm:h-[75vh] rounded-3xl overflow-hidden border border-white/15 bg-black shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+                <Image
+                  src={lightboxImage.url}
+                  alt={lightboxImage.title}
+                  fill
+                  unoptimized={lightboxImage.url.startsWith("data:")}
+                  sizes="100vw"
+                  className="object-contain"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* =========================================================================
           INTERACTIVE TEAM MEMBER DETAIL MODAL
@@ -1321,18 +1290,18 @@ export default function Home() {
       />
 
       {/* =========================================================================
-          HYPER-MODERN FOOTER
+          HYPER-MODERN DARK STUDIO FOOTER
           ========================================================================= */}
-      <footer className="relative z-20 w-full border-t border-white/10 bg-black/40 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-slate-400">
+      <footer className="relative z-20 w-full border-t border-white/10 bg-black/60 backdrop-blur-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-zinc-400">
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-center sm:text-left">
             <div className="flex items-center gap-2.5">
-              <div className="relative w-6 h-6 rounded-full border border-cyan-400/40 p-0.5 overflow-hidden bg-slate-950 shrink-0 shadow-[0_0_10px_rgba(0,240,255,0.25)]">
+              <div className="relative w-7 h-7 rounded-full border border-purple-400/40 p-0.5 overflow-hidden bg-black shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
                 <Image
                   src="/tesa-logo.png"
                   alt="TESA Logo"
-                  width={24}
-                  height={24}
+                  width={28}
+                  height={28}
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>
@@ -1340,26 +1309,29 @@ export default function Home() {
                 TESA • SGGSIE&amp;T NANDED
               </span>
             </div>
-            <span className="hidden sm:inline text-slate-600">|</span>
-            <span className="text-[11px] text-slate-400">
+            <span className="hidden sm:inline text-zinc-600">|</span>
+            <span className="text-[11px] text-zinc-400">
               Department of Textile Technology • Est. 1987
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 text-slate-300">
-            <a href="#hero" className="min-h-[44px] inline-flex items-center px-2 hover:text-cyan-300 transition-colors cursor-pointer">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-zinc-300">
+            <a href="#hero" className="min-h-[44px] inline-flex items-center px-2 hover:text-purple-300 transition-colors cursor-pointer">
               Home
             </a>
-            <a href="#events" className="min-h-[44px] inline-flex items-center px-2 hover:text-cyan-300 transition-colors cursor-pointer">
+            <a href="#events" className="min-h-[44px] inline-flex items-center px-2 hover:text-purple-300 transition-colors cursor-pointer">
               Events
             </a>
-            <a href="#team" className="min-h-[44px] inline-flex items-center px-2 hover:text-cyan-300 transition-colors cursor-pointer">
+            <a href="#team" className="min-h-[44px] inline-flex items-center px-2 hover:text-purple-300 transition-colors cursor-pointer">
               TESA Team
             </a>
+            <Link href="/admin" className="min-h-[44px] inline-flex items-center px-3 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-purple-400 text-purple-300 hover:text-white transition-all cursor-pointer">
+              Admin Portal →
+            </Link>
           </div>
         </div>
 
-        <div className="border-t border-white/[0.04] py-3 text-center text-[10px] font-mono text-slate-600">
+        <div className="border-t border-white/[0.04] py-3.5 text-center text-[10px] font-mono text-zinc-600">
           © 2026 Textile Engineering Students Association, SGGSIE&amp;T. All rights reserved.
         </div>
       </footer>

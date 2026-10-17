@@ -22,18 +22,10 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import dynamic from "next/dynamic";
 import { auth, googleProvider, db, isFirebaseConfigured } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
-import ConductiveThreadDivider from "@/components/ConductiveThreadDivider";
-import FabricSwatchPicker from "@/components/FabricSwatchPicker";
+import AuroraBackground from "@/components/AuroraBackground";
 import * as XLSX from "xlsx";
-
-// Client-only dynamic WebGL 3D Live Textile & Woven Fabric Simulation (ssr: false prevents hydration mismatches)
-const TextileCanvas3D = dynamic(
-  () => import("@/components/TextileCanvas3D"),
-  { ssr: false }
-);
 
 // ============================================================================
 // DATA INTERFACES & SCHEMAS (Synced with Minimalist Architecture)
@@ -1184,10 +1176,10 @@ export default function AdminDashboardPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-transparent text-slate-100 flex items-center justify-center p-4 relative">
-        <TextileCanvas3D />
-        <div className="relative z-10 flex flex-col items-center gap-3 font-mono text-xs text-cyan-400 p-6 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/15 shadow-2xl">
-          <div className="w-8 h-8 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+      <div className="min-h-screen bg-[#050508] text-zinc-100 flex items-center justify-center p-4 relative">
+        <AuroraBackground />
+        <div className="relative z-10 flex flex-col items-center gap-3 font-mono text-xs text-purple-300 p-8 rounded-3xl bg-[#0b0c10]/90 backdrop-blur-2xl border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.8)]">
+          <div className="w-8 h-8 rounded-full border-2 border-purple-400 border-t-transparent animate-spin" />
           <span>INITIALIZING TESA ADMIN CONSOLE...</span>
         </div>
       </div>
@@ -1196,108 +1188,101 @@ export default function AdminDashboardPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-transparent text-slate-100 flex flex-col justify-between relative overflow-hidden">
+      <div className="min-h-screen bg-[#050508] text-zinc-100 flex flex-col justify-between relative overflow-hidden">
         {/* Top Connection Checker Banner */}
         {renderConnectionBanner()}
 
-        {/* Live Interactive 3D Textile & Woven Fabric Simulation */}
-        <TextileCanvas3D />
+        {/* Ambient Aurora Light Orbs Background */}
+        <AuroraBackground />
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
-          <div className="relative z-10 w-full max-w-md p-8 rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl text-center shadow-2xl selvedge-card relative overflow-hidden group">
-            {/* Industrial Serged Seam Top Edge */}
-            <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+          <div className="bento-card group relative z-10 w-full max-w-md p-8 rounded-3xl border border-white/10 bg-[#0b0c10]/90 backdrop-blur-2xl text-center shadow-[0_0_80px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden">
+            {/* Top-Right Ambient Glow */}
+            <div className="bento-glow" />
 
-            {/* Corner Selvedge Telemetry */}
-            <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-4 uppercase">
-              <span className="flex items-center gap-1">
-                <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
-                SECURITY MATRIX ACTIVE
-              </span>
-              <span className="text-slate-500">DENIER: 900D</span>
-            </div>
+            <div className="relative z-10">
+              <div className="w-16 h-16 rounded-2xl bg-purple-950/60 border border-purple-500/40 flex items-center justify-center mx-auto mb-6 shadow-[0_0_25px_rgba(168,85,247,0.3)]">
+                <svg className="w-8 h-8 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+              <h1 className="text-xl font-mono font-bold text-white mb-2 uppercase tracking-wider">
+                TESA Administrative Access
+              </h1>
+              <p className="text-xs text-zinc-400 font-mono mb-6 leading-relaxed">
+                Restricted portal for SGGSIE&amp;T Textile Engineering Students Association authorized executives. Sign in with Google to manage the Council Team and Events.
+              </p>
 
-            <div className="w-16 h-16 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-              <svg className="w-8 h-8 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-            </div>
-            <h1 className="text-xl font-mono font-bold text-white mb-2 uppercase tracking-wider">
-              TESA Administrative Access
-            </h1>
-            <p className="text-xs text-slate-400 font-mono mb-6 leading-relaxed">
-              Restricted portal for SGGSIE&amp;T Textile Engineering Students Association authorized executives. Sign in with Google to manage the Council Team and Events.
-            </p>
-
-            {/* Highly Visible Auth Error Banner */}
-            {authError && (
-              <div
-                id="auth-error-banner"
-                className="mb-6 p-4 rounded-xl border border-red-500/60 bg-red-950/90 text-left shadow-[0_0_25px_rgba(239,68,68,0.35)] animate-in fade-in"
-              >
-                <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-red-500/30">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-ping" />
-                    <span className="font-mono text-xs font-bold text-red-200 uppercase tracking-wider">
-                      Google Sign-In Error
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => setAuthError(null)}
-                    className="text-red-400 hover:text-white text-xs font-mono px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 transition-colors cursor-pointer"
-                  >
-                    ✕ Dismiss
-                  </button>
-                </div>
-
-                <div className="space-y-2 font-mono text-xs">
-                  <div>
-                    <span className="text-red-400 text-[10px] uppercase font-bold block mb-0.5">Error Code:</span>
-                    <code className="px-2 py-1 rounded bg-black/80 border border-red-500/50 text-amber-300 font-bold text-xs inline-block break-all">
-                      {authError.code}
-                    </code>
+              {/* Highly Visible Auth Error Banner */}
+              {authError && (
+                <div
+                  id="auth-error-banner"
+                  className="mb-6 p-4 rounded-xl border border-red-500/60 bg-red-950/90 text-left shadow-[0_0_25px_rgba(239,68,68,0.35)] animate-in fade-in"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-red-500/30">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-400 animate-ping" />
+                      <span className="font-mono text-xs font-bold text-red-200 uppercase tracking-wider">
+                        Google Sign-In Error
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => setAuthError(null)}
+                      className="text-red-400 hover:text-white text-xs font-mono px-2 py-0.5 rounded bg-red-900/60 hover:bg-red-800 transition-colors cursor-pointer"
+                    >
+                      ✕ Dismiss
+                    </button>
                   </div>
 
-                  <div>
-                    <span className="text-red-400 text-[10px] uppercase font-bold block mb-0.5">Firebase Error Message:</span>
-                    <div className="p-2.5 rounded bg-black/60 border border-red-500/30 text-red-100 text-xs break-words leading-relaxed">
-                      {authError.message}
+                  <div className="space-y-2 font-mono text-xs">
+                    <div>
+                      <span className="text-red-400 text-[10px] uppercase font-bold block mb-0.5">Error Code:</span>
+                      <code className="px-2 py-1 rounded bg-black/80 border border-red-500/50 text-amber-300 font-bold text-xs inline-block break-all">
+                        {authError.code}
+                      </code>
+                    </div>
+
+                    <div>
+                      <span className="text-red-400 text-[10px] uppercase font-bold block mb-0.5">Firebase Error Message:</span>
+                      <div className="p-2.5 rounded bg-black/60 border border-red-500/30 text-red-100 text-xs break-words leading-relaxed">
+                        {authError.message}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="mt-3 pt-2.5 border-t border-red-500/20 text-[10px] font-mono text-red-300 space-y-1">
-                  <span className="font-bold text-white block">400 Bad Request Diagnostic Guide:</span>
-                  <p>• <strong>auth/operation-not-allowed:</strong> Google provider is disabled. Go to Firebase Console &gt; Authentication &gt; Sign-in method &gt; Enable Google.</p>
-                  <p>• <strong>auth/unauthorized-domain:</strong> Go to Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains &gt; Add your Vercel URL and localhost.</p>
-                  <p>• <strong>auth/configuration-not-found:</strong> Ensure support email is set under Project Settings &gt; General in Firebase Console.</p>
+                  <div className="mt-3 pt-2.5 border-t border-red-500/20 text-[10px] font-mono text-red-300 space-y-1">
+                    <span className="font-bold text-white block">400 Bad Request Diagnostic Guide:</span>
+                    <p>• <strong>auth/operation-not-allowed:</strong> Google provider is disabled. Go to Firebase Console &gt; Authentication &gt; Sign-in method &gt; Enable Google.</p>
+                    <p>• <strong>auth/unauthorized-domain:</strong> Go to Firebase Console &gt; Authentication &gt; Settings &gt; Authorized domains &gt; Add your Vercel URL and localhost.</p>
+                    <p>• <strong>auth/configuration-not-found:</strong> Ensure support email is set under Project Settings &gt; General in Firebase Console.</p>
+                  </div>
                 </div>
-              </div>
-            )}
-
-            <button
-              onClick={handleGoogleLogin}
-              disabled={isLoggingIn}
-              className="w-full py-3 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-wider bg-white text-black hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
-            >
-              {isLoggingIn ? (
-                <>
-                  <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
-                  <span>Connecting with Google...</span>
-                </>
-              ) : (
-                <>
-                  <svg className="w-4 h-4" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-                  </svg>
-                  <span>Authorize with Google</span>
-                </>
               )}
-            </button>
+
+              <button
+                onClick={handleGoogleLogin}
+                disabled={isLoggingIn}
+                className="w-full py-3.5 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-wider bg-white text-black hover:bg-zinc-200 transition-all shadow-[0_0_25px_rgba(255,255,255,0.25)] flex items-center justify-center gap-3 cursor-pointer disabled:opacity-50"
+              >
+                {isLoggingIn ? (
+                  <>
+                    <div className="w-4 h-4 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                    <span>Connecting with Google...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                    </svg>
+                    <span>Authorize with Google</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1309,27 +1294,27 @@ export default function AdminDashboardPage() {
   // --------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden w-full max-w-full relative">
+    <div className="min-h-screen bg-[#050508] text-zinc-100 flex flex-col selection:bg-purple-500/30 selection:text-purple-200 overflow-x-hidden w-full max-w-full relative">
       {/* Top Connection Checker Banner */}
       {renderConnectionBanner()}
 
-      {/* Live Interactive 3D Textile & Woven Fabric Simulation */}
-      <TextileCanvas3D />
+      {/* Ambient Aurora Light Orbs Background */}
+      <AuroraBackground />
 
       {/* Top Header */}
-      <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#050508]/85 backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-white/[0.05] border border-white/10 hover:border-cyan-500/40 text-xs font-mono text-slate-300 hover:text-cyan-300 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="min-h-[44px] px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 text-xs font-mono text-zinc-300 hover:text-purple-300 transition-colors flex items-center gap-1.5 cursor-pointer backdrop-blur-xl"
             >
               <span>←</span>
               <span>Public Website</span>
             </Link>
             <div className="h-4 w-px bg-white/10 hidden sm:block" />
             <div className="flex items-center gap-2.5">
-              <div className="relative w-8 h-8 rounded-full border border-cyan-400/40 p-0.5 overflow-hidden bg-slate-950 shrink-0 shadow-[0_0_10px_rgba(0,240,255,0.25)]">
+              <div className="relative w-8 h-8 rounded-full border border-purple-400/40 p-0.5 overflow-hidden bg-black shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
                 <Image
                   src="/tesa-logo.png"
                   alt="TESA Logo"
@@ -1343,11 +1328,11 @@ export default function AdminDashboardPage() {
                   <span className="font-mono text-xs sm:text-sm font-bold text-white tracking-wider">
                     TESA CONTROL SUITE
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
-                    MINIMALIST v4.0
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30">
+                    DARK STUDIO v4.0
                   </span>
                 </div>
-                <span className="text-[10px] font-mono text-slate-400 hidden sm:block">
+                <span className="text-[10px] font-mono text-zinc-500 hidden sm:block">
                   SGGSIE&amp;T Textile Engineering Students Association
                 </span>
               </div>
@@ -1356,9 +1341,7 @@ export default function AdminDashboardPage() {
 
           {/* User Profile & Sign Out */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <FabricSwatchPicker />
-
-            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10">
+            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 backdrop-blur-xl">
               {user.photoURL && (
                 <Image
                   src={user.photoURL}
@@ -1366,7 +1349,7 @@ export default function AdminDashboardPage() {
                   width={28}
                   height={28}
                   unoptimized
-                  className="w-7 h-7 rounded-lg border border-cyan-400/40 object-cover"
+                  className="w-7 h-7 rounded-lg border border-purple-400/40 object-cover"
                 />
               )}
               <div className="hidden md:block text-left text-xs font-mono">
@@ -1379,7 +1362,7 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 onClick={() => signOut(auth)}
-                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 hover:bg-red-950/40 hover:border-red-500/40 hover:text-red-300 text-xs font-mono transition-colors cursor-pointer"
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 hover:bg-red-950/40 hover:border-red-500/40 hover:text-red-300 text-xs font-mono transition-colors cursor-pointer"
                 title="Sign out"
               >
                 Sign Out
@@ -1395,26 +1378,25 @@ export default function AdminDashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { id: "team", label: "MANAGE TESA TEAM", icon: "👥", count: teamList.length, spec: "COUNCIL" },
-              { id: "events", label: "MANAGE EVENTS", icon: "📅", count: eventsList.length, spec: "LOOM" },
-              { id: "registrations", label: "MANAGE REGISTRATIONS & VERIFY", icon: "📋", count: registrations.length, spec: "VERIFICATION" },
-              { id: "all", label: "STACKED VIEW (ALL)", icon: "🌟", count: null, spec: "SYNC" },
+              { id: "team", label: "MANAGE TESA TEAM", icon: "👥", count: teamList.length },
+              { id: "events", label: "MANAGE EVENTS", icon: "📅", count: eventsList.length },
+              { id: "registrations", label: "MANAGE REGISTRATIONS & VERIFY", icon: "📋", count: registrations.length },
+              { id: "all", label: "STACKED VIEW (ALL)", icon: "🌟", count: null },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-semibold tracking-wide border transition-all cursor-pointer care-label-badge ${
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-semibold tracking-wide border transition-all cursor-pointer ${
                   activeTab === tab.id
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-400 bg-twill-cyan text-black border-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.4)] font-bold"
-                    : "bg-white/[0.03] text-slate-300 border-white/10 hover:border-cyan-500/40 hover:text-white"
+                    ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white border-white/20 shadow-[0_0_20px_rgba(139,92,246,0.4)] font-bold"
+                    : "bg-white/[0.03] text-zinc-300 border-white/10 hover:border-purple-500/40 hover:text-white"
                 }`}
               >
-                <span className="text-[10px] opacity-75">☷</span>
                 <span>{tab.icon}</span>
                 <span>{tab.label}</span>
                 {tab.count !== null && (
                   <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                    activeTab === tab.id ? "bg-black/30 text-black font-extrabold" : "bg-white/10 text-cyan-300"
+                    activeTab === tab.id ? "bg-black/40 text-white font-extrabold" : "bg-white/10 text-purple-300"
                   }`}>
                     {tab.count}
                   </span>
@@ -1423,20 +1405,20 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          <div className="text-xs font-mono text-slate-400 flex items-center gap-2">
+          <div className="text-xs font-mono text-zinc-400 flex items-center gap-2">
             <span>DATA ENGINE:</span>
             {firestoreStatus === "connected" ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-500/40 font-bold care-label-badge">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                FIRESTORE LIVE • WEFT SYNC
+                FIRESTORE LIVE
               </span>
             ) : firestoreStatus === "missing_env" ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-950/70 text-red-300 border border-red-500/40 font-bold care-label-badge">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/70 text-red-300 border border-red-500/40 font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
                 DATABASE DISCONNECTED
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/70 text-amber-300 border border-amber-500/40 font-bold care-label-badge">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-950/70 text-amber-300 border border-amber-500/40 font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                 LOCAL STORE RESILIENT
               </span>
@@ -1447,12 +1429,12 @@ export default function AdminDashboardPage() {
         {/* Global Toast */}
         {toastMessage && (
           <div
-            className={`p-4 rounded-xl text-xs font-mono border transition-all ${
+            className={`p-4 rounded-2xl text-xs font-mono border backdrop-blur-xl transition-all shadow-xl ${
               toastMessage.type === "success"
-                ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-200"
+                ? "bg-emerald-950/80 border-emerald-500/40 text-emerald-200"
                 : toastMessage.type === "info"
-                ? "bg-cyan-950/80 border-cyan-500/50 text-cyan-200"
-                : "bg-red-950/80 border-red-500/50 text-red-200"
+                ? "bg-purple-950/80 border-purple-500/40 text-purple-200"
+                : "bg-red-950/80 border-red-500/40 text-red-200"
             }`}
           >
             {toastMessage.type === "success" ? "✔" : toastMessage.type === "info" ? "ℹ" : "⚠"} {toastMessage.text}
@@ -1460,81 +1442,71 @@ export default function AdminDashboardPage() {
         )}
 
         {/* =====================================================================
-            STEP 1: SECTION 1 — MANAGE TESA TEAM (POSITION #1 AT THE VERY TOP)
+            SECTION 1 — MANAGE TESA COUNCIL TEAM (POSITION #1 AT TOP)
             ===================================================================== */}
         {(activeTab === "team" || activeTab === "all") && (
           <section id="section-team" className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl shadow-2xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/[0.08] bg-[#0b0c10]/90 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/40 bg-cyan-950/50 text-[11px] font-mono text-cyan-300 mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                  <span>PRIMARY MANAGEMENT • POSITION #1</span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 text-[11px] font-mono text-purple-300 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                  <span>STUDIO DIRECTORY • POSITION #1</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                   Manage TESA Council Team
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
                   Upload portrait photos, update leadership roles, technical specializations, and manage the student council displayed on the homepage.
                 </p>
               </div>
 
               <button
                 onClick={handleOpenAddTeamModal}
-                className="px-5 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer shrink-0"
+                className="glow-button-primary px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold text-xs tracking-wide transition-all shadow-[0_0_25px_rgba(139,92,246,0.4)] flex items-center gap-2 cursor-pointer shrink-0"
               >
-                <span>+</span>
+                <span className="text-sm">+</span>
                 <span>Add Council Member</span>
               </button>
             </div>
 
-            {/* Category Filter with Care/Spec Label Styling */}
+            {/* Category Filter Pills */}
             <div className="flex flex-wrap items-center gap-2">
               {[
-                { id: "all", label: "ALL MEMBERS", spec: "100% FIBER" },
-                { id: "core", label: "CORE COUNCIL", spec: "EXECUTIVE" },
-                { id: "technical", label: "TECHNICAL & RESEARCH", spec: "LAB DEV" },
-                { id: "events", label: "EVENTS & OPERATIONS", spec: "LOGISTICS" },
-                { id: "outreach", label: "OUTREACH & ALUMNI", spec: "PR BUS" },
+                { id: "all", label: "All Members" },
+                { id: "core", label: "Core Council" },
+                { id: "technical", label: "Technical & Research" },
+                { id: "events", label: "Events & Operations" },
+                { id: "outreach", label: "Outreach & Alumni" },
               ].map((c) => (
                 <button
                   key={c.id}
                   onClick={() => setTeamCategoryFilter(c.id)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all cursor-pointer care-label-badge ${
+                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
                     teamCategoryFilter === c.id
-                      ? "bg-cyan-500 bg-twill-cyan text-black font-bold border border-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.4)]"
-                      : "bg-slate-950/60 text-slate-400 border border-white/10 hover:text-white"
+                      ? "bg-white text-zinc-950 font-semibold shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                      : "bg-white/[0.04] text-zinc-400 border border-white/[0.07] hover:text-white hover:bg-white/[0.08]"
                   }`}
                 >
-                  <span className="text-[10px] opacity-75 mr-1">☷</span>
                   {c.label}
                 </button>
               ))}
             </div>
 
-            {/* Team Members Grid: Medium Rectangular Portraits with Jacquard Selvedge Aesthetics */}
+            {/* Team Members Grid: Bento Cards with Hover Spotlight Glow */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {teamList
                 .filter((m) => teamCategoryFilter === "all" || m.category === teamCategoryFilter)
                 .map((member) => (
                   <div
                     key={member.id}
-                    className="group rounded-3xl border border-white/15 bg-white/[0.04] p-4 sm:p-5 backdrop-blur-xl flex flex-col justify-between hover:border-cyan-400 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 font-mono selvedge-card relative overflow-hidden"
+                    className="bento-card group rounded-3xl p-5 flex flex-col justify-between hover:border-purple-500/40 hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden"
                   >
-                    {/* Industrial Serged Seam Top Edge */}
-                    <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+                    {/* Hover Radial Spotlight Glow */}
+                    <div className="bento-glow" />
 
                     <div>
-                      {/* Corner Selvedge Telemetry */}
-                      <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-2.5 uppercase">
-                        <span className="flex items-center gap-1">
-                          <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
-                          WARP // WEFT SYNC
-                        </span>
-                        <span className="text-slate-500">DENIER: 900D</span>
-                      </div>
-
-                      {/* Medium Rectangular Portrait Frame with Theme-Blending CSS Filters */}
-                      <div className="relative w-full h-48 sm:h-52 mb-3.5 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                      {/* Portrait Frame */}
+                      <div className="relative w-full h-52 mb-4 rounded-2xl border border-white/10 bg-zinc-950 overflow-hidden group-hover:border-purple-500/40 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                         {member.photoUrl ? (
                           <div className="relative w-full h-full">
                             <Image
@@ -1542,56 +1514,56 @@ export default function AdminDashboardPage() {
                               alt={member.name}
                               fill
                               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                              className="object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
+                              className="object-cover contrast-105 group-hover:scale-105 transition-all duration-700 ease-out"
                             />
-                            {/* Dark Theme Gradient Overlay */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
-                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
+                            {/* Dark Gradient Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-transparent to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
                           </div>
                         ) : (
-                          <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
-                            <div className="w-14 h-14 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
+                          <div className="relative w-full h-full bg-gradient-to-br from-zinc-900 via-zinc-950 to-purple-950/30 flex flex-col items-center justify-center p-4 text-center">
+                            <div className="w-14 h-14 rounded-2xl border border-purple-500/30 bg-purple-950/40 flex items-center justify-center font-mono text-xl font-bold text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.2)] mb-2">
                               {member.photoPlaceholder || "TE"}
                             </div>
-                            <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase">
+                            <span className="text-[10px] tracking-wider text-zinc-500 uppercase">
                               PORTRAIT ARCHIVE
                             </span>
-                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
                           </div>
                         )}
 
                         {/* Category & Year Tag Overlays */}
-                        <span className="absolute top-2.5 left-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 backdrop-blur-md uppercase care-label-badge">
+                        <span className="absolute top-2.5 left-2.5 z-10 text-[10px] px-2.5 py-0.5 rounded-full bg-zinc-950/80 text-violet-300 border border-violet-500/30 backdrop-blur-md uppercase font-medium">
                           {member.category}
                         </span>
-                        <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 text-cyan-400 border border-cyan-500/30 backdrop-blur-md">
+                        <span className="absolute bottom-2.5 right-2.5 z-10 text-[10px] px-2.5 py-0.5 rounded-full bg-black/80 text-zinc-300 border border-white/10 backdrop-blur-md">
                           {member.year}
                         </span>
                       </div>
 
-                      <h3 className="text-sm sm:text-base font-bold text-white mb-0.5 group-hover:text-cyan-300 transition-colors">
+                      <h3 className="text-base font-bold text-white mb-0.5 group-hover:text-purple-300 transition-colors">
                         {member.name}
                       </h3>
-                      <div className="text-[11px] text-cyan-400 font-semibold mb-0.5">
+                      <div className="text-xs text-purple-400 font-medium mb-0.5">
                         {member.role}
                       </div>
-                      <div className="text-[10px] text-slate-400 mb-2 truncate">
+                      <div className="text-[11px] text-zinc-400 mb-2 truncate">
                         {member.designation}
                       </div>
 
-                      <p className="text-xs text-slate-300 font-normal mb-2.5 line-clamp-2">
+                      <p className="text-xs text-zinc-300 font-normal mb-3 line-clamp-2">
                         {member.bio}
                       </p>
 
-                      <div className="text-[10px] text-purple-300 mb-2.5 truncate">
-                        ⚡ {member.specialization}
+                      <div className="text-xs text-violet-300/90 mb-3 truncate flex items-center gap-1.5">
+                        <span>⚡</span>
+                        <span>{member.specialization}</span>
                       </div>
 
-                      <div className="flex flex-wrap gap-1 mb-3">
+                      <div className="flex flex-wrap gap-1 mb-4">
                         {member.skills.slice(0, 3).map((s, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-0.5 rounded bg-white/[0.05] border border-white/5 text-[9px] text-slate-300 care-label-badge"
+                            className="px-2.5 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] text-zinc-300"
                           >
                             {s}
                           </span>
@@ -1599,16 +1571,16 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
 
-                    <div className="pt-3 border-t border-white/10 flex items-center gap-2">
+                    <div className="pt-3 border-t border-white/[0.08] flex items-center gap-2">
                       <button
                         onClick={() => handleOpenEditTeamModal(member)}
-                        className="flex-1 py-2 rounded-lg bg-white/[0.05] hover:bg-cyan-950/60 hover:text-cyan-300 text-xs text-slate-300 border border-white/10 transition-colors cursor-pointer text-center"
+                        className="glass-button-secondary flex-1 py-2 rounded-xl text-xs text-zinc-300 hover:text-white border border-white/10 hover:border-purple-500/40 transition-colors cursor-pointer text-center"
                       >
                         ✏ Edit Details &amp; Photo
                       </button>
                       <button
                         onClick={() => handleDeleteTeamMember(member.id, member.name)}
-                        className="py-2 px-3 rounded-lg bg-red-950/40 hover:bg-red-900 border border-red-500/30 text-xs text-red-300 transition-colors cursor-pointer"
+                        className="py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs text-red-400 transition-colors cursor-pointer"
                         title="Delete member"
                       >
                         ✕
@@ -1620,62 +1592,50 @@ export default function AdminDashboardPage() {
           </section>
         )}
 
-        {/* CONDUCTIVE THREAD SECTION DIVIDER: SECTION 1 (TEAM) -> SECTION 2 (EVENTS) */}
+        {/* SECTION DIVIDER: TEAM -> EVENTS */}
         {(activeTab === "all" || activeTab === "team" || activeTab === "events") && (
-          <ConductiveThreadDivider
-            label="LOOM MATRIX CONTROL // BUS 01"
-            subLabel="COUNCIL ARCHIVE • 400nm WAVEGUIDE • EXECUTIVE SYNAPSE"
-            accent="cyan"
-          />
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-10" />
         )}
 
         {/* =====================================================================
-            STEP 1: SECTION 2 — MANAGE EVENTS (DIRECTLY BELOW TEAM)
+            SECTION 2 — MANAGE EVENTS (DIRECTLY BELOW TEAM)
             ===================================================================== */}
         {(activeTab === "events" || activeTab === "all") && (
           <section id="section-events" className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl shadow-2xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/[0.08] bg-[#0b0c10]/90 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
               <div>
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
-                  EVENT OPERATIONS • POSITION #2
-                </span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 text-[11px] font-mono text-purple-300 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                  <span>EVENT OPERATIONS • POSITION #2</span>
+                </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                   Manage Events &amp; Conclaves
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
                   Publish and organize national symposiums, hackathons, and workshops displayed on the public events feed.
                 </p>
               </div>
 
               <button
                 onClick={handleOpenAddEventModal}
-                className="px-5 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer shrink-0"
+                className="glow-button-primary px-5 py-3 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-semibold text-xs tracking-wide transition-all shadow-[0_0_25px_rgba(139,92,246,0.4)] flex items-center gap-2 cursor-pointer shrink-0"
               >
-                <span>+</span>
+                <span className="text-sm">+</span>
                 <span>Publish New Event</span>
               </button>
             </div>
 
-            {/* Events Cards Grid with Jacquard Selvedge Borders */}
+            {/* Events Cards Grid: Dark Bento Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {eventsList.map((ev) => (
                 <div
                   key={ev.id}
-                  className="rounded-3xl border border-white/15 bg-white/[0.04] overflow-hidden flex flex-col justify-between hover:border-cyan-400 transition-all backdrop-blur-xl shadow-2xl hover:-translate-y-1 duration-300 selvedge-card relative group"
+                  className="bento-card group rounded-3xl overflow-hidden flex flex-col justify-between hover:border-purple-500/40 transition-all hover:-translate-y-1.5 duration-300 relative"
                 >
-                  {/* Industrial Serged Seam Top Edge */}
-                  <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+                  {/* Hover Radial Spotlight Glow */}
+                  <div className="bento-glow" />
 
                   <div>
-                    {/* Corner Selvedge Telemetry */}
-                    <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider px-4 pt-3 pb-1 uppercase">
-                      <span className="flex items-center gap-1">
-                        <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
-                        LOOM MATRIX ACTIVE
-                      </span>
-                      <span className="text-slate-500">SPEC: {ev.eventStatus || "UPCOMING"}</span>
-                    </div>
-
                     {ev.mediaUrl ? (
                       <div className="h-44 w-full overflow-hidden relative">
                         <Image
@@ -1683,64 +1643,80 @@ export default function AdminDashboardPage() {
                           alt={ev.title}
                           fill
                           sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                          className="object-cover"
+                          className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
-                        <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/80 text-[10px] font-mono text-cyan-300 border border-cyan-500/30 backdrop-blur-md care-label-badge">
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-black/30 to-transparent pointer-events-none" />
+                        <span className="absolute top-3 right-3 px-3 py-1 rounded-full bg-black/80 text-[10px] font-medium text-purple-300 border border-purple-500/30 backdrop-blur-md">
                           {ev.category}
                         </span>
                       </div>
                     ) : (
-                      <div className="h-32 w-full bg-cyan-950/30 border-b border-white/10 flex items-center justify-center text-xs font-mono text-cyan-400">
+                      <div className="h-32 w-full bg-purple-950/20 border-b border-white/[0.08] flex items-center justify-center text-xs font-mono text-purple-400">
                         NO BANNER ATTACHED
                       </div>
                     )}
 
-                    <div className="p-5 font-mono">
-                      <div className="flex items-center justify-between mb-2">
+                    <div className="p-5">
+                      <div className="flex items-center justify-between mb-3">
                         <span
-                          className={`text-[10px] font-bold uppercase care-label-badge px-2 py-0.5 rounded ${
+                          className={`text-[11px] font-semibold uppercase px-2.5 py-0.5 rounded-full ${
                             ev.status === "open"
-                              ? "text-emerald-400 bg-emerald-950/50 border border-emerald-500/30"
+                              ? "text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.2)]"
                               : ev.status === "upcoming"
-                              ? "text-amber-400 bg-amber-950/50 border border-amber-500/30"
-                              : "text-slate-500 bg-slate-900 border border-white/10"
+                              ? "text-amber-400 bg-amber-500/10 border border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                              : "text-zinc-400 bg-zinc-800/60 border border-white/10"
                           }`}
                         >
-                          ● STATUS: {ev.status}
+                          ● {ev.status}
                         </span>
-                        <span className="text-[10px] text-slate-400">
+                        <span className="text-[11px] text-zinc-400 font-mono">
                           Capacity: {ev.capacity || "Unlimited"}
                         </span>
                       </div>
 
-                      <h3 className="text-base font-bold text-white mb-2 line-clamp-2">
+                      <h3 className="text-base font-bold text-white mb-2 line-clamp-2 group-hover:text-purple-300 transition-colors">
                         {ev.title}
                       </h3>
 
-                      <p className="text-xs text-slate-300 line-clamp-3 mb-4 font-normal">
+                      <p className="text-xs text-zinc-400 line-clamp-3 mb-4 leading-relaxed font-normal">
                         {ev.summary}
                       </p>
 
-                      <div className="space-y-1 text-[11px] text-slate-400 border-t border-white/5 pt-3">
-                        <div>📅 <span className="text-slate-200">{ev.date}</span></div>
-                        <div>📍 <span className="text-slate-200">{ev.venue}</span></div>
-                        {ev.deadline && <div>⏳ Deadline: <span className="text-amber-300">{ev.deadline}</span></div>}
-                        {ev.highlights && <div>🏆 <span className="text-cyan-300">{ev.highlights}</span></div>}
+                      <div className="space-y-1.5 text-xs text-zinc-400 border-t border-white/[0.08] pt-3.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-zinc-500">📅</span>
+                          <span className="text-zinc-200">{ev.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-zinc-500">📍</span>
+                          <span className="text-zinc-200">{ev.venue}</span>
+                        </div>
+                        {ev.deadline && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-amber-400/80">⏳</span>
+                            <span className="text-zinc-300">Deadline: <span className="text-amber-300 font-medium">{ev.deadline}</span></span>
+                          </div>
+                        )}
+                        {ev.highlights && (
+                          <div className="flex items-center gap-2 text-violet-300">
+                            <span>🏆</span>
+                            <span className="truncate">{ev.highlights}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-4 bg-black/40 border-t border-white/10 flex items-center justify-between gap-2">
+                  <div className="p-4 bg-white/[0.02] border-t border-white/[0.08] flex items-center justify-between gap-2">
                     <button
                       onClick={() => handleOpenEditEventModal(ev)}
-                      className="flex-1 py-1.5 px-3 rounded-lg bg-white/[0.06] hover:bg-cyan-950/60 hover:text-cyan-300 border border-white/10 text-xs font-mono text-slate-300 transition-colors cursor-pointer text-center"
+                      className="glass-button-secondary flex-1 py-2 px-3 rounded-xl border border-white/10 hover:border-purple-500/40 text-xs font-medium text-zinc-300 hover:text-white transition-colors cursor-pointer text-center"
                     >
                       ✏ Edit Details &amp; Banner
                     </button>
                     <button
                       onClick={() => handleDeleteEvent(ev.id, ev.title)}
-                      className="py-1.5 px-3 rounded-lg bg-red-950/40 hover:bg-red-900 border border-red-500/30 text-xs font-mono text-red-300 transition-colors cursor-pointer"
+                      className="py-2 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-xs text-red-400 transition-colors cursor-pointer"
                       title="Delete event"
                     >
                       ✕ Remove
@@ -1752,13 +1728,9 @@ export default function AdminDashboardPage() {
           </section>
         )}
 
-        {/* CONDUCTIVE THREAD SECTION DIVIDER: SECTION 2 (EVENTS) -> SECTION 3 (REGISTRATIONS) */}
+        {/* SECTION DIVIDER: EVENTS -> REGISTRATIONS */}
         {(activeTab === "all" || activeTab === "events" || activeTab === "registrations") && (
-          <ConductiveThreadDivider
-            label="CONDUCTIVE THREAD REGISTRY // BUS 02"
-            subLabel="VERIFIED REGISTRATIONS & CLOUDINARY MEDIA VAULT • 280 GSM"
-            accent="violet"
-          />
+          <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-10" />
         )}
 
         {/* =====================================================================
@@ -1766,16 +1738,16 @@ export default function AdminDashboardPage() {
             ===================================================================== */}
         {(activeTab === "registrations" || activeTab === "all") && (
           <section id="section-registrations" className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl shadow-2xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/[0.08] bg-[#0b0c10]/90 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
               <div>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/40 bg-cyan-950/50 text-[11px] font-mono text-cyan-300 mb-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-950/40 text-[11px] font-mono text-emerald-300 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>DELEGATE VERIFICATION &amp; EXPORT</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
                   Manage Registrations &amp; Verify
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
                   Inspect student submissions, open uploaded presentations (PPT/PDF/Image) &amp; payment receipts via Cloudinary, review custom Google Forms-style answers, and verify registrations.
                 </p>
               </div>
@@ -1783,7 +1755,7 @@ export default function AdminDashboardPage() {
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   onClick={handleExportToExcel}
-                  className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(16,185,129,0.35)] flex items-center gap-2 cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs tracking-wide transition-all shadow-[0_0_20px_rgba(16,185,129,0.35)] flex items-center gap-2 cursor-pointer"
                 >
                   <span>📊</span>
                   <span>Export to Excel (.xlsx)</span>
@@ -1791,70 +1763,59 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Quick Metrics Bar with Jacquard Selvedge Aesthetics */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
-              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 selvedge-card relative overflow-hidden group">
-                <div className="serged-seam absolute top-0 left-0 right-0 z-10 pointer-events-none" />
-                <div className="flex items-center justify-between text-[8px] text-cyan-400/60 uppercase mb-1">
-                  <span>METRIC // WEFT</span>
-                  <span>SYNC ACTIVE</span>
-                </div>
-                <span className="text-[10px] text-slate-400 block uppercase">Total Submissions</span>
-                <span className="text-xl font-bold text-white">{registrations.length}</span>
+            {/* Quick Metrics Bar: Dark Bento Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="bento-card p-4 rounded-2xl relative overflow-hidden group">
+                <span className="text-[11px] text-zinc-400 block uppercase tracking-wider mb-1">Total Submissions</span>
+                <span className="text-2xl font-bold text-white">{registrations.length}</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 selvedge-card relative overflow-hidden group">
-                <div className="serged-seam absolute top-0 left-0 right-0 z-10 pointer-events-none" />
-                <div className="flex items-center justify-between text-[8px] text-emerald-400/60 uppercase mb-1">
-                  <span>TENSILE VERIFIED</span>
-                  <span>✔ 100% PASS</span>
+              <div className="bento-card p-4 rounded-2xl relative overflow-hidden group border-emerald-500/20 bg-emerald-500/[0.03]">
+                <div className="flex items-center justify-between text-[10px] text-emerald-400/80 mb-1">
+                  <span className="uppercase tracking-wider">Verified</span>
+                  <span>✔ Pass</span>
                 </div>
-                <span className="text-[10px] text-emerald-300 block uppercase">Verified Delegates</span>
-                <span className="text-xl font-bold text-emerald-400">
+                <span className="text-2xl font-bold text-emerald-400">
                   {registrations.filter((r) => r.status === "verified" || r.status === "approved").length}
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30 selvedge-card relative overflow-hidden group">
-                <div className="serged-seam absolute top-0 left-0 right-0 z-10 pointer-events-none" />
-                <div className="flex items-center justify-between text-[8px] text-amber-400/60 uppercase mb-1">
-                  <span>LOOM QUEUE</span>
-                  <span>DENIER: 450D</span>
+              <div className="bento-card p-4 rounded-2xl relative overflow-hidden group border-amber-500/20 bg-amber-500/[0.03]">
+                <div className="flex items-center justify-between text-[10px] text-amber-400/80 mb-1">
+                  <span className="uppercase tracking-wider">Pending</span>
+                  <span>⏳ Queue</span>
                 </div>
-                <span className="text-[10px] text-amber-300 block uppercase">Pending Verification</span>
-                <span className="text-xl font-bold text-amber-400">
+                <span className="text-2xl font-bold text-amber-400">
                   {registrations.filter((r) => r.status === "pending").length}
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/30 selvedge-card relative overflow-hidden group">
-                <div className="serged-seam absolute top-0 left-0 right-0 z-10 pointer-events-none" />
-                <div className="flex items-center justify-between text-[8px] text-red-400/60 uppercase mb-1">
-                  <span>WARP DEFECT</span>
-                  <span>REJECTED</span>
+              <div className="bento-card p-4 rounded-2xl relative overflow-hidden group border-rose-500/20 bg-rose-500/[0.03]">
+                <div className="flex items-center justify-between text-[10px] text-rose-400/80 mb-1">
+                  <span className="uppercase tracking-wider">Rejected</span>
+                  <span>✖ Closed</span>
                 </div>
-                <span className="text-[10px] text-red-300 block uppercase">Rejected</span>
-                <span className="text-xl font-bold text-red-400">
+                <span className="text-2xl font-bold text-rose-400">
                   {registrations.filter((r) => r.status === "rejected").length}
                 </span>
               </div>
             </div>
 
-            {/* Filter & Search Bar */}
-            <div className="p-4 rounded-xl border border-white/10 bg-slate-950/60 backdrop-blur-md flex flex-col md:flex-row items-center gap-3 font-mono text-xs care-label-badge">
+            {/* Filter & Search Bar: Dark Command Center */}
+            <div className="p-4 rounded-2xl border border-white/[0.08] bg-[#0b0c10]/80 backdrop-blur-xl flex flex-col md:flex-row items-center gap-3 text-xs">
               <div className="relative flex-1 w-full">
                 <input
                   type="text"
                   placeholder="Search by student name, PRN, or contact number..."
                   value={registrationSearch}
                   onChange={(e) => setRegistrationSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2 rounded-lg bg-black/60 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all"
                 />
-                <span className="absolute left-3 top-2.5 text-slate-500">🔍</span>
+                <span className="absolute left-3.5 top-3 text-zinc-500">🔍</span>
               </div>
 
               <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                 <select
                   value={filterEvent}
                   onChange={(e) => setFilterEvent(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-slate-300 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                  className="px-3.5 py-2.5 rounded-xl bg-[#0b0c10] border border-white/10 text-zinc-300 focus:outline-none focus:border-purple-500 cursor-pointer"
                 >
                   <option value="all">All Registered Events</option>
                   {eventsList.map((ev) => (
@@ -1867,7 +1828,7 @@ export default function AdminDashboardPage() {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-slate-300 focus:outline-none focus:border-cyan-400 cursor-pointer"
+                  className="px-3.5 py-2.5 rounded-xl bg-[#0b0c10] border border-white/10 text-zinc-300 focus:outline-none focus:border-purple-500 cursor-pointer"
                 >
                   <option value="all">All Statuses</option>
                   <option value="verified">Verified (✔)</option>
@@ -1877,20 +1838,21 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Registrations Data Table with Selvedge & Serged Seam */}
-            <div className="rounded-3xl border border-white/15 bg-white/[0.04] overflow-hidden backdrop-blur-xl font-mono text-xs shadow-2xl selvedge-card relative">
-              <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
-              <div className="flex items-center justify-between px-4 py-2 bg-slate-950/90 border-b border-white/5 text-[9px] text-cyan-400/70 uppercase">
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                  JACQUARD REGISTRATION MATRIX // LIVE REGISTRY
+            {/* Registrations Data Table: Dark Bento Card Table */}
+            <div className="bento-card rounded-3xl overflow-hidden relative">
+              <div className="flex items-center justify-between px-5 py-3 bg-white/[0.02] border-b border-white/[0.08] text-xs">
+                <span className="flex items-center gap-2 text-purple-300 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                  Live Participant Registry
                 </span>
-                <span className="text-slate-500">SPEC: SGGSIE&amp;T TEXTILE LOOM SUITE • 280 GSM</span>
+                <span className="text-zinc-500 text-[11px] font-mono">
+                  Real-time sync with Firestore
+                </span>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
+                <table className="w-full text-left border-collapse text-xs">
                   <thead>
-                    <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[11px] uppercase tracking-wider">
+                    <tr className="border-b border-white/[0.08] bg-white/[0.01] text-zinc-400 text-[11px] uppercase tracking-wider font-semibold">
                       <th className="py-3.5 px-4">#</th>
                       <th className="py-3.5 px-4">Student &amp; PRN</th>
                       <th className="py-3.5 px-4">Event Title</th>
@@ -1902,7 +1864,7 @@ export default function AdminDashboardPage() {
                       <th className="py-3.5 px-4 text-right">Verification Action</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody className="divide-y divide-white/[0.06]">
                     {filteredRegistrations.length > 0 ? (
                       filteredRegistrations.map((reg, idx) => {
                         const isVerified = reg.status === "verified" || reg.status === "approved";
@@ -1912,24 +1874,24 @@ export default function AdminDashboardPage() {
 
                         return (
                           <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
-                            <td className="py-3.5 px-4 text-slate-500">{idx + 1}</td>
+                            <td className="py-3.5 px-4 text-zinc-500 font-mono">{idx + 1}</td>
                             
                             {/* Student & PRN */}
                             <td className="py-3.5 px-4">
                               <span className="font-bold text-white block">{reg.studentName}</span>
-                              <span className="text-[11px] text-cyan-300 font-semibold">{reg.prn}</span>
+                              <span className="text-[11px] text-purple-300 font-mono font-medium">{reg.prn}</span>
                             </td>
 
                             {/* Event Title */}
-                            <td className="py-3.5 px-4 text-slate-200 max-w-xs">
+                            <td className="py-3.5 px-4 text-zinc-300 max-w-xs">
                               <span className="line-clamp-2">{reg.eventTitle}</span>
-                              <span className="text-[10px] text-slate-500 block mt-0.5">{reg.registeredAt}</span>
+                              <span className="text-[10px] text-zinc-500 block mt-0.5">{reg.registeredAt}</span>
                             </td>
 
                             {/* Year & Contact */}
-                            <td className="py-3.5 px-4 text-slate-400">
-                              <span className="block text-slate-300">{reg.year}</span>
-                              <span className="text-[10px] text-slate-500">{reg.email}</span>
+                            <td className="py-3.5 px-4 text-zinc-400">
+                              <span className="block text-zinc-200">{reg.year}</span>
+                              <span className="text-[11px] text-zinc-500">{reg.email}</span>
                             </td>
 
                             {/* Uploaded Presentation / Media (PPT/PDF/Image) */}
@@ -1939,7 +1901,7 @@ export default function AdminDashboardPage() {
                                   href={reg.submissionFileUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 text-[10px] font-semibold transition-all hover:scale-105 shadow-[0_0_10px_rgba(0,240,255,0.15)]"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/30 text-[11px] font-medium transition-all hover:scale-105 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
                                   title="Open presentation/media uploaded to Cloudinary"
                                 >
                                   <span>📄</span>
@@ -1947,7 +1909,7 @@ export default function AdminDashboardPage() {
                                   <span className="text-[9px] opacity-70">↗</span>
                                 </a>
                               ) : (
-                                <span className="text-[10px] text-slate-500 italic">None attached</span>
+                                <span className="text-[11px] text-zinc-500 italic">None attached</span>
                               )}
                             </td>
 
@@ -1958,15 +1920,15 @@ export default function AdminDashboardPage() {
                                   href={reg.paymentScreenshotUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold transition-all hover:scale-105 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-500/30 text-[11px] font-medium transition-all hover:scale-105 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
                                   title="Open payment screenshot on Cloudinary"
                                 >
                                   <span>🧾</span>
-                                  <span>Screenshot</span>
+                                  <span>Receipt</span>
                                   <span className="text-[9px] opacity-70">↗</span>
                                 </a>
                               ) : (
-                                <span className="text-[10px] text-slate-500 italic">None</span>
+                                <span className="text-[11px] text-zinc-500 italic">None</span>
                               )}
                             </td>
 
@@ -1976,7 +1938,7 @@ export default function AdminDashboardPage() {
                                 <button
                                   type="button"
                                   onClick={() => setSelectedRegForAnswers(reg)}
-                                  className="px-2.5 py-1 rounded-lg bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-500/30 text-[10px] transition-colors cursor-pointer flex items-center gap-1"
+                                  className="px-2.5 py-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-purple-300 border border-purple-500/30 text-[11px] font-medium transition-colors cursor-pointer flex items-center gap-1"
                                 >
                                   <span>📋</span>
                                   <span>Answers ({answerCount})</span>
@@ -1985,51 +1947,51 @@ export default function AdminDashboardPage() {
                                 <button
                                   type="button"
                                   onClick={() => setSelectedRegForAnswers(reg)}
-                                  className="text-[10px] text-slate-400 hover:text-white transition-colors cursor-pointer underline"
+                                  className="text-[11px] text-zinc-400 hover:text-white transition-colors cursor-pointer underline"
                                 >
                                   Details
                                 </button>
                               )}
                             </td>
 
-                            {/* Status Badge with Care-Label Aesthetics */}
+                            {/* Status Badge: Neon Status Pills */}
                             <td className="py-3.5 px-4">
                               {isVerified ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold shadow-[0_0_12px_rgba(16,185,129,0.3)] care-label-badge">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold shadow-[0_0_12px_rgba(16,185,129,0.25)]">
                                   <span>✔</span>
-                                  <span>TENSILE VERIFIED</span>
+                                  <span>Verified</span>
                                 </span>
                               ) : isPending ? (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-bold care-label-badge">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[11px] font-semibold shadow-[0_0_12px_rgba(245,158,11,0.25)]">
                                   <span>⏳</span>
-                                  <span>PENDING QUEUE</span>
+                                  <span>Pending</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-950/80 text-red-300 border border-red-500/40 text-[10px] font-bold care-label-badge">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 text-[11px] font-semibold shadow-[0_0_12px_rgba(244,63,94,0.25)]">
                                   <span>✖</span>
-                                  <span>DEFECT REJECTED</span>
+                                  <span>Rejected</span>
                                 </span>
                               )}
                             </td>
 
-                            {/* Action Buttons: Verify Registration */}
+                            {/* Action Buttons */}
                             <td className="py-3.5 px-4 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 {!isVerified ? (
                                   <button
                                     type="button"
                                     onClick={() => handleUpdateRegStatus(reg.id, "verified")}
-                                    className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer"
+                                    className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-[11px] transition-all flex items-center gap-1 shadow-[0_0_15px_rgba(16,185,129,0.35)] cursor-pointer"
                                     title="Click to Verify Registration (updates status to verified in Firestore)"
                                   >
                                     <span>✔</span>
-                                    <span>Verify Registration</span>
+                                    <span>Verify</span>
                                   </button>
                                 ) : (
                                   <button
                                     type="button"
                                     onClick={() => handleUpdateRegStatus(reg.id, "pending")}
-                                    className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] border border-white/10 transition-colors cursor-pointer"
+                                    className="glass-button-secondary px-2.5 py-1.5 rounded-lg text-zinc-300 hover:text-white text-[11px] border border-white/10 transition-colors cursor-pointer"
                                     title="Revert to pending"
                                   >
                                     Revert
@@ -2040,7 +2002,7 @@ export default function AdminDashboardPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleUpdateRegStatus(reg.id, "rejected")}
-                                    className="px-2 py-1 rounded-lg bg-amber-950/50 hover:bg-amber-900/80 text-amber-300 border border-amber-500/30 text-[10px] transition-colors cursor-pointer"
+                                    className="px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[11px] transition-colors cursor-pointer"
                                     title="Reject registration"
                                   >
                                     ✖
@@ -2050,7 +2012,7 @@ export default function AdminDashboardPage() {
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteRegistration(reg.id)}
-                                  className="px-2 py-1 rounded-lg bg-red-950/40 hover:bg-red-900 text-red-300 border border-red-500/30 text-[10px] transition-colors cursor-pointer"
+                                  className="px-2.5 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-[11px] transition-colors cursor-pointer"
                                   title="Delete registration record"
                                 >
                                   🗑
@@ -2062,9 +2024,9 @@ export default function AdminDashboardPage() {
                       })
                     ) : (
                       <tr>
-                        <td colSpan={9} className="py-12 text-center text-slate-500">
-                          <p className="text-sm text-slate-400 font-semibold mb-1">No registration submissions matching filters.</p>
-                          <p className="text-xs text-slate-600">Students registering on the public portal will appear here in real-time.</p>
+                        <td colSpan={9} className="py-12 text-center text-zinc-500">
+                          <p className="text-sm text-zinc-400 font-semibold mb-1">No registration submissions matching filters.</p>
+                          <p className="text-xs text-zinc-500">Students registering on the public portal will appear here in real-time.</p>
                         </td>
                       </tr>
                     )}
@@ -2077,52 +2039,53 @@ export default function AdminDashboardPage() {
                 MODAL: STUDENT FORM RESPONSES & VERIFICATION INSPECTOR
                 ============================================================= */}
             {selectedRegForAnswers && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-                <div className="relative w-full max-w-2xl bg-[#090b10] border border-cyan-500/50 rounded-2xl p-6 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(0,240,255,0.25)] font-mono text-xs my-8">
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
+                <div className="relative w-full max-w-2xl bg-[#0b0c10]/95 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.15)] text-xs my-8 backdrop-blur-2xl">
                   {/* Top Modal Header */}
-                  <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+                  <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
                     <div>
-                      <span className="text-[10px] text-cyan-400 uppercase tracking-widest block font-bold">
-                        REGISTRATION DOSSIER • SUBMISSION DETAILS
-                      </span>
-                      <h3 className="text-xl font-bold text-white mt-0.5">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 text-[10px] font-mono text-purple-300 mb-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                        <span>REGISTRATION DOSSIER • SUBMISSION DETAILS</span>
+                      </div>
+                      <h3 className="text-xl font-bold text-white">
                         {selectedRegForAnswers.studentName}
                       </h3>
-                      <span className="text-[11px] text-slate-400 font-sans">
-                        PRN: <span className="text-cyan-300 font-mono font-bold">{selectedRegForAnswers.prn}</span> • {selectedRegForAnswers.eventTitle}
+                      <span className="text-xs text-zinc-400">
+                        PRN: <span className="text-purple-300 font-mono font-semibold">{selectedRegForAnswers.prn}</span> • {selectedRegForAnswers.eventTitle}
                       </span>
                     </div>
 
                     <button
                       onClick={() => setSelectedRegForAnswers(null)}
-                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                      className="w-9 h-9 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
                     >
                       ✕
                     </button>
                   </div>
 
                   {/* Delegate Summary Box */}
-                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                  <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
                     <div>
-                      <span className="text-[10px] text-slate-500 block uppercase">Year of Study:</span>
-                      <span className="text-white font-semibold">{selectedRegForAnswers.year}</span>
+                      <span className="text-[10px] text-zinc-500 block uppercase tracking-wider">Year of Study:</span>
+                      <span className="text-white font-medium">{selectedRegForAnswers.year}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block uppercase">Contact / WhatsApp:</span>
-                      <span className="text-white font-semibold">{selectedRegForAnswers.email}</span>
+                      <span className="text-[10px] text-zinc-500 block uppercase tracking-wider">Contact / WhatsApp:</span>
+                      <span className="text-white font-medium">{selectedRegForAnswers.email}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block uppercase">Registration Date:</span>
-                      <span className="text-slate-300">{selectedRegForAnswers.registeredAt}</span>
+                      <span className="text-[10px] text-zinc-500 block uppercase tracking-wider">Registration Date:</span>
+                      <span className="text-zinc-300 font-mono">{selectedRegForAnswers.registeredAt}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] text-slate-500 block uppercase">Current Status:</span>
-                      <span className={`font-bold ${
+                      <span className="text-[10px] text-zinc-500 block uppercase tracking-wider">Current Status:</span>
+                      <span className={`font-semibold ${
                         selectedRegForAnswers.status === "verified" || selectedRegForAnswers.status === "approved"
                           ? "text-emerald-400"
                           : selectedRegForAnswers.status === "pending"
                           ? "text-amber-400"
-                          : "text-red-400"
+                          : "text-rose-400"
                       }`}>
                         {selectedRegForAnswers.status.toUpperCase()}
                       </span>
@@ -2130,46 +2093,46 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {/* Uploaded Files Section */}
-                  <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/30 space-y-3 mb-5">
-                    <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
+                  <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] space-y-3 mb-5">
+                    <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
                       Uploaded Files &amp; Media Attachments
                     </span>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {/* Presentation / Media File */}
-                      <div className="p-3 rounded-lg bg-black/60 border border-white/10 flex flex-col justify-between">
+                      <div className="p-3.5 rounded-xl bg-black/50 border border-white/[0.08] flex flex-col justify-between">
                         <div>
-                          <span className="text-[10px] text-slate-400 block mb-1">PROJECT MEDIA / PRESENTATION:</span>
+                          <span className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">Project Media / Presentation:</span>
                           {selectedRegForAnswers.submissionFileUrl ? (
                             <a
                               href={selectedRegForAnswers.submissionFileUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold text-xs mt-1 transition-all"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 text-purple-300 font-semibold text-xs mt-1 transition-all hover:scale-105 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
                             >
                               <span>📄 Open Presentation (PPT/PDF/Image) ↗</span>
                             </a>
                           ) : (
-                            <span className="text-slate-500 text-xs italic">No presentation file attached</span>
+                            <span className="text-zinc-500 text-xs italic">No presentation file attached</span>
                           )}
                         </div>
                       </div>
 
                       {/* Payment Screenshot */}
-                      <div className="p-3 rounded-lg bg-black/60 border border-white/10 flex flex-col justify-between">
+                      <div className="p-3.5 rounded-xl bg-black/50 border border-white/[0.08] flex flex-col justify-between">
                         <div>
-                          <span className="text-[10px] text-slate-400 block mb-1">PAYMENT SCREENSHOT PROOF:</span>
+                          <span className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">Payment Screenshot Proof:</span>
                           {selectedRegForAnswers.paymentScreenshotUrl ? (
                             <a
                               href={selectedRegForAnswers.paymentScreenshotUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 font-bold text-xs mt-1 transition-all"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-500/30 text-emerald-300 font-semibold text-xs mt-1 transition-all hover:scale-105 shadow-[0_0_12px_rgba(16,185,129,0.15)]"
                             >
                               <span>🧾 View Receipt Proof ↗</span>
                             </a>
                           ) : (
-                            <span className="text-slate-500 text-xs italic">No screenshot attached</span>
+                            <span className="text-zinc-500 text-xs italic">No screenshot attached</span>
                           )}
                         </div>
                       </div>
@@ -2178,15 +2141,15 @@ export default function AdminDashboardPage() {
 
                   {/* Custom Form Answers */}
                   <div className="space-y-2 mb-6">
-                    <span className="text-[11px] font-bold text-white uppercase tracking-wide block">
+                    <span className="text-xs font-semibold text-white uppercase tracking-wide block">
                       Custom Form Field Responses
                     </span>
 
                     {selectedRegForAnswers.customAnswers && Object.keys(selectedRegForAnswers.customAnswers).length > 0 ? (
-                      <div className="rounded-xl border border-white/10 bg-black/40 overflow-hidden divide-y divide-white/5">
+                      <div className="rounded-2xl border border-white/[0.08] bg-black/40 overflow-hidden divide-y divide-white/[0.06]">
                         {Object.entries(selectedRegForAnswers.customAnswers).map(([qTitle, answer], aIdx) => (
-                          <div key={aIdx} className="p-3 flex flex-col sm:flex-row sm:items-start justify-between gap-2">
-                            <span className="text-slate-400 text-xs sm:w-1/3 shrink-0 font-medium">
+                          <div key={aIdx} className="p-3.5 flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                            <span className="text-zinc-400 text-xs sm:w-1/3 shrink-0 font-medium">
                               {qTitle}:
                             </span>
                             <div className="sm:w-2/3 text-white text-xs break-words">
@@ -2195,7 +2158,7 @@ export default function AdminDashboardPage() {
                                   href={answer}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="text-cyan-300 hover:text-cyan-200 underline inline-flex items-center gap-1"
+                                  className="text-purple-300 hover:text-purple-200 underline inline-flex items-center gap-1"
                                 >
                                   <span>Open Uploaded File ↗</span>
                                 </a>
@@ -2207,18 +2170,18 @@ export default function AdminDashboardPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-4 rounded-xl border border-dashed border-white/10 text-center text-slate-500 text-xs">
+                      <div className="p-4 rounded-xl border border-dashed border-white/10 text-center text-zinc-500 text-xs">
                         No additional custom fields were required for this event.
                       </div>
                     )}
                   </div>
 
                   {/* Modal Action Buttons */}
-                  <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between pt-4 border-t border-white/[0.08]">
                     <button
                       type="button"
                       onClick={() => setSelectedRegForAnswers(null)}
-                      className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+                      className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer"
                     >
                       Close Window
                     </button>
@@ -2231,13 +2194,13 @@ export default function AdminDashboardPage() {
                             handleUpdateRegStatus(selectedRegForAnswers.id, "verified");
                             setSelectedRegForAnswers(null);
                           }}
-                          className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer flex items-center gap-1.5"
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs tracking-wide transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer flex items-center gap-1.5"
                         >
                           <span>✔</span>
                           <span>Verify Registration Now</span>
                         </button>
                       ) : (
-                        <span className="text-emerald-400 text-xs font-bold flex items-center gap-1">
+                        <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1">
                           <span>✔ Already Verified</span>
                         </span>
                       )}
@@ -2251,14 +2214,14 @@ export default function AdminDashboardPage() {
       </main>
 
       {/* =======================================================================
-          MODAL: ADD / EDIT COUNCIL MEMBER (With Large Rectangular Photo Preview)
+          MODAL: ADD / EDIT COUNCIL MEMBER (With Sleek Portrait Frame Preview)
           ======================================================================= */}
       {isTeamModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-[#090b10] border border-cyan-500/40 rounded-2xl p-6 sm:p-7 shadow-2xl font-mono text-xs my-8">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#0b0c10]/95 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.15)] text-xs my-8 backdrop-blur-2xl">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
               <div>
-                <span className="text-[10px] text-cyan-400 uppercase tracking-widest block">
+                <span className="text-[10px] text-purple-400 uppercase tracking-widest block font-mono">
                   COUNCIL DIRECTORY
                 </span>
                 <h3 className="text-xl font-bold text-white">
@@ -2267,22 +2230,22 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 onClick={() => setIsTeamModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <form onSubmit={handleSaveTeamMember} className="space-y-5">
-              {/* Image Preview & Upload Section (Large Tall Rectangle - NEVER rounded-full) */}
-              <div className="p-4 rounded-xl border border-cyan-500/30 bg-slate-950/80 space-y-4">
-                <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
-                  1. Member Portrait Photo (Theme-Blended Tall Rectangle)
+              {/* Image Preview & Upload Section */}
+              <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
+                <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
+                  1. Member Portrait Photo
                 </span>
 
                 <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-start">
                   {/* Portrait Frame Preview */}
-                  <div className="relative w-36 aspect-[3/4] rounded-xl border border-cyan-500/40 bg-zinc-950 overflow-hidden shrink-0 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                  <div className="relative w-36 aspect-[3/4] rounded-2xl border border-white/10 bg-zinc-950 overflow-hidden shrink-0 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                     {teamForm.photoUrl ? (
                       <div className="relative w-full h-full">
                         <Image
@@ -2290,21 +2253,21 @@ export default function AdminDashboardPage() {
                           alt="Preview"
                           fill
                           unoptimized
-                          className="object-cover mix-blend-luminosity grayscale-[40%] contrast-110"
+                          className="object-cover contrast-105"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
-                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
                       </div>
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 text-slate-500">
+                      <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 text-zinc-500">
                         <span className="text-2xl mb-1">📷</span>
-                        <span className="text-[9px] leading-tight">No Photo Attached</span>
+                        <span className="text-[10px] leading-tight">No Photo Attached</span>
                       </div>
                     )}
 
                     {isUploadingPhoto && (
-                      <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-[10px] text-cyan-300">
-                        <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-1" />
+                      <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-[10px] text-purple-300">
+                        <div className="w-5 h-5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mb-1" />
                         <span>Uploading...</span>
                       </div>
                     )}
@@ -2313,7 +2276,7 @@ export default function AdminDashboardPage() {
                   {/* Upload Controls & URL input */}
                   <div className="flex-1 w-full space-y-3">
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-1.5 uppercase">
+                      <label className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">
                         Upload Portrait Photo to Cloudinary (Unsigned):
                       </label>
                       <input
@@ -2322,19 +2285,19 @@ export default function AdminDashboardPage() {
                         accept="image/png, image/jpeg, image/webp"
                         onChange={handleTeamPhotoFileChange}
                         disabled={isUploadingPhoto}
-                        className="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                        className="w-full text-xs text-zinc-300 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer disabled:opacity-50"
                       />
                     </div>
 
                     {isUploadingPhoto && (
-                      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-cyan-950/60 border border-cyan-400/40 text-cyan-300 text-xs animate-pulse">
-                        <span className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin shrink-0" />
+                      <div className="flex items-center gap-2 p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-300 text-xs animate-pulse">
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin shrink-0" />
                         <span>Uploading Media... Sending portrait photo to Cloudinary...</span>
                       </div>
                     )}
 
                     <div>
-                      <label className="text-[10px] text-slate-400 block mb-1 uppercase">
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
                         Or Paste Direct Image URL:
                       </label>
                       <input
@@ -2342,13 +2305,13 @@ export default function AdminDashboardPage() {
                         placeholder="https://images.unsplash.com/..."
                         value={teamForm.photoUrl || ""}
                         onChange={(e) => setTeamForm({ ...teamForm, photoUrl: e.target.value })}
-                        className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                       />
                     </div>
 
                     {/* Quick Sample Portraits Picker */}
                     <div>
-                      <span className="text-[9px] text-slate-500 block mb-1.5">
+                      <span className="text-[10px] text-zinc-500 block mb-1.5 font-medium">
                         Quick testing portraits:
                       </span>
                       <div className="flex flex-wrap gap-1.5">
@@ -2357,7 +2320,7 @@ export default function AdminDashboardPage() {
                             key={idx}
                             type="button"
                             onClick={() => setTeamForm({ ...teamForm, photoUrl: sample.url })}
-                            className="px-2 py-1 rounded bg-white/[0.04] hover:bg-cyan-950 hover:text-cyan-300 border border-white/10 text-[10px] text-slate-400 transition-colors cursor-pointer"
+                            className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-purple-950/60 hover:text-purple-300 border border-white/10 text-[10px] text-zinc-400 transition-colors cursor-pointer"
                           >
                             {sample.label}
                           </button>
@@ -2371,46 +2334,46 @@ export default function AdminDashboardPage() {
               {/* Text Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-slate-400 block mb-1">Full Name *</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Full Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Aarav Deshmukh"
                     value={teamForm.name}
                     onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Role / Position *</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Role / Position *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. President"
                     value={teamForm.role}
                     onChange={(e) => setTeamForm({ ...teamForm, role: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Official Designation</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Official Designation</label>
                   <input
                     type="text"
                     placeholder="e.g. Executive Head, TESA Council"
                     value={teamForm.designation}
                     onChange={(e) => setTeamForm({ ...teamForm, designation: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Academic Year</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Academic Year</label>
                   <select
                     value={teamForm.year}
                     onChange={(e) => setTeamForm({ ...teamForm, year: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 cursor-pointer"
                   >
                     <option value="Final Year B.Tech">Final Year B.Tech</option>
                     <option value="Third Year B.Tech">Third Year B.Tech</option>
@@ -2421,11 +2384,11 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Category</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Category</label>
                   <select
                     value={teamForm.category}
                     onChange={(e) => setTeamForm({ ...teamForm, category: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 cursor-pointer"
                   >
                     <option value="core">Core Council</option>
                     <option value="technical">Technical &amp; Research</option>
@@ -2435,54 +2398,54 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Technical Specialization</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Technical Specialization</label>
                   <input
                     type="text"
                     placeholder="e.g. Smart &amp; Conductive Textiles"
                     value={teamForm.specialization}
                     onChange={(e) => setTeamForm({ ...teamForm, specialization: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">Skills (Comma-separated)</label>
+                <label className="text-zinc-400 block mb-1 font-medium">Skills (Comma-separated)</label>
                 <input
                   type="text"
                   placeholder="e.g. E-Textiles, Project Leadership, Research &amp; Dev"
                   value={skillsInput}
                   onChange={(e) => setSkillsInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">Member Bio / Overview</label>
+                <label className="text-zinc-400 block mb-1 font-medium">Member Bio / Overview</label>
                 <textarea
                   rows={3}
                   placeholder="Short bio detailing council leadership contributions..."
                   value={teamForm.bio}
                   onChange={(e) => setTeamForm({ ...teamForm, bio: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 font-sans text-xs"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 font-sans text-xs"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={() => setIsTeamModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!isFirebaseConfigured || isUploadingPhoto}
-                  className={`px-5 py-2.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                  className={`glow-button-primary px-5 py-2.5 rounded-xl font-semibold uppercase tracking-wider transition-all flex items-center gap-2 ${
                     !isFirebaseConfigured
                       ? "bg-red-950/70 border border-red-500/40 text-red-300 cursor-not-allowed opacity-75"
-                      : "bg-cyan-400 hover:bg-cyan-300 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
+                      : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.35)] cursor-pointer disabled:opacity-50"
                   }`}
                 >
                   {!isFirebaseConfigured ? (
@@ -2492,7 +2455,7 @@ export default function AdminDashboardPage() {
                     </>
                   ) : isUploadingPhoto ? (
                     <>
-                      <span className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                       <span>Uploading Media...</span>
                     </>
                   ) : editingTeamMember ? (
@@ -2508,14 +2471,14 @@ export default function AdminDashboardPage() {
       )}
 
       {/* =======================================================================
-          MODAL: ADD / EDIT EVENT
+          MODAL: ADD / EDIT EVENT (With Google Forms Builder & Gallery)
           ======================================================================= */}
       {isEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-[#090b10] border border-cyan-500/40 rounded-2xl p-6 sm:p-7 shadow-2xl font-mono text-xs my-8">
-            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#0b0c10]/95 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.15)] text-xs my-8 backdrop-blur-2xl">
+            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
               <div>
-                <span className="text-[10px] text-cyan-400 uppercase tracking-widest block">
+                <span className="text-[10px] text-purple-400 uppercase tracking-widest block font-mono">
                   EVENT OPERATIONS
                 </span>
                 <h3 className="text-xl font-bold text-white">
@@ -2524,7 +2487,7 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 onClick={() => setIsEventModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-9 h-9 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 ✕
               </button>
@@ -2532,13 +2495,13 @@ export default function AdminDashboardPage() {
 
             <form onSubmit={handleSaveEvent} className="space-y-4">
               {/* Event Banner Section */}
-              <div className="p-4 rounded-xl border border-white/10 bg-slate-950/80 space-y-3">
-                <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
+              <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-3">
+                <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
                   Event Banner Image (Cloudinary Unsigned Upload / URL)
                 </span>
 
                 <div className="flex flex-col sm:flex-row gap-4 items-center">
-                  <div className="w-40 h-24 rounded-lg border border-white/10 bg-black overflow-hidden shrink-0 relative">
+                  <div className="w-40 h-24 rounded-2xl border border-white/10 bg-black overflow-hidden shrink-0 relative">
                     {eventForm.mediaUrl ? (
                       <Image
                         src={eventForm.mediaUrl}
@@ -2548,13 +2511,13 @@ export default function AdminDashboardPage() {
                         className="object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500 text-center p-2">
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500 text-center p-2">
                         No Banner
                       </div>
                     )}
                     {isUploadingBanner && (
-                      <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-cyan-300 text-[10px] animate-pulse">
-                        <div className="w-4 h-4 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-1" />
+                      <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-purple-300 text-[10px] animate-pulse">
+                        <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mb-1" />
                         <span>Uploading Media...</span>
                       </div>
                     )}
@@ -2567,45 +2530,45 @@ export default function AdminDashboardPage() {
                       accept="image/*"
                       disabled={isUploadingBanner}
                       onChange={handleEventBannerFileChange}
-                      className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                      className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer disabled:opacity-50"
                     />
                     <input
                       type="url"
                       placeholder="Or paste banner image URL..."
                       value={eventForm.mediaUrl || ""}
                       onChange={(e) => setEventForm({ ...eventForm, mediaUrl: e.target.value })}
-                      className="w-full px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400"
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                     />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">Event Title *</label>
+                <label className="text-zinc-400 block mb-1 font-medium">Event Title *</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. TEX-CONCLAVE 2026: National Smart Fibers Symposium"
                   value={eventForm.title}
                   onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-slate-400 block mb-1">Category</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Category</label>
                   <input
                     type="text"
                     placeholder="e.g. National Conclave / Hackathon"
                     value={eventForm.category}
                     onChange={(e) => setEventForm({ ...eventForm, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Event Status (eventStatus) *</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Event Status (eventStatus) *</label>
                   <select
                     value={eventForm.eventStatus || (eventForm.status === "closed" ? "Concluded" : "Upcoming")}
                     onChange={(e) => {
@@ -2616,7 +2579,7 @@ export default function AdminDashboardPage() {
                         status: val === "Concluded" ? "closed" : "upcoming",
                       });
                     }}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 cursor-pointer font-mono"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 cursor-pointer font-mono"
                   >
                     <option value="Upcoming">Upcoming</option>
                     <option value="Concluded">Concluded</option>
@@ -2624,63 +2587,63 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Date &amp; Schedule *</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Date &amp; Schedule *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. April 28–29, 2026"
                     value={eventForm.date}
                     onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Venue / Complex</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Venue / Complex</label>
                   <input
                     type="text"
                     placeholder="e.g. SGGSIE&amp;T Main Auditorium"
                     value={eventForm.venue}
                     onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Registration Capacity</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Registration Capacity</label>
                   <input
                     type="number"
                     value={eventForm.capacity || 100}
                     onChange={(e) => setEventForm({ ...eventForm, capacity: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Registration Deadline</label>
+                  <label className="text-zinc-400 block mb-1 font-medium">Registration Deadline</label>
                   <input
                     type="text"
                     placeholder="e.g. April 15, 2026"
                     value={eventForm.deadline || ""}
                     onChange={(e) => setEventForm({ ...eventForm, deadline: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                   />
                 </div>
               </div>
 
               {/* Event Gallery Photos Section (Visible for Concluded events) */}
               {(eventForm.eventStatus === "Concluded" || eventForm.status === "closed") && (
-                <div className="p-4 rounded-xl border border-cyan-500/30 bg-slate-950/80 space-y-3">
+                <div className="p-4 rounded-2xl border border-purple-500/30 bg-purple-950/10 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
+                      <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
                         Event Gallery Photos
                       </span>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
+                      <p className="text-[10px] text-zinc-400 mt-0.5">
                         Choose multiple photos. Upon submitting this Concluded event, they will upload to Cloudinary (unsigned preset) and save to Firestore as galleryUrls.
                       </p>
                     </div>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/30">
                       {(eventForm.galleryUrls?.length || 0) + galleryFiles.length} Photos Attached
                     </span>
                   </div>
@@ -2691,18 +2654,18 @@ export default function AdminDashboardPage() {
                     multiple
                     accept="image/*"
                     onChange={handleGalleryFilesChange}
-                    className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer"
+                    className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer"
                   />
 
                   {/* Previews of newly selected files & existing gallery URLs */}
                   {((eventForm.galleryUrls && eventForm.galleryUrls.length > 0) || galleryFiles.length > 0) && (
-                    <div className="pt-2 border-t border-white/10 space-y-2">
-                      <span className="text-[10px] font-mono text-slate-400 block">
+                    <div className="pt-2 border-t border-white/[0.08] space-y-2">
+                      <span className="text-[10px] text-zinc-400 block font-medium">
                         Gallery Photographs Preview:
                       </span>
                       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-40 overflow-y-auto p-1">
                         {eventForm.galleryUrls?.map((url, uIdx) => (
-                          <div key={`existing-${uIdx}`} className="relative aspect-square rounded-lg border border-cyan-500/30 overflow-hidden group bg-black">
+                          <div key={`existing-${uIdx}`} className="relative aspect-square rounded-xl border border-white/10 overflow-hidden group bg-black">
                             <Image src={url} alt={`Gallery ${uIdx}`} fill unoptimized className="object-cover" />
                             <button
                               type="button"
@@ -2716,7 +2679,7 @@ export default function AdminDashboardPage() {
                         ))}
 
                         {galleryFiles.map((file, fIdx) => (
-                          <div key={`file-${fIdx}`} className="relative aspect-square rounded-lg border border-amber-500/40 overflow-hidden group bg-zinc-900 flex flex-col items-center justify-center p-1 text-center">
+                          <div key={`file-${fIdx}`} className="relative aspect-square rounded-xl border border-amber-500/40 overflow-hidden group bg-zinc-900 flex flex-col items-center justify-center p-1 text-center">
                             <span className="text-base">📷</span>
                             <span className="text-[8px] text-amber-300 truncate w-full px-1">{file.name}</span>
                             <button
@@ -2734,8 +2697,8 @@ export default function AdminDashboardPage() {
                   )}
 
                   {isUploadingGallery && (
-                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-cyan-950/60 border border-cyan-400/40 text-cyan-300 text-xs font-mono animate-pulse">
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin shrink-0" />
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-300 text-xs animate-pulse">
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin shrink-0" />
                       <span>Uploading Media... Uploading event gallery photos to Cloudinary...</span>
                     </div>
                   )}
@@ -2743,42 +2706,42 @@ export default function AdminDashboardPage() {
               )}
 
               <div>
-                <label className="text-slate-400 block mb-1">Key Highlights Pill</label>
+                <label className="text-zinc-400 block mb-1 font-medium">Key Highlights Pill</label>
                 <input
                   type="text"
                   placeholder="e.g. ₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE"
                   value={eventForm.highlights || ""}
                   onChange={(e) => setEventForm({ ...eventForm, highlights: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                 />
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">Event Summary</label>
+                <label className="text-zinc-400 block mb-1 font-medium">Event Summary</label>
                 <textarea
                   rows={3}
                   placeholder="Detailed synopsis of symposium tracks, competitions..."
                   value={eventForm.summary}
                   onChange={(e) => setEventForm({ ...eventForm, summary: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 font-sans text-xs"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 font-sans text-xs"
                 />
               </div>
 
               {/* =============================================================
                   GOOGLE FORMS-STYLE CUSTOM REGISTRATION FORM BUILDER
                   ============================================================= */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-cyan-500/30 bg-slate-950/90 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+              <div className="p-4 sm:p-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 uppercase">
+                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/30 uppercase">
                         DYNAMIC QUESTIONS BUILDER
                       </span>
-                      <span className="text-[11px] font-bold text-white uppercase tracking-wide">
+                      <span className="text-xs font-bold text-white uppercase tracking-wide">
                         Google Forms-Style Custom Fields
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-1">
+                    <p className="text-[10px] text-zinc-400 mt-1">
                       Configure custom questions for students registering for this event (Team Name, Abstract, PPT/PDF Upload, etc.).
                     </p>
                   </div>
@@ -2786,7 +2749,7 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={handleAddCustomQuestion}
-                    className="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-300 hover:text-white font-mono text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-[0_0_12px_rgba(0,240,255,0.2)]"
+                    className="glass-button-secondary text-purple-300 hover:text-white border-purple-500/30 hover:border-purple-500/60 rounded-xl px-3.5 py-2 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
                   >
                     <span>+</span>
                     <span>Add Custom Question</span>
@@ -2795,9 +2758,9 @@ export default function AdminDashboardPage() {
 
                 {/* Question List */}
                 {(!eventForm.customFormFields || eventForm.customFormFields.length === 0) ? (
-                  <div className="py-6 px-4 rounded-xl border border-dashed border-white/10 text-center text-slate-500 text-xs font-mono">
-                    <p className="mb-1 text-slate-400">No custom questions added for this event yet.</p>
-                    <p className="text-[10px] text-slate-500">
+                  <div className="py-6 px-4 rounded-xl border border-dashed border-white/10 text-center text-zinc-500 text-xs">
+                    <p className="mb-1 text-zinc-400">No custom questions added for this event yet.</p>
+                    <p className="text-[10px] text-zinc-500">
                       Standard collegiate fields (Full Name, PRN, Year, Contact Number, Project Media &amp; Payment Screenshot) are always included.
                     </p>
                   </div>
@@ -2806,16 +2769,16 @@ export default function AdminDashboardPage() {
                     {eventForm.customFormFields.map((field, index) => (
                       <div
                         key={field.id}
-                        className="p-3.5 rounded-xl border border-white/15 bg-black/60 space-y-3 relative group"
+                        className="p-4 rounded-2xl border border-white/[0.08] bg-black/40 space-y-3 relative group"
                       >
-                        <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/5">
-                          <span className="text-[10px] font-mono font-bold text-cyan-400">
+                        <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/[0.06]">
+                          <span className="text-[10px] font-mono font-bold text-purple-400">
                             QUESTION #{index + 1}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleRemoveCustomQuestion(field.id)}
-                            className="text-[10px] font-mono text-red-400 hover:text-red-300 px-2 py-0.5 rounded bg-red-950/40 hover:bg-red-950/80 border border-red-500/30 transition-colors cursor-pointer"
+                            className="text-[10px] font-mono text-red-400 hover:text-red-300 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-colors cursor-pointer"
                           >
                             ✕ Remove Question
                           </button>
@@ -2824,8 +2787,8 @@ export default function AdminDashboardPage() {
                         {/* Title and Field Type Row */}
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                           <div className="sm:col-span-2">
-                            <label className="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">
-                              Question Title <span className="text-cyan-400">*</span>
+                            <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-semibold">
+                              Question Title <span className="text-purple-400">*</span>
                             </label>
                             <input
                               type="text"
@@ -2835,13 +2798,13 @@ export default function AdminDashboardPage() {
                               onChange={(e) =>
                                 handleUpdateCustomQuestion(field.id, { questionTitle: e.target.value })
                               }
-                              className="w-full px-3 py-1.5 rounded-lg bg-black/70 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 text-xs"
+                              className="w-full px-3 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-xs"
                             />
                           </div>
 
                           <div>
-                            <label className="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">
-                              Field Type <span className="text-cyan-400">*</span>
+                            <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-semibold">
+                              Field Type <span className="text-purple-400">*</span>
                             </label>
                             <select
                               value={field.fieldType}
@@ -2850,7 +2813,7 @@ export default function AdminDashboardPage() {
                                   fieldType: e.target.value as CustomFieldType,
                                 })
                               }
-                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/15 text-white focus:outline-none focus:border-cyan-400 text-xs cursor-pointer font-mono"
+                              className="w-full px-2.5 py-2 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 text-xs cursor-pointer font-mono"
                             >
                               <option value="Short Text">Short Text</option>
                               <option value="Paragraph">Paragraph</option>
@@ -2874,16 +2837,16 @@ export default function AdminDashboardPage() {
                               onChange={(e) =>
                                 handleUpdateCustomQuestion(field.id, { options: e.target.value })
                               }
-                              className="w-full px-3 py-1.5 rounded-lg bg-amber-950/20 border border-amber-500/30 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs"
+                              className="w-full px-3 py-2 rounded-xl bg-amber-950/20 border border-amber-500/30 text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 text-xs"
                             />
-                            <span className="text-[9px] text-slate-400 mt-0.5 block">
+                            <span className="text-[9px] text-zinc-400 mt-0.5 block">
                               Enter values separated by commas. Students will select one from this dropdown.
                             </span>
                           </div>
                         )}
 
                         {/* Required Checkbox Toggle */}
-                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                        <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
                           <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                             <input
                               type="checkbox"
@@ -2891,14 +2854,14 @@ export default function AdminDashboardPage() {
                               onChange={(e) =>
                                 handleUpdateCustomQuestion(field.id, { required: e.target.checked })
                               }
-                              className="w-3.5 h-3.5 rounded border-white/20 bg-black text-cyan-500 focus:ring-0 focus:outline-none cursor-pointer"
+                              className="w-3.5 h-3.5 rounded border-white/20 bg-black text-purple-500 focus:ring-0 focus:outline-none cursor-pointer"
                             />
-                            <span className="text-[11px] text-slate-300 font-mono">
+                            <span className="text-xs text-zinc-300">
                               Required Question
                             </span>
                           </label>
 
-                          <span className="text-[10px] font-mono text-cyan-400/80">
+                          <span className="text-[10px] font-mono text-purple-300/80">
                             {field.fieldType === "File Upload (PPT/PDF/Image)"
                               ? "Cloudinary /auto/upload"
                               : field.fieldType}
@@ -2910,22 +2873,22 @@ export default function AdminDashboardPage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
                 <button
                   type="button"
                   onClick={() => setIsEventModalOpen(false)}
                   disabled={isSubmittingEvent || isUploadingBanner || isUploadingGallery}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer disabled:opacity-40"
+                  className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer disabled:opacity-40"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!isFirebaseConfigured || isSubmittingEvent || isUploadingBanner || isUploadingGallery}
-                  className={`px-5 py-2.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                  className={`glow-button-primary px-5 py-2.5 rounded-xl font-semibold uppercase tracking-wider transition-all flex items-center gap-2 ${
                     !isFirebaseConfigured
                       ? "bg-red-950/70 border border-red-500/40 text-red-300 cursor-not-allowed opacity-75"
-                      : "bg-cyan-400 hover:bg-cyan-300 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
+                      : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.35)] cursor-pointer disabled:opacity-50"
                   }`}
                 >
                   {!isFirebaseConfigured ? (
@@ -2935,7 +2898,7 @@ export default function AdminDashboardPage() {
                     </>
                   ) : (isUploadingGallery || isUploadingBanner || isSubmittingEvent) ? (
                     <>
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                       <span>
                         {isUploadingGallery || isUploadingBanner
                           ? "Uploading Media..."
