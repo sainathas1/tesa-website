@@ -74,14 +74,14 @@ export default function MouseTiltCard({
           y: -8,
           transition: { duration: 0.3 },
         }}
-        className={`relative rounded-3xl p-7 sm:p-8 backdrop-blur-2xl bg-slate-950/65 border border-cyan-500/30 hover:border-cyan-400 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:shadow-[0_0_35px_rgba(0,240,255,0.35)] ${className}`}
+        className={`relative rounded-2xl p-5 sm:p-6 backdrop-blur-2xl bg-slate-950/65 border border-cyan-500/30 hover:border-cyan-400 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:shadow-[0_0_35px_rgba(0,240,255,0.35)] ${className}`}
       >
         {/* Subtle Woven Texture Overlay */}
-        <div className="pointer-events-none absolute inset-0 rounded-3xl bg-woven-texture opacity-25" />
+        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-woven-texture opacity-25" />
 
         {/* Dynamic Specular Sheen / Spotlight tracking mouse */}
         <motion.div
-          className="pointer-events-none absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
           style={{
             background: `radial-gradient(circle at ${spotlightX} ${spotlightY}, ${glowColor}, transparent 65%)`,
           }}
@@ -89,7 +89,7 @@ export default function MouseTiltCard({
 
         {/* Glowing Cyan Accent Border */}
         <div
-          className="pointer-events-none absolute -inset-px rounded-3xl opacity-75 group-hover:opacity-100 transition-opacity duration-300"
+          className="pointer-events-none absolute -inset-px rounded-2xl opacity-75 group-hover:opacity-100 transition-opacity duration-300"
           style={{
             border: `1px solid ${borderColor}`,
             boxShadow: `inset 0 0 16px ${glowColor}, 0 0 20px ${glowColor}`,

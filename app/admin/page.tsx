@@ -1048,18 +1048,18 @@ export default function AdminDashboardPage() {
               ))}
             </div>
 
-            {/* Team Members Grid: Large Rectangular Portraits (NEVER rounded-full) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {/* Team Members Grid: Medium Rectangular Portraits (NEVER rounded-full) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {teamList
                 .filter((m) => teamCategoryFilter === "all" || m.category === teamCategoryFilter)
                 .map((member) => (
                   <div
                     key={member.id}
-                    className="group rounded-2xl border border-white/10 bg-slate-950/70 p-5 backdrop-blur-md flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(0,240,255,0.15)] transition-all font-mono"
+                    className="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 sm:p-5 backdrop-blur-md flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(0,240,255,0.15)] transition-all font-mono"
                   >
                     <div>
-                      {/* Large Rectangular Portrait Frame with Theme-Blending CSS Filters */}
-                      <div className="relative w-full aspect-[3/4] mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                      {/* Medium Rectangular Portrait Frame with Theme-Blending CSS Filters */}
+                      <div className="relative w-full h-48 sm:h-52 mb-3.5 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                         {member.photoUrl ? (
                           <div className="relative w-full h-full">
                             <img
@@ -1073,7 +1073,7 @@ export default function AdminDashboardPage() {
                           </div>
                         ) : (
                           <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
-                            <div className="w-16 h-16 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-2xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
+                            <div className="w-14 h-14 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
                               {member.photoPlaceholder || "TE"}
                             </div>
                             <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase">
@@ -1092,25 +1092,25 @@ export default function AdminDashboardPage() {
                         </span>
                       </div>
 
-                      <h3 className="text-base font-bold text-white mb-0.5 group-hover:text-cyan-300 transition-colors">
+                      <h3 className="text-sm sm:text-base font-bold text-white mb-0.5 group-hover:text-cyan-300 transition-colors">
                         {member.name}
                       </h3>
-                      <div className="text-xs text-cyan-400 font-semibold mb-1">
+                      <div className="text-[11px] text-cyan-400 font-semibold mb-0.5">
                         {member.role}
                       </div>
-                      <div className="text-[10px] text-slate-400 mb-3">
+                      <div className="text-[10px] text-slate-400 mb-2 truncate">
                         {member.designation}
                       </div>
 
-                      <p className="text-xs text-slate-300 font-normal mb-3 line-clamp-3">
+                      <p className="text-xs text-slate-300 font-normal mb-2.5 line-clamp-2">
                         {member.bio}
                       </p>
 
-                      <div className="text-[10px] text-purple-300 mb-3 truncate">
+                      <div className="text-[10px] text-purple-300 mb-2.5 truncate">
                         ⚡ {member.specialization}
                       </div>
 
-                      <div className="flex flex-wrap gap-1 mb-4">
+                      <div className="flex flex-wrap gap-1 mb-3">
                         {member.skills.slice(0, 3).map((s, idx) => (
                           <span
                             key={idx}

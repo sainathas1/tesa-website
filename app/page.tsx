@@ -643,13 +643,13 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Staggered 3D Tilt Card Grid: 1 Col on Mobile, 2 on Tablet, 3 on Desktop */}
+          {/* Medium-Sized Staggered 3D Tilt Card Grid: 1 Col Mobile, 2 Col Tablet, 4 Col Desktop */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-30px" }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6"
           >
             <AnimatePresence mode="popLayout">
               {filteredTeam.map((member) => (
@@ -666,8 +666,8 @@ export default function Home() {
                   >
                     <div className="flex flex-col justify-between h-full">
                       <div>
-                        {/* Upper: Member Large Tall Portrait Frame (NEVER rounded-full) */}
-                        <div className="relative w-full aspect-[3/4] mb-5 rounded-2xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                        {/* Upper: Member Medium Portrait Frame */}
+                        <div className="relative w-full h-52 sm:h-56 mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                           {member.photoUrl ? (
                             <div className="relative w-full h-full">
                               <img
@@ -677,14 +677,14 @@ export default function Home() {
                               />
                               {/* Dark Theme Vignette & Gradient Overlay */}
                               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
-                              <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
+                              <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
                             </div>
                           ) : (
-                            <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-6 text-center">
-                              <div className="w-20 h-20 rounded-2xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-3xl font-black text-cyan-300 shadow-[0_0_25px_rgba(0,240,255,0.25)] mb-3">
+                            <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
+                              <div className="w-14 h-14 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
                                 {member.photoPlaceholder || "TE"}
                               </div>
-                              <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
+                              <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase">
                                 PORTRAIT ARCHIVE
                               </span>
                               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
@@ -692,7 +692,7 @@ export default function Home() {
                           )}
 
                           {/* Member Year Badge */}
-                          <span className="absolute bottom-3 right-3 z-10 text-[9px] font-mono px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-cyan-300 border border-cyan-500/40 shadow-lg">
+                          <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-cyan-300 border border-cyan-500/40 shadow-md">
                             {member.year}
                           </span>
 
@@ -701,34 +701,34 @@ export default function Home() {
                         </div>
 
                         {/* Name & Role Designation */}
-                        <div className="mb-3">
-                          <div className="inline-block px-2.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 uppercase tracking-wider mb-1.5">
+                        <div className="mb-2.5">
+                          <div className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 uppercase tracking-wider mb-1">
                             {member.role}
                           </div>
-                          <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
+                          <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
                             {member.name}
                           </h3>
-                          <p className="text-xs font-mono text-slate-400 mt-0.5">
+                          <p className="text-[11px] font-mono text-slate-400 mt-0.5 truncate">
                             {member.designation}
                           </p>
                         </div>
 
                         {/* Bio Description */}
-                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                        <p className="text-xs text-slate-300 leading-relaxed mb-3 line-clamp-2">
                           {member.bio}
                         </p>
                       </div>
 
                       {/* Lower: Focus Area & Skills Badges */}
-                      <div className="pt-3 border-t border-white/[0.08]">
-                        <div className="text-[10px] font-mono text-cyan-400/80 uppercase tracking-wider mb-2">
+                      <div className="pt-2.5 border-t border-white/[0.08]">
+                        <div className="text-[9px] font-mono text-cyan-400/80 uppercase tracking-wider mb-1.5 truncate">
                           FOCUS: {member.specialization}
                         </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {member.skills.map((skill, sIdx) => (
+                        <div className="flex flex-wrap gap-1">
+                          {member.skills.slice(0, 3).map((skill, sIdx) => (
                             <span
                               key={sIdx}
-                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.04] text-slate-300 border border-white/[0.08]"
+                              className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-slate-300 border border-white/[0.08]"
                             >
                               {skill}
                             </span>

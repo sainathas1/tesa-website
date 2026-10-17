@@ -268,7 +268,7 @@ export default function TesaTeamSection() {
 
                 {/* Upper: Photo Placeholder Frame */}
                 <div>
-                  <div className="relative w-full aspect-[3/4] mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                  <div className="relative w-full h-52 sm:h-56 mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                     {member.photoUrl ? (
                       <div className="relative w-full h-full">
                         <img
@@ -280,7 +280,7 @@ export default function TesaTeamSection() {
                       </div>
                     ) : (
                       <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
-                        <div className="w-16 h-16 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-2xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
+                        <div className="w-14 h-14 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
                           {member.photoPlaceholder || "TE"}
                         </div>
                         <span className="text-[8px] font-mono tracking-widest text-slate-400 uppercase">
@@ -297,20 +297,20 @@ export default function TesaTeamSection() {
                   </div>
 
                   {/* Member Name & Role */}
-                  <div className="mb-3">
-                    <div className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 uppercase tracking-wider mb-1.5">
+                  <div className="mb-2.5">
+                    <div className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 uppercase tracking-wider mb-1">
                       {member.role}
                     </div>
-                    <h3 className="text-lg sm:text-xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
+                    <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
                       {member.name}
                     </h3>
-                    <p className="text-xs font-mono text-slate-400">
+                    <p className="text-[11px] font-mono text-slate-400 truncate">
                       {member.designation}
                     </p>
                   </div>
 
                   {/* Bio Description */}
-                  <p className="text-xs text-slate-300 leading-relaxed mb-4">
+                  <p className="text-xs text-slate-300 leading-relaxed mb-3 line-clamp-2">
                     {member.bio}
                   </p>
                 </div>
