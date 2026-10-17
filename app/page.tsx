@@ -666,35 +666,38 @@ export default function Home() {
                   >
                     <div className="flex flex-col justify-between h-full">
                       <div>
-                        {/* Upper: Member Photo Frame */}
-                        <div className="relative w-full aspect-square mb-4 rounded-xl border border-dashed border-cyan-500/30 bg-gradient-to-br from-slate-950 via-[#0a0f18] to-slate-900/80 p-2 flex flex-col items-center justify-center overflow-hidden group-hover:border-cyan-400/70 transition-colors">
-                          <div
-                            className={`absolute inset-0 bg-gradient-to-tr ${member.accentColor} opacity-40 group-hover:opacity-80 transition-opacity blur-xl`}
-                          />
-
+                        {/* Upper: Member Large Tall Portrait Frame (NEVER rounded-full) */}
+                        <div className="relative w-full aspect-[3/4] mb-5 rounded-2xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
                           {member.photoUrl ? (
-                            <div className="relative z-10 w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-cyan-400/70 overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.3)] group-hover:scale-105 transition-transform">
+                            <div className="relative w-full h-full">
                               <img
                                 src={member.photoUrl}
                                 alt={member.name}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
                               />
+                              {/* Dark Theme Vignette & Gradient Overlay */}
+                              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
+                              <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
                             </div>
                           ) : (
-                            <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 rounded-full border border-cyan-500/40 bg-black/70 flex flex-col items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-                              <span className="font-mono text-2xl font-black text-cyan-300">
-                                {member.photoPlaceholder}
+                            <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-6 text-center">
+                              <div className="w-20 h-20 rounded-2xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-3xl font-black text-cyan-300 shadow-[0_0_25px_rgba(0,240,255,0.25)] mb-3">
+                                {member.photoPlaceholder || "TE"}
+                              </div>
+                              <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase">
+                                PORTRAIT ARCHIVE
                               </span>
-                              <span className="text-[8px] font-mono tracking-widest text-slate-400 uppercase mt-0.5">
-                                MEMBER
-                              </span>
+                              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
                             </div>
                           )}
 
                           {/* Member Year Badge */}
-                          <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded bg-black/80 text-cyan-400 border border-cyan-500/30">
+                          <span className="absolute bottom-3 right-3 z-10 text-[9px] font-mono px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-cyan-300 border border-cyan-500/40 shadow-lg">
                             {member.year}
                           </span>
+
+                          {/* Accent glow line at bottom of photo */}
+                          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
                         </div>
 
                         {/* Name & Role Designation */}

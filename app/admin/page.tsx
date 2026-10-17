@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import {
   onAuthStateChanged,
@@ -20,27 +20,13 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
-import { auth, googleProvider, db } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { auth, googleProvider, db, storage } from "@/lib/firebase";
 import * as XLSX from "xlsx";
 
-// ==========================================
-// DATA INTERFACES & SCHEMAS
-// ==========================================
-
-export interface EventItem {
-  id: string;
-  title: string;
-  category: string;
-  date: string;
-  venue: string;
-  deadline: string;
-  capacity: number;
-  status: "open" | "upcoming" | "closed";
-  mediaUrl: string;
-  summary: string;
-  highlights: string;
-  createdAt?: any;
-}
+// ============================================================================
+// DATA INTERFACES & SCHEMAS (Synced with Minimalist Architecture)
+// ============================================================================
 
 export interface TeamMember {
   id: string;
@@ -57,27 +43,19 @@ export interface TeamMember {
   accentColor: string;
 }
 
-export interface FacultyMember {
+export interface EventItem {
   id: string;
-  name: string;
-  designation: string;
-  qualification: string;
-  specialization: string;
-  experience: string;
-  email: string;
-  researchFocus: string[];
-  photoUrl?: string;
-}
-
-export interface StaffMember {
-  id: string;
-  name: string;
-  designation: string;
-  labAssigned: string;
-  qualification: string;
-  experience: string;
-  skills: string;
-  photoUrl?: string;
+  title: string;
+  category: string;
+  date: string;
+  venue: string;
+  deadline?: string;
+  capacity?: number;
+  status: "open" | "upcoming" | "closed";
+  mediaUrl?: string;
+  summary: string;
+  highlights?: string;
+  createdAt?: any;
 }
 
 export interface Registration {
@@ -92,35 +70,124 @@ export interface Registration {
   status: "pending" | "approved" | "rejected";
 }
 
-export interface SiteContent {
-  announcementBanner: string;
-  heroHeadline: string;
-  heroSubheadline: string;
-  upcomingConclaveDate: string;
-  registrationStatus: string;
-  departmentNotice: string;
-}
-
-export interface MediaAsset {
-  id: string;
-  name: string;
-  url: string;
-  category: "event" | "lab" | "banner" | "general" | "portrait";
-  uploadedAt: string;
-}
-
-// Sample portraits for quick testing in edit modals
-const SAMPLE_PORTRAITS = [
-  { label: "Male Student", url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80" },
-  { label: "Female Student", url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80" },
-  { label: "Senior Professor", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80" },
-  { label: "Female Professor", url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80" },
-  { label: "Technical Specialist", url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80" },
-];
-
-// ==========================================
+// ============================================================================
 // DEFAULT SEED DATA
-// ==========================================
+// ============================================================================
+
+const INITIAL_TEAM: TeamMember[] = [
+  {
+    id: "lead-1",
+    name: "Aarav Deshmukh",
+    role: "President",
+    designation: "Executive Head, TESA Council",
+    year: "Final Year B.Tech",
+    category: "core",
+    bio: "Spearheading TESA 2025-26 initiatives with a research focus on conductive smart fibers, electronic textiles, and national collegiate partnerships.",
+    specialization: "Smart & Conductive Textiles",
+    skills: ["E-Textiles", "Project Leadership", "Research & Dev"],
+    photoPlaceholder: "AD",
+    photoUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800&auto=format&fit=crop&q=80",
+    accentColor: "from-cyan-500/20 to-blue-600/30",
+  },
+  {
+    id: "lead-2",
+    name: "Sneha Kulkarni",
+    role: "Vice President",
+    designation: "Council Operations & Academic Liaison",
+    year: "Final Year B.Tech",
+    category: "core",
+    bio: "Overseeing council operations, faculty coordination, and industrial internship drives for textile engineering undergraduates.",
+    specialization: "Nanofiber Synthesis & Filtration",
+    skills: ["Electrospinning", "Lab Coordination", "Strategy"],
+    photoPlaceholder: "SK",
+    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80",
+    accentColor: "from-teal-500/20 to-emerald-600/30",
+  },
+  {
+    id: "lead-3",
+    name: "Rohan Patil",
+    role: "General Secretary",
+    designation: "Administrative Head & Event Secretary",
+    year: "Third Year B.Tech",
+    category: "core",
+    bio: "Managing inter-collegiate affairs, club documentation, and technical event scheduling for TEX-CONCLAVE 2026.",
+    specialization: "Automated Weaving Systems",
+    skills: ["Electronic Jacquard", "Event Management", "CAD"],
+    photoPlaceholder: "RP",
+    photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80",
+    accentColor: "from-blue-500/20 to-indigo-600/30",
+  },
+  {
+    id: "lead-4",
+    name: "Pooja Sharma",
+    role: "Technical Head",
+    designation: "Research & Workshop Director",
+    year: "Third Year B.Tech",
+    category: "technical",
+    bio: "Directing technical symposium tracks, coordinating hands-on student lab workshops, and mentoring paper presentations.",
+    specialization: "Eco-Friendly Wet Processing",
+    skills: ["Bio-Dyeing", "Spectroscopy", "Material Testing"],
+    photoPlaceholder: "PS",
+    photoUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80",
+    accentColor: "from-indigo-500/20 to-purple-600/30",
+  },
+  {
+    id: "lead-5",
+    name: "Tanmay Joshi",
+    role: "Chief Event Coordinator",
+    designation: "Lead Organizer, Conclave & Hackathon",
+    year: "Third Year B.Tech",
+    category: "events",
+    bio: "Leading logistics and participant onboarding for the Smart Weaves Hackathon and National Student Design Challenge.",
+    specialization: "Industrial Automation in Textiles",
+    skills: ["Hackathon Ops", "Public Relations", "Stage Logistics"],
+    photoPlaceholder: "TJ",
+    photoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&auto=format&fit=crop&q=80",
+    accentColor: "from-amber-500/20 to-orange-600/30",
+  },
+  {
+    id: "lead-6",
+    name: "Ananya Shinde",
+    role: "Treasurer & Finance Lead",
+    designation: "Budget & Sponsorship Head",
+    year: "Third Year B.Tech",
+    category: "core",
+    bio: "Managing association finances, corporate sponsorships, and budget allocations for lab competitions and annual fests.",
+    specialization: "Quality Assurance & Tensile Analytics",
+    skills: ["Financial Modeling", "Corporate Sponsor", "Auditing"],
+    photoPlaceholder: "AS",
+    photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&auto=format&fit=crop&q=80",
+    accentColor: "from-emerald-500/20 to-cyan-600/30",
+  },
+  {
+    id: "lead-7",
+    name: "Varun Kadam",
+    role: "Design & Digital Media Lead",
+    designation: "Creative & Web Interface Director",
+    year: "Second Year B.Tech",
+    category: "technical",
+    bio: "Crafting digital assets, CAD jacquard mockups, web portals, and audiovisual campaigns for all TESA student exhibits.",
+    specialization: "Textile CAD/CAM & UI/UX Design",
+    skills: ["Textile CAD", "Creative Direction", "Web Tech"],
+    photoPlaceholder: "VK",
+    photoUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&auto=format&fit=crop&q=80",
+    accentColor: "from-cyan-500/20 to-teal-600/30",
+  },
+  {
+    id: "lead-8",
+    name: "Meera Gaikwad",
+    role: "Public Relations & Alumni Lead",
+    designation: "Outreach & Industry Networker",
+    year: "Second Year B.Tech",
+    category: "outreach",
+    bio: "Connecting current students with our distinguished 35+ year SGGSIE&T textile alumni network and industrial partners.",
+    specialization: "Medical Textiles & Geotextiles",
+    skills: ["Alumni Relations", "Communications", "Media"],
+    photoPlaceholder: "MG",
+    photoUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&auto=format&fit=crop&q=80",
+    accentColor: "from-purple-500/20 to-pink-600/30",
+  },
+];
 
 const INITIAL_EVENTS: EventItem[] = [
   {
@@ -164,328 +231,57 @@ const INITIAL_EVENTS: EventItem[] = [
   },
 ];
 
-const INITIAL_TEAM: TeamMember[] = [
-  {
-    id: "lead-1",
-    name: "Aarav Deshmukh",
-    role: "President",
-    designation: "Executive Head, TESA Council",
-    year: "Final Year B.Tech",
-    category: "core",
-    bio: "Spearheading TESA 2025-26 initiatives with a research focus on conductive smart fibers, electronic textiles, and national collegiate partnerships.",
-    specialization: "Smart & Conductive Textiles",
-    skills: ["E-Textiles", "Project Leadership", "Research & Dev"],
-    photoPlaceholder: "AD",
-    photoUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80",
-    accentColor: "from-cyan-500/20 to-blue-600/30",
-  },
-  {
-    id: "lead-2",
-    name: "Sneha Kulkarni",
-    role: "Vice President",
-    designation: "Council Operations & Academic Liaison",
-    year: "Final Year B.Tech",
-    category: "core",
-    bio: "Overseeing council operations, faculty coordination, and industrial internship drives for textile engineering undergraduates.",
-    specialization: "Nanofiber Synthesis & Filtration",
-    skills: ["Electrospinning", "Lab Coordination", "Strategy"],
-    photoPlaceholder: "SK",
-    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
-    accentColor: "from-teal-500/20 to-emerald-600/30",
-  },
-  {
-    id: "lead-3",
-    name: "Rohan Patil",
-    role: "General Secretary",
-    designation: "Administrative Head & Event Secretary",
-    year: "Third Year B.Tech",
-    category: "core",
-    bio: "Managing inter-collegiate affairs, club documentation, and technical event scheduling for TEX-CONCLAVE 2026.",
-    specialization: "Automated Weaving Systems",
-    skills: ["Electronic Jacquard", "Event Management", "CAD"],
-    photoPlaceholder: "RP",
-    accentColor: "from-blue-500/20 to-indigo-600/30",
-  },
-  {
-    id: "lead-4",
-    name: "Pooja Sharma",
-    role: "Technical Head",
-    designation: "Research & Workshop Director",
-    year: "Third Year B.Tech",
-    category: "technical",
-    bio: "Directing technical symposium tracks, coordinating hands-on student lab workshops, and mentoring paper presentations.",
-    specialization: "Eco-Friendly Wet Processing",
-    skills: ["Bio-Dyeing", "Spectroscopy", "Material Testing"],
-    photoPlaceholder: "PS",
-    accentColor: "from-indigo-500/20 to-purple-600/30",
-  },
-  {
-    id: "lead-5",
-    name: "Tanmay Joshi",
-    role: "Chief Event Coordinator",
-    designation: "Lead Organizer, Conclave & Hackathon",
-    year: "Third Year B.Tech",
-    category: "events",
-    bio: "Leading logistics and participant onboarding for the Smart Weaves Hackathon and National Student Design Challenge.",
-    specialization: "Industrial Automation in Textiles",
-    skills: ["Hackathon Ops", "Public Relations", "Stage Logistics"],
-    photoPlaceholder: "TJ",
-    accentColor: "from-amber-500/20 to-orange-600/30",
-  },
-  {
-    id: "lead-6",
-    name: "Ananya Shinde",
-    role: "Treasurer & Finance Lead",
-    designation: "Budget & Sponsorship Head",
-    year: "Third Year B.Tech",
-    category: "core",
-    bio: "Managing association finances, corporate sponsorships, and budget allocations for lab competitions and annual fests.",
-    specialization: "Quality Assurance & Tensile Analytics",
-    skills: ["Financial Modeling", "Corporate Sponsor", "Auditing"],
-    photoPlaceholder: "AS",
-    accentColor: "from-emerald-500/20 to-cyan-600/30",
-  },
-  {
-    id: "lead-7",
-    name: "Varun Kadam",
-    role: "Design & Digital Media Lead",
-    designation: "Creative & Web Interface Director",
-    year: "Second Year B.Tech",
-    category: "technical",
-    bio: "Crafting digital assets, CAD jacquard mockups, web portals, and audiovisual campaigns for all TESA student exhibits.",
-    specialization: "Textile CAD/CAM & UI/UX Design",
-    skills: ["Textile CAD", "Creative Direction", "Web Tech"],
-    photoPlaceholder: "VK",
-    accentColor: "from-cyan-500/20 to-teal-600/30",
-  },
-  {
-    id: "lead-8",
-    name: "Meera Gaikwad",
-    role: "Public Relations & Alumni Lead",
-    designation: "Outreach & Industry Networker",
-    year: "Second Year B.Tech",
-    category: "outreach",
-    bio: "Connecting current students with our distinguished 35+ year SGGSIE&T textile alumni network and industrial partners.",
-    specialization: "Medical Textiles & Geotextiles",
-    skills: ["Alumni Relations", "Communications", "Media"],
-    photoPlaceholder: "MG",
-    accentColor: "from-purple-500/20 to-pink-600/30",
-  },
-];
-
-const INITIAL_FACULTY: FacultyMember[] = [
-  {
-    id: "fac-1",
-    name: "Dr. Ravindra V. Adivarekar",
-    designation: "Professor & Head of Department",
-    qualification: "Ph.D. (Tech) Textile Chemistry, ICT Mumbai",
-    specialization: "Eco-Friendly Wet Processing, Natural Dyeing & Surface Functionalization",
-    experience: "28+ Years Academic & Research",
-    email: "hod.textile@sggs.ac.in",
-    researchFocus: ["Green Chemistry", "Nanoparticle Finishing", "Plasma Technology"],
-    photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "fac-2",
-    name: "Dr. Arvind S. Patil",
-    designation: "Professor",
-    qualification: "Ph.D. Textile Technology, IIT Delhi",
-    specialization: "Yarn Manufacturing, Texturizing & Advanced Fiber Mechanics",
-    experience: "25+ Years Experience",
-    email: "aspatil@sggs.ac.in",
-    researchFocus: ["Rotor Spinning Dynamics", "Air-Vortex Yarns", "Polymer Blends"],
-  },
-  {
-    id: "fac-3",
-    name: "Dr. Milind S. Kulkarni",
-    designation: "Associate Professor",
-    qualification: "Ph.D. Textile Engineering, VJTI Mumbai",
-    specialization: "Weaving Automation, Electronic Jacquards & 3D Fabric Geometry",
-    experience: "20+ Years Experience",
-    email: "mskulkarni@sggs.ac.in",
-    researchFocus: ["Shuttleless Weaving", "3D Woven Preforms", "Loom Sensors"],
-  },
-  {
-    id: "fac-4",
-    name: "Dr. Snehalata R. Joshi",
-    designation: "Associate Professor",
-    qualification: "Ph.D. Technical Textiles, IIT Delhi",
-    specialization: "Smart Textiles, Nanofibers & Conductive Polymeric Weaves",
-    experience: "16+ Years Experience",
-    email: "srjoshi@sggs.ac.in",
-    researchFocus: ["Electrospinning", "Wearable Electronics", "Biomedical Implants"],
-    photoUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "fac-5",
-    name: "Prof. Dnyaneshwar B. Shinde",
-    designation: "Assistant Professor",
-    qualification: "M.Tech Textile Technology, DKTE Ichalkaranji",
-    specialization: "Textile Quality Testing, Statistical Process Control & Standards",
-    experience: "12+ Years Experience",
-    email: "dbshinde@sggs.ac.in",
-    researchFocus: ["Tensile Failure Mechanics", "ISO Test Protocols", "Fiber Identification"],
-  },
-  {
-    id: "fac-6",
-    name: "Prof. Priya K. Deshmukh",
-    designation: "Assistant Professor",
-    qualification: "M.Tech Apparel Production, NIFT / SGGSIE&T",
-    specialization: "Garment Manufacturing CAD/CAM, Ergonomics & Fashion Tech",
-    experience: "9+ Years Experience",
-    email: "pkdeshmukh@sggs.ac.in",
-    researchFocus: ["3D Body Scanning", "Automated Marker Planning", "Apparel Sizing"],
-  },
-];
-
-const INITIAL_STAFF: StaffMember[] = [
-  {
-    id: "stf-1",
-    name: "Mr. Sunil V. Rathod",
-    designation: "Senior Technical Superintendent",
-    labAssigned: "Fabric Weaving & Loom Shed",
-    qualification: "Diploma in Textile Manufacturing (DTM)",
-    experience: "22 Years",
-    skills: "Electronic Jacquard Card Punching, Rapier Loom Timing Calibration, Loom Maintenance",
-    photoUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&auto=format&fit=crop&q=80",
-  },
-  {
-    id: "stf-2",
-    name: "Mr. Balaji M. Khandare",
-    designation: "Laboratory Assistant",
-    labAssigned: "Chemical Wet Processing & Dyeing Lab",
-    qualification: "B.Sc. (Chemistry), ADT (Textile)",
-    experience: "18 Years",
-    skills: "HTHP Beaker Dyeing Vessel Operation, Spectrophotometer Calibration, Chemical Bath Prep",
-  },
-  {
-    id: "stf-3",
-    name: "Mr. Ramesh P. Gaikwad",
-    designation: "Technical Instructor",
-    labAssigned: "Fiber Spinning & Yarn Prep Lab",
-    qualification: "Diploma in Textile Technology",
-    experience: "15 Years",
-    skills: "Mini-Blowroom Maintenance, Carding Clothing Maintenance, Ring Frame Spindle Alignment",
-  },
-  {
-    id: "stf-4",
-    name: "Mrs. Shobha S. Mane",
-    designation: "Senior Testing Assistant",
-    labAssigned: "Quality Assurance & Tensile Testing Lab",
-    qualification: "Diploma in Textile Testing",
-    experience: "14 Years",
-    skills: "Universal Tensile Machine (UTM) Operation, Yarn Evenness Tester, Abrasion & Pilling Analytics",
-  },
-  {
-    id: "stf-5",
-    name: "Mr. Ajay K. Chavan",
-    designation: "CAD/CAM & Computation Lab Assistant",
-    labAssigned: "Textile CAD & Design Studio",
-    qualification: "B.C.A. & Textile CAD Certification",
-    experience: "8 Years",
-    skills: "Richpeace Textile CAD Station Setup, Jacquard Weave File Simulation, Network Lab Admin",
-  },
-];
-
 const INITIAL_REGISTRATIONS: Registration[] = [
   {
-    id: "reg-101",
-    studentName: "Aditya Deshpande",
-    prn: "2022BTE045",
-    email: "2022bte045@sggs.ac.in",
+    id: "reg-1",
+    studentName: "Aditya Deshmukh",
+    prn: "2023BTE042",
+    email: "aditya.d@sggs.ac.in",
     department: "Textile Technology",
-    year: "Final Year B.Tech",
+    year: "Third Year B.Tech",
     eventTitle: "TEX-CONCLAVE 2026: National Smart Fibers Symposium",
-    registeredAt: "2026-03-28 14:30",
+    registeredAt: "2026-03-28",
     status: "approved",
   },
   {
-    id: "reg-102",
-    studentName: "Priyanka More",
-    prn: "2023BTE012",
-    email: "2023bte012@sggs.ac.in",
-    department: "Textile Technology",
-    year: "Third Year B.Tech",
-    eventTitle: "SMART WEAVES HACKATHON 2026",
-    registeredAt: "2026-03-29 09:15",
-    status: "pending",
-  },
-  {
-    id: "reg-103",
-    studentName: "Kunal Shinde",
-    prn: "2023BME088",
-    email: "2023bme088@sggs.ac.in",
-    department: "Mechanical Engineering",
-    year: "Third Year B.Tech",
-    eventTitle: "SMART WEAVES HACKATHON 2026",
-    registeredAt: "2026-03-29 11:40",
-    status: "pending",
-  },
-  {
-    id: "reg-104",
-    studentName: "Sanya Sheikh",
-    prn: "2024BTE007",
-    email: "2024bte007@sggs.ac.in",
+    id: "reg-2",
+    studentName: "Priyanka Joshi",
+    prn: "2024BTE019",
+    email: "priyanka.j@sggs.ac.in",
     department: "Textile Technology",
     year: "Second Year B.Tech",
+    eventTitle: "SMART WEAVES HACKATHON 2026",
+    registeredAt: "2026-03-29",
+    status: "pending",
+  },
+  {
+    id: "reg-3",
+    studentName: "Kunal Shinde",
+    prn: "2022BTE005",
+    email: "kunal.s@sggs.ac.in",
+    department: "Textile Technology",
+    year: "Final Year B.Tech",
     eventTitle: "NANOFIBER & ELECTROSPINNING WORKSHOP",
-    registeredAt: "2026-03-30 16:20",
+    registeredAt: "2026-03-30",
     status: "approved",
   },
-  {
-    id: "reg-105",
-    studentName: "Rahul Chavan",
-    prn: "2022BIT091",
-    email: "2022bit091@sggs.ac.in",
-    department: "Information Technology",
-    year: "Final Year B.Tech",
-    eventTitle: "TEX-CONCLAVE 2026: National Smart Fibers Symposium",
-    registeredAt: "2026-03-31 10:05",
-    status: "rejected",
-  },
 ];
 
-const INITIAL_MEDIA: MediaAsset[] = [
-  {
-    id: "med-1",
-    name: "National Conclave Keynote Banner",
-    url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60",
-    category: "event",
-    uploadedAt: "2026-03-20",
-  },
-  {
-    id: "med-2",
-    name: "Smart Loom & Hackathon Studio",
-    url: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
-    category: "event",
-    uploadedAt: "2026-03-22",
-  },
-  {
-    id: "med-3",
-    name: "Nanofiber Electrospinner Chamber",
-    url: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=60",
-    category: "lab",
-    uploadedAt: "2026-03-25",
-  },
-  {
-    id: "med-4",
-    name: "Rapier Weaving Industrial Floor",
-    url: "https://images.unsplash.com/photo-1581092335397-9583fe92d232?w=800&auto=format&fit=crop&q=60",
-    category: "lab",
-    uploadedAt: "2026-03-26",
-  },
+// Sample portrait links for fast preview testing in modals
+const SAMPLE_PORTRAITS = [
+  { label: "Male Student", url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=800&auto=format&fit=crop&q=80" },
+  { label: "Female Student", url: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80" },
+  { label: "Executive Leader", url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop&q=80" },
+  { label: "Research Innovator", url: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=800&auto=format&fit=crop&q=80" },
+  { label: "Tech Specialist", url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&auto=format&fit=crop&q=80" },
 ];
-
-// ==========================================
-// COMPONENT MAIN
-// ==========================================
 
 export default function AdminDashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const [activeTab, setActiveTab] = useState<
-    "events" | "team" | "faculty_staff" | "registrations" | "media_cms"
-  >("events");
+
+  // Default active tab is "team" (Manage TESA Team is #1)
+  const [activeTab, setActiveTab] = useState<"team" | "events" | "registrations" | "all">("team");
 
   // Connectivity state for Firestore
   const [firestoreStatus, setFirestoreStatus] = useState<"checking" | "connected" | "not_provisioned">("checking");
@@ -493,34 +289,15 @@ export default function AdminDashboardPage() {
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
 
-  // ------------------------------------------
-  // STATE: EVENTS
-  // ------------------------------------------
-  const [eventsList, setEventsList] = useState<EventItem[]>(INITIAL_EVENTS);
-  const [isSubmittingEvent, setIsSubmittingEvent] = useState<boolean>(false);
-  const [eventForm, setEventForm] = useState<EventItem>({
-    id: "",
-    title: "",
-    category: "National Conclave",
-    date: "",
-    venue: "SGGSIE&T Main Auditorium",
-    deadline: "",
-    capacity: 150,
-    status: "open",
-    mediaUrl: "",
-    summary: "",
-    highlights: "",
-  });
-  const [editingEventId, setEditingEventId] = useState<string | null>(null);
-  const [isEventModalOpen, setIsEventModalOpen] = useState<boolean>(false);
-
-  // ------------------------------------------
-  // STATE: TEAM MEMBERS
-  // ------------------------------------------
+  // --------------------------------------------------------------------------
+  // 1. STATE: TESA TEAM (PRIMARY MANAGEMENT SECTION)
+  // --------------------------------------------------------------------------
   const [teamList, setTeamList] = useState<TeamMember[]>(INITIAL_TEAM);
   const [teamCategoryFilter, setTeamCategoryFilter] = useState<string>("all");
   const [editingTeamMember, setEditingTeamMember] = useState<TeamMember | null>(null);
   const [isTeamModalOpen, setIsTeamModalOpen] = useState<boolean>(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+
   const [teamForm, setTeamForm] = useState<TeamMember>({
     id: "",
     name: "",
@@ -536,84 +313,40 @@ export default function AdminDashboardPage() {
     accentColor: "from-cyan-500/20 to-blue-600/30",
   });
   const [skillsInput, setSkillsInput] = useState<string>("");
+  const teamFileInputRef = useRef<HTMLInputElement>(null);
 
-  // ------------------------------------------
-  // STATE: FACULTY & STAFF
-  // ------------------------------------------
-  const [facultyList, setFacultyList] = useState<FacultyMember[]>(INITIAL_FACULTY);
-  const [staffList, setStaffList] = useState<StaffMember[]>(INITIAL_STAFF);
-  const [facStaffSubTab, setFacStaffSubTab] = useState<"faculty" | "staff">("faculty");
+  // --------------------------------------------------------------------------
+  // 2. STATE: EVENTS (SECONDARY SECTION DIRECTLY BELOW TEAM)
+  // --------------------------------------------------------------------------
+  const [eventsList, setEventsList] = useState<EventItem[]>(INITIAL_EVENTS);
+  const [isSubmittingEvent, setIsSubmittingEvent] = useState<boolean>(false);
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [isEventModalOpen, setIsEventModalOpen] = useState<boolean>(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
 
-  // Faculty edit/create modal
-  const [isFacultyModalOpen, setIsFacultyModalOpen] = useState<boolean>(false);
-  const [editingFacultyId, setEditingFacultyId] = useState<string | null>(null);
-  const [facultyForm, setFacultyForm] = useState<FacultyMember>({
+  const [eventForm, setEventForm] = useState<EventItem>({
     id: "",
-    name: "",
-    designation: "Assistant Professor",
-    qualification: "",
-    specialization: "",
-    experience: "",
-    email: "",
-    researchFocus: [],
-    photoUrl: "",
+    title: "",
+    category: "National Conclave",
+    date: "",
+    venue: "SGGSIE&T Main Auditorium",
+    deadline: "",
+    capacity: 150,
+    status: "open",
+    mediaUrl: "",
+    summary: "",
+    highlights: "",
   });
-  const [researchFocusInput, setResearchFocusInput] = useState<string>("");
+  const eventFileInputRef = useRef<HTMLInputElement>(null);
 
-  // Staff edit/create modal
-  const [isStaffModalOpen, setIsStaffModalOpen] = useState<boolean>(false);
-  const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
-  const [staffForm, setStaffForm] = useState<StaffMember>({
-    id: "",
-    name: "",
-    designation: "Laboratory Assistant",
-    labAssigned: "",
-    qualification: "",
-    experience: "",
-    skills: "",
-    photoUrl: "",
-  });
-
-  // ------------------------------------------
-  // STATE: REGISTRATIONS & EXCEL EXPORT
-  // ------------------------------------------
+  // --------------------------------------------------------------------------
+  // 3. STATE: REGISTRATIONS & EXCEL EXPORT
+  // --------------------------------------------------------------------------
   const [registrations, setRegistrations] = useState<Registration[]>(INITIAL_REGISTRATIONS);
   const [registrationSearch, setRegistrationSearch] = useState<string>("");
   const [filterEvent, setFilterEvent] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
-  const [isAddRegModalOpen, setIsAddRegModalOpen] = useState<boolean>(false);
-  const [newRegForm, setNewRegForm] = useState<Partial<Registration>>({
-    studentName: "",
-    prn: "",
-    email: "",
-    department: "Textile Technology",
-    year: "Third Year B.Tech",
-    eventTitle: "TEX-CONCLAVE 2026: National Smart Fibers Symposium",
-    status: "approved",
-  });
 
-  // ------------------------------------------
-  // STATE: MEDIA & SITE CMS
-  // ------------------------------------------
-  const [mediaList, setMediaList] = useState<MediaAsset[]>(INITIAL_MEDIA);
-  const [newMediaName, setNewMediaName] = useState<string>("");
-  const [newMediaUrl, setNewMediaUrl] = useState<string>("");
-  const [newMediaCategory, setNewMediaCategory] = useState<"event" | "lab" | "banner" | "general" | "portrait">("event");
-
-  const [isSavingContent, setIsSavingContent] = useState<boolean>(false);
-  const [siteContent, setSiteContent] = useState<SiteContent>({
-    announcementBanner: "⚡ REGISTRATIONS FOR TEX-CONCLAVE 2026 ARE NOW LIVE — REGISTER BEFORE APR 10",
-    heroHeadline: "ENGINEERING ADVANCED FIBERS & SMART TEXTILE SYSTEMS",
-    heroSubheadline:
-      "Gear up for TESA's flagship 2026 event season — featuring the National Textile Conclave, Smart Weaves Hackathon, and Industry 4.0 Nanofiber Expo.",
-    upcomingConclaveDate: "April 28–29, 2026",
-    registrationStatus: "OPEN",
-    departmentNotice: "State-of-the-Art Electrospinning & Rapier Loom research slots open for B.Tech project students.",
-  });
-
-  // ------------------------------------------
-  // TOAST HELPER
-  // ------------------------------------------
   const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
     setToastMessage({ text, type });
     setTimeout(() => {
@@ -621,19 +354,11 @@ export default function AdminDashboardPage() {
     }, 4500);
   };
 
-  // ------------------------------------------
-  // INITIAL DATA HYDRATION (localStorage & Firestore)
-  // ------------------------------------------
+  // --------------------------------------------------------------------------
+  // DATA HYDRATION & FIRESTORE LIVE SYNC
+  // --------------------------------------------------------------------------
   useEffect(() => {
     try {
-      const storedEvents = localStorage.getItem("tesa_events");
-      if (storedEvents) {
-        const parsed = JSON.parse(storedEvents);
-        if (Array.isArray(parsed) && parsed.length > 0) setEventsList(parsed);
-      } else {
-        localStorage.setItem("tesa_events", JSON.stringify(INITIAL_EVENTS));
-      }
-
       const storedTeam = localStorage.getItem("tesa_team");
       if (storedTeam) {
         const parsed = JSON.parse(storedTeam);
@@ -642,20 +367,12 @@ export default function AdminDashboardPage() {
         localStorage.setItem("tesa_team", JSON.stringify(INITIAL_TEAM));
       }
 
-      const storedFaculty = localStorage.getItem("tesa_faculty");
-      if (storedFaculty) {
-        const parsed = JSON.parse(storedFaculty);
-        if (Array.isArray(parsed) && parsed.length > 0) setFacultyList(parsed);
+      const storedEvents = localStorage.getItem("tesa_events");
+      if (storedEvents) {
+        const parsed = JSON.parse(storedEvents);
+        if (Array.isArray(parsed) && parsed.length > 0) setEventsList(parsed);
       } else {
-        localStorage.setItem("tesa_faculty", JSON.stringify(INITIAL_FACULTY));
-      }
-
-      const storedStaff = localStorage.getItem("tesa_staff");
-      if (storedStaff) {
-        const parsed = JSON.parse(storedStaff);
-        if (Array.isArray(parsed) && parsed.length > 0) setStaffList(parsed);
-      } else {
-        localStorage.setItem("tesa_staff", JSON.stringify(INITIAL_STAFF));
+        localStorage.setItem("tesa_events", JSON.stringify(INITIAL_EVENTS));
       }
 
       const storedRegs = localStorage.getItem("tesa_registrations");
@@ -665,21 +382,8 @@ export default function AdminDashboardPage() {
       } else {
         localStorage.setItem("tesa_registrations", JSON.stringify(INITIAL_REGISTRATIONS));
       }
-
-      const storedContent = localStorage.getItem("tesa_content");
-      if (storedContent) {
-        setSiteContent(JSON.parse(storedContent));
-      }
-
-      const storedMedia = localStorage.getItem("tesa_media");
-      if (storedMedia) {
-        const parsed = JSON.parse(storedMedia);
-        if (Array.isArray(parsed) && parsed.length > 0) setMediaList(parsed);
-      } else {
-        localStorage.setItem("tesa_media", JSON.stringify(INITIAL_MEDIA));
-      }
     } catch (err) {
-      console.warn("localStorage initialization note:", err);
+      console.warn("localStorage note:", err);
     }
 
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -695,14 +399,7 @@ export default function AdminDashboardPage() {
 
   const syncFromFirestore = async () => {
     try {
-      const evSnap = await getDocs(query(collection(db, "events"), orderBy("createdAt", "desc")));
-      if (!evSnap.empty) {
-        const items: EventItem[] = [];
-        evSnap.forEach((d) => items.push({ ...(d.data() as EventItem), id: d.id }));
-        setEventsList(items);
-        localStorage.setItem("tesa_events", JSON.stringify(items));
-      }
-
+      // 1. Team sync
       const teamSnap = await getDocs(collection(db, "team"));
       if (!teamSnap.empty) {
         const items: TeamMember[] = [];
@@ -711,22 +408,16 @@ export default function AdminDashboardPage() {
         localStorage.setItem("tesa_team", JSON.stringify(items));
       }
 
-      const facSnap = await getDocs(collection(db, "faculty"));
-      if (!facSnap.empty) {
-        const items: FacultyMember[] = [];
-        facSnap.forEach((d) => items.push({ ...(d.data() as FacultyMember), id: d.id }));
-        setFacultyList(items);
-        localStorage.setItem("tesa_faculty", JSON.stringify(items));
+      // 2. Events sync
+      const evSnap = await getDocs(query(collection(db, "events"), orderBy("createdAt", "desc")));
+      if (!evSnap.empty) {
+        const items: EventItem[] = [];
+        evSnap.forEach((d) => items.push({ ...(d.data() as EventItem), id: d.id }));
+        setEventsList(items);
+        localStorage.setItem("tesa_events", JSON.stringify(items));
       }
 
-      const staffSnap = await getDocs(collection(db, "staff"));
-      if (!staffSnap.empty) {
-        const items: StaffMember[] = [];
-        staffSnap.forEach((d) => items.push({ ...(d.data() as StaffMember), id: d.id }));
-        setStaffList(items);
-        localStorage.setItem("tesa_staff", JSON.stringify(items));
-      }
-
+      // 3. Registrations sync
       const regSnap = await getDocs(collection(db, "registrations"));
       if (!regSnap.empty) {
         const items: Registration[] = [];
@@ -734,15 +425,6 @@ export default function AdminDashboardPage() {
         setRegistrations(items);
         localStorage.setItem("tesa_registrations", JSON.stringify(items));
       }
-
-      const contentSnap = await getDocs(collection(db, "site_content"));
-      contentSnap.forEach((d) => {
-        if (d.id === "settings") {
-          const content = d.data() as SiteContent;
-          setSiteContent((prev) => ({ ...prev, ...content }));
-          localStorage.setItem("tesa_content", JSON.stringify(content));
-        }
-      });
 
       setFirestoreStatus("connected");
     } catch (err: any) {
@@ -764,9 +446,164 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // ==========================================
-  // EVENT ACTIONS & MEDIA UPLOAD
-  // ==========================================
+  // --------------------------------------------------------------------------
+  // FIREBASE STORAGE UPLOAD HELPER (With DataURL fallback)
+  // --------------------------------------------------------------------------
+  const uploadImageToStorage = async (file: File, folderPath: string): Promise<string> => {
+    try {
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+      const storageRef = ref(storage, `${folderPath}/${fileName}`);
+      const uploadRes = await uploadBytes(storageRef, file);
+      const downloadUrl = await getDownloadURL(uploadRes.ref);
+      return downloadUrl;
+    } catch (storageError) {
+      console.warn("Storage bucket upload skipped, encoding locally as base64 DataURL:", storageError);
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // TEAM ACTIONS (Photo Upload & Firestore Save)
+  // --------------------------------------------------------------------------
+
+  const handleOpenAddTeamModal = () => {
+    setEditingTeamMember(null);
+    setTeamForm({
+      id: "",
+      name: "",
+      role: "",
+      designation: "",
+      year: "Third Year B.Tech",
+      category: "core",
+      bio: "",
+      specialization: "",
+      skills: [],
+      photoPlaceholder: "",
+      photoUrl: "",
+      accentColor: "from-cyan-500/20 to-blue-600/30",
+    });
+    setSkillsInput("");
+    setIsTeamModalOpen(true);
+  };
+
+  const handleOpenEditTeamModal = (m: TeamMember) => {
+    setEditingTeamMember(m);
+    setTeamForm({
+      ...m,
+      skills: m.skills || [],
+      photoUrl: m.photoUrl || "",
+    });
+    setSkillsInput(m.skills ? m.skills.join(", ") : "");
+    setIsTeamModalOpen(true);
+  };
+
+  const handleTeamPhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Photo exceeds 5MB limit. Please upload a smaller image.", "error");
+      return;
+    }
+
+    try {
+      setIsUploadingPhoto(true);
+      showToast("Uploading member portrait photo...", "info");
+      const url = await uploadImageToStorage(file, "team");
+      setTeamForm((prev) => ({ ...prev, photoUrl: url }));
+      showToast("Portrait photo ready! Form updated.");
+    } catch {
+      showToast("Could not load photo. Try choosing another file.", "error");
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
+
+  const handleSaveTeamMember = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!teamForm.name.trim() || !teamForm.role.trim()) {
+      showToast("Please provide Member Name and Role.", "error");
+      return;
+    }
+
+    const initials = teamForm.name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2) || "TM";
+
+    const parsedSkills = skillsInput
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    const payload: TeamMember = {
+      ...teamForm,
+      photoPlaceholder: initials,
+      skills: parsedSkills.length > 0 ? parsedSkills : ["Leadership", "Textile Tech"],
+    };
+
+    if (editingTeamMember) {
+      const updated = teamList.map((m) =>
+        m.id === editingTeamMember.id ? { ...payload, id: editingTeamMember.id } : m
+      );
+      setTeamList(updated);
+      localStorage.setItem("tesa_team", JSON.stringify(updated));
+
+      try {
+        await setDoc(doc(db, "team", editingTeamMember.id), payload, { merge: true });
+      } catch (e) {
+        console.warn("Saved to localStorage; Firestore sync will retry.");
+      }
+
+      showToast(`Updated council member ${payload.name}!`);
+    } else {
+      const newId = `lead-${Date.now()}`;
+      const newMember = { ...payload, id: newId };
+      const updated = [newMember, ...teamList];
+      setTeamList(updated);
+      localStorage.setItem("tesa_team", JSON.stringify(updated));
+
+      try {
+        const docRef = await addDoc(collection(db, "team"), {
+          ...newMember,
+          createdAt: serverTimestamp(),
+          addedBy: user?.email || "admin",
+        });
+        newMember.id = docRef.id;
+      } catch (e) {
+        console.warn("Saved to localStorage; Firestore sync will retry.");
+      }
+
+      showToast(`Added ${payload.name} to TESA Council!`);
+    }
+
+    setIsTeamModalOpen(false);
+  };
+
+  const handleDeleteTeamMember = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove council member ${name}?`)) return;
+
+    const filtered = teamList.filter((m) => m.id !== id);
+    setTeamList(filtered);
+    localStorage.setItem("tesa_team", JSON.stringify(filtered));
+
+    try {
+      await deleteDoc(doc(db, "team", id));
+    } catch (e) {}
+
+    showToast(`Removed council member ${name}.`);
+  };
+
+  // --------------------------------------------------------------------------
+  // EVENT ACTIONS (Banner Upload & Firestore Save)
+  // --------------------------------------------------------------------------
 
   const handleOpenAddEventModal = () => {
     setEditingEventId(null);
@@ -792,23 +629,26 @@ export default function AdminDashboardPage() {
     setIsEventModalOpen(true);
   };
 
-  const handleEventMediaUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleEventBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("Banner image exceeds 2MB. Please choose a smaller image.", "error");
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Banner image exceeds 5MB. Please choose a smaller image.", "error");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") {
-        setEventForm((prev) => ({ ...prev, mediaUrl: reader.result as string }));
-        showToast("Event banner loaded successfully!");
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsUploadingBanner(true);
+      showToast("Uploading event banner...", "info");
+      const url = await uploadImageToStorage(file, "events");
+      setEventForm((prev) => ({ ...prev, mediaUrl: url }));
+      showToast("Event banner loaded successfully!");
+    } catch {
+      showToast("Failed to upload banner.", "error");
+    } finally {
+      setIsUploadingBanner(false);
+    }
   };
 
   const handleSaveEvent = async (e: React.FormEvent) => {
@@ -858,13 +698,9 @@ export default function AdminDashboardPage() {
           newEvent.id = docRef.id;
         } catch (err) {}
 
-        showToast("New event published successfully!");
+        showToast(`Published "${newEvent.title}"!`);
       }
-
       setIsEventModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      showToast("Action saved to local session.", "info");
     } finally {
       setIsSubmittingEvent(false);
     }
@@ -873,7 +709,7 @@ export default function AdminDashboardPage() {
   const handleDeleteEvent = async (id: string, title: string) => {
     if (!confirm(`Are you sure you want to delete event "${title}"?`)) return;
 
-    const filtered = eventsList.filter((ev) => ev.id !== id);
+    const filtered = eventsList.filter((e) => e.id !== id);
     setEventsList(filtered);
     localStorage.setItem("tesa_events", JSON.stringify(filtered));
 
@@ -881,340 +717,12 @@ export default function AdminDashboardPage() {
       await deleteDoc(doc(db, "events", id));
     } catch (err) {}
 
-    showToast(`Deleted event "${title}".`);
+    showToast(`Removed event: ${title}`);
   };
 
-  // ==========================================
-  // TEAM ACTIONS & PHOTO UPLOAD
-  // ==========================================
-
-  const handleOpenAddTeamModal = () => {
-    setEditingTeamMember(null);
-    setTeamForm({
-      id: "",
-      name: "",
-      role: "",
-      designation: "",
-      year: "Third Year B.Tech",
-      category: "core",
-      bio: "",
-      specialization: "",
-      skills: [],
-      photoPlaceholder: "",
-      photoUrl: "",
-      accentColor: "from-cyan-500/20 to-blue-600/30",
-    });
-    setSkillsInput("");
-    setIsTeamModalOpen(true);
-  };
-
-  const handleOpenEditTeamModal = (member: TeamMember) => {
-    setEditingTeamMember(member);
-    setTeamForm({
-      ...member,
-      photoUrl: member.photoUrl || "",
-    });
-    setSkillsInput(member.skills.join(", "));
-    setIsTeamModalOpen(true);
-  };
-
-  const handleTeamPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("Photo exceeds 2MB limit. Please choose a smaller image.", "error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") {
-        setTeamForm((prev) => ({ ...prev, photoUrl: reader.result as string }));
-        showToast("Member photo loaded!");
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveTeamMember = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!teamForm.name.trim() || !teamForm.role.trim()) {
-      showToast("Please provide team member Name and Role.", "error");
-      return;
-    }
-
-    const initials = teamForm.name
-      .split(" ")
-      .map((w) => w[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase();
-
-    const parsedSkills = skillsInput
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
-    const memberPayload: TeamMember = {
-      ...teamForm,
-      photoPlaceholder: teamForm.photoPlaceholder || initials || "TE",
-      skills: parsedSkills.length > 0 ? parsedSkills : ["Textile Engineering", "TESA Council"],
-    };
-
-    if (editingTeamMember) {
-      const updated = teamList.map((m) =>
-        m.id === editingTeamMember.id ? { ...memberPayload, id: editingTeamMember.id } : m
-      );
-      setTeamList(updated);
-      localStorage.setItem("tesa_team", JSON.stringify(updated));
-
-      try {
-        await setDoc(doc(db, "team", editingTeamMember.id), memberPayload, { merge: true });
-      } catch (e) {}
-
-      showToast(`Updated team profile for ${memberPayload.name}!`);
-    } else {
-      const newId = `lead-${Date.now()}`;
-      const newMember = { ...memberPayload, id: newId };
-      const updated = [...teamList, newMember];
-      setTeamList(updated);
-      localStorage.setItem("tesa_team", JSON.stringify(updated));
-
-      try {
-        await setDoc(doc(db, "team", newId), newMember);
-      } catch (e) {}
-
-      showToast(`Added ${memberPayload.name} to TESA Council!`);
-    }
-
-    setIsTeamModalOpen(false);
-  };
-
-  const handleDeleteTeamMember = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to remove ${name} from the TESA Council?`)) return;
-
-    const filtered = teamList.filter((m) => m.id !== id);
-    setTeamList(filtered);
-    localStorage.setItem("tesa_team", JSON.stringify(filtered));
-
-    try {
-      await deleteDoc(doc(db, "team", id));
-    } catch (e) {}
-
-    showToast(`Removed ${name} from council.`);
-  };
-
-  // ==========================================
-  // FACULTY ACTIONS & PHOTO UPLOAD
-  // ==========================================
-
-  const handleOpenAddFacultyModal = () => {
-    setEditingFacultyId(null);
-    setFacultyForm({
-      id: "",
-      name: "",
-      designation: "Assistant Professor",
-      qualification: "",
-      specialization: "",
-      experience: "",
-      email: "",
-      researchFocus: [],
-      photoUrl: "",
-    });
-    setResearchFocusInput("");
-    setIsFacultyModalOpen(true);
-  };
-
-  const handleOpenEditFacultyModal = (fac: FacultyMember) => {
-    setEditingFacultyId(fac.id);
-    setFacultyForm({
-      ...fac,
-      photoUrl: fac.photoUrl || "",
-    });
-    setResearchFocusInput(fac.researchFocus.join(", "));
-    setIsFacultyModalOpen(true);
-  };
-
-  const handleFacultyPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("Photo exceeds 2MB limit. Please choose a smaller image.", "error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") {
-        setFacultyForm((prev) => ({ ...prev, photoUrl: reader.result as string }));
-        showToast("Faculty portrait photo loaded!");
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveFaculty = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!facultyForm.name.trim() || !facultyForm.email.trim()) {
-      showToast("Please provide Faculty Name and Official Email.", "error");
-      return;
-    }
-
-    const parsedFocus = researchFocusInput
-      .split(",")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
-    const payload: FacultyMember = {
-      ...facultyForm,
-      researchFocus: parsedFocus.length > 0 ? parsedFocus : ["Textile Engineering"],
-    };
-
-    if (editingFacultyId) {
-      const updated = facultyList.map((f) =>
-        f.id === editingFacultyId ? { ...payload, id: editingFacultyId } : f
-      );
-      setFacultyList(updated);
-      localStorage.setItem("tesa_faculty", JSON.stringify(updated));
-
-      try {
-        await setDoc(doc(db, "faculty", editingFacultyId), payload, { merge: true });
-      } catch (e) {}
-
-      showToast(`Updated faculty profile for ${payload.name}!`);
-    } else {
-      const newId = `fac-${Date.now()}`;
-      const newFac = { ...payload, id: newId };
-      const updated = [...facultyList, newFac];
-      setFacultyList(updated);
-      localStorage.setItem("tesa_faculty", JSON.stringify(updated));
-
-      try {
-        await setDoc(doc(db, "faculty", newId), newFac);
-      } catch (e) {}
-
-      showToast(`Added ${payload.name} to Faculty registry!`);
-    }
-
-    setIsFacultyModalOpen(false);
-  };
-
-  const handleDeleteFaculty = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to remove faculty member ${name}?`)) return;
-
-    const filtered = facultyList.filter((f) => f.id !== id);
-    setFacultyList(filtered);
-    localStorage.setItem("tesa_faculty", JSON.stringify(filtered));
-
-    try {
-      await deleteDoc(doc(db, "faculty", id));
-    } catch (e) {}
-
-    showToast(`Removed faculty member ${name}.`);
-  };
-
-  // ==========================================
-  // STAFF ACTIONS & PHOTO UPLOAD
-  // ==========================================
-
-  const handleOpenAddStaffModal = () => {
-    setEditingStaffId(null);
-    setStaffForm({
-      id: "",
-      name: "",
-      designation: "Laboratory Assistant",
-      labAssigned: "Textile Engineering Lab",
-      qualification: "",
-      experience: "",
-      skills: "",
-      photoUrl: "",
-    });
-    setIsStaffModalOpen(true);
-  };
-
-  const handleOpenEditStaffModal = (stf: StaffMember) => {
-    setEditingStaffId(stf.id);
-    setStaffForm({
-      ...stf,
-      photoUrl: stf.photoUrl || "",
-    });
-    setIsStaffModalOpen(true);
-  };
-
-  const handleStaffPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("Photo exceeds 2MB limit. Please choose a smaller image.", "error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") {
-        setStaffForm((prev) => ({ ...prev, photoUrl: reader.result as string }));
-        showToast("Staff photo loaded!");
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSaveStaff = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!staffForm.name.trim() || !staffForm.labAssigned.trim()) {
-      showToast("Please provide Staff Name and Assigned Laboratory.", "error");
-      return;
-    }
-
-    if (editingStaffId) {
-      const updated = staffList.map((s) =>
-        s.id === editingStaffId ? { ...staffForm, id: editingStaffId } : s
-      );
-      setStaffList(updated);
-      localStorage.setItem("tesa_staff", JSON.stringify(updated));
-
-      try {
-        await setDoc(doc(db, "staff", editingStaffId), staffForm, { merge: true });
-      } catch (e) {}
-
-      showToast(`Updated laboratory staff record for ${staffForm.name}!`);
-    } else {
-      const newId = `stf-${Date.now()}`;
-      const newStaff = { ...staffForm, id: newId };
-      const updated = [...staffList, newStaff];
-      setStaffList(updated);
-      localStorage.setItem("tesa_staff", JSON.stringify(updated));
-
-      try {
-        await setDoc(doc(db, "staff", newId), newStaff);
-      } catch (e) {}
-
-      showToast(`Added ${staffForm.name} to Technical Staff!`);
-    }
-
-    setIsStaffModalOpen(false);
-  };
-
-  const handleDeleteStaff = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to remove staff member ${name}?`)) return;
-
-    const filtered = staffList.filter((s) => s.id !== id);
-    setStaffList(filtered);
-    localStorage.setItem("tesa_staff", JSON.stringify(filtered));
-
-    try {
-      await deleteDoc(doc(db, "staff", id));
-    } catch (e) {}
-
-    showToast(`Removed staff member ${name}.`);
-  };
-
-  // ==========================================
+  // --------------------------------------------------------------------------
   // REGISTRATIONS & EXCEL EXPORT (XLSX)
-  // ==========================================
+  // --------------------------------------------------------------------------
 
   const handleUpdateRegStatus = async (
     regId: string,
@@ -1246,118 +754,43 @@ export default function AdminDashboardPage() {
     showToast("Registration record deleted.");
   };
 
-  const handleAddManualRegistration = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRegForm.studentName || !newRegForm.prn || !newRegForm.email) {
-      showToast("Please provide Student Name, PRN, and Email.", "error");
-      return;
-    }
-
-    const newRecord: Registration = {
-      id: `reg-${Date.now().toString().slice(-4)}`,
-      studentName: newRegForm.studentName || "",
-      prn: newRegForm.prn || "",
-      email: newRegForm.email || "",
-      department: newRegForm.department || "Textile Technology",
-      year: newRegForm.year || "Third Year B.Tech",
-      eventTitle: newRegForm.eventTitle || "TEX-CONCLAVE 2026",
-      registeredAt: new Date().toISOString().replace("T", " ").slice(0, 16),
-      status: (newRegForm.status as any) || "approved",
-    };
-
-    const updated = [newRecord, ...registrations];
-    setRegistrations(updated);
-    localStorage.setItem("tesa_registrations", JSON.stringify(updated));
-
-    try {
-      setDoc(doc(db, "registrations", newRecord.id), newRecord);
-    } catch (err) {}
-
-    setIsAddRegModalOpen(false);
-    setNewRegForm({
-      studentName: "",
-      prn: "",
-      email: "",
-      department: "Textile Technology",
-      year: "Third Year B.Tech",
-      eventTitle: "TEX-CONCLAVE 2026: National Smart Fibers Symposium",
-      status: "approved",
-    });
-    showToast("Student registration recorded!");
-  };
-
   const handleExportToExcel = () => {
-    if (filteredRegistrations.length === 0) {
-      showToast("No registrations found to export.", "error");
+    if (registrations.length === 0) {
+      showToast("No registrations available to export.", "error");
       return;
     }
 
-    const excelRows = filteredRegistrations.map((r, index) => ({
-      "Sr No.": index + 1,
-      "Registration ID": r.id,
+    const excelData = registrations.map((r, idx) => ({
+      "Sr No": idx + 1,
       "Student Name": r.studentName,
-      "PRN Number": r.prn,
-      "Email Address": r.email,
-      "Department": r.department,
+      "PRN / Roll No": r.prn,
+      "Official Email": r.email,
+      Department: r.department,
       "Academic Year": r.year,
-      "Event Title": r.eventTitle,
-      "Registration Timestamp": r.registeredAt,
-      "Verification Status": r.status.toUpperCase(),
+      "Registered Event": r.eventTitle,
+      "Registration Date": r.registeredAt,
+      Status: r.status.toUpperCase(),
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(excelRows);
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "TESA_Registrations");
 
     worksheet["!cols"] = [
-      { wch: 8 },  // Sr No.
-      { wch: 18 }, // ID
-      { wch: 25 }, // Student Name
-      { wch: 16 }, // PRN
-      { wch: 30 }, // Email
-      { wch: 24 }, // Department
-      { wch: 20 }, // Year
-      { wch: 36 }, // Event Title
-      { wch: 22 }, // Timestamp
-      { wch: 16 }, // Status
+      { wch: 8 },
+      { wch: 25 },
+      { wch: 16 },
+      { wch: 28 },
+      { wch: 22 },
+      { wch: 18 },
+      { wch: 45 },
+      { wch: 16 },
+      { wch: 12 },
     ];
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Event Registrations");
-
-    const today = new Date().toISOString().slice(0, 10);
-    const fileName = `TESA_Event_Registrations_${today}.xlsx`;
-
+    const fileName = `TESA_Event_Registrations_${new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(workbook, fileName);
-    showToast(`Exported ${excelRows.length} registrations to ${fileName}!`, "success");
-  };
-
-  const handleExportCSV = () => {
-    if (filteredRegistrations.length === 0) {
-      showToast("No registrations to export.", "error");
-      return;
-    }
-
-    const headers = ["ID", "Student Name", "PRN", "Email", "Department", "Year", "Event Title", "Registered At", "Status"];
-    const rows = filteredRegistrations.map((r) => [
-      r.id,
-      `"${r.studentName}"`,
-      r.prn,
-      r.email,
-      `"${r.department}"`,
-      `"${r.year}"`,
-      `"${r.eventTitle}"`,
-      r.registeredAt,
-      r.status,
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `TESA_Registrations_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showToast("Exported to CSV!");
+    showToast(`Successfully exported ${registrations.length} student records to Excel!`);
   };
 
   const filteredRegistrations = registrations.filter((r) => {
@@ -1376,104 +809,16 @@ export default function AdminDashboardPage() {
     return matchesSearch && matchesEvent && matchesStatus;
   });
 
-  // ==========================================
-  // MEDIA & CMS ACTIONS
-  // ==========================================
-
-  const handleAddMedia = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMediaName.trim() || !newMediaUrl.trim()) {
-      showToast("Please provide a Media Title and Image URL.", "error");
-      return;
-    }
-
-    const newAsset: MediaAsset = {
-      id: `med-${Date.now()}`,
-      name: newMediaName,
-      url: newMediaUrl,
-      category: newMediaCategory,
-      uploadedAt: new Date().toISOString().slice(0, 10),
-    };
-
-    const updated = [newAsset, ...mediaList];
-    setMediaList(updated);
-    localStorage.setItem("tesa_media", JSON.stringify(updated));
-
-    try {
-      setDoc(doc(db, "media", newAsset.id), newAsset);
-    } catch (e) {}
-
-    setNewMediaName("");
-    setNewMediaUrl("");
-    showToast("Media banner added to library!");
-  };
-
-  const handleMediaUploadFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("File size exceeds 2MB limit. Please upload a smaller image.", "error");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (typeof reader.result === "string") {
-        setNewMediaUrl(reader.result);
-        if (!newMediaName) {
-          setNewMediaName(file.name.replace(/\.[^/.]+$/, ""));
-        }
-        showToast("Image loaded! Click Add Media to save.");
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleDeleteMedia = (id: string) => {
-    const filtered = mediaList.filter((m) => m.id !== id);
-    setMediaList(filtered);
-    localStorage.setItem("tesa_media", JSON.stringify(filtered));
-
-    try {
-      deleteDoc(doc(db, "media", id));
-    } catch (e) {}
-
-    showToast("Media asset deleted.");
-  };
-
-  const handleSaveSiteContent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      setIsSavingContent(true);
-      localStorage.setItem("tesa_content", JSON.stringify(siteContent));
-
-      try {
-        await setDoc(doc(db, "site_content", "settings"), {
-          ...siteContent,
-          updatedAt: serverTimestamp(),
-          updatedBy: user?.email,
-        });
-      } catch (err) {}
-
-      showToast("Website content and notices updated!");
-    } catch (err) {
-      showToast("Content saved to local browser storage.", "info");
-    } finally {
-      setIsSavingContent(false);
-    }
-  };
-
-  // ==========================================
-  // RENDER: AUTH GUARDS & LOADING
-  // ==========================================
+  // --------------------------------------------------------------------------
+  // AUTH GUARDS & LOGIN SCREEN
+  // --------------------------------------------------------------------------
 
   if (authLoading) {
     return (
       <div className="min-h-screen bg-[#06070a] text-slate-100 flex items-center justify-center p-4">
         <div className="flex flex-col items-center gap-3 font-mono text-xs text-cyan-400">
           <div className="w-8 h-8 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
-          <span>INITIALIZING TESA ADMIN SECURE CONSOLE...</span>
+          <span>INITIALIZING TESA ADMIN CONSOLE...</span>
         </div>
       </div>
     );
@@ -1494,7 +839,7 @@ export default function AdminDashboardPage() {
             TESA Administrative Access
           </h1>
           <p className="text-xs text-slate-400 font-mono mb-6 leading-relaxed">
-            Restricted portal for SGGSIE&amp;T Textile Engineering Students Association authorized executives. Sign in with Google to manage faculty, council team, events, and registrations.
+            Restricted portal for SGGSIE&amp;T Textile Engineering Students Association authorized executives. Sign in with Google to manage the Council Team and Events.
           </p>
           <button
             onClick={handleGoogleLogin}
@@ -1513,22 +858,22 @@ export default function AdminDashboardPage() {
     );
   }
 
-  // ==========================================
-  // RENDER: DASHBOARD INTERFACE
-  // ==========================================
+  // --------------------------------------------------------------------------
+  // DASHBOARD MAIN UI
+  // --------------------------------------------------------------------------
 
   return (
     <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* Background Decor */}
-      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-35" />
+      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-30" />
 
       {/* Top Header */}
       <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#06070a]/95 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="px-2.5 py-1 rounded bg-white/[0.05] border border-white/10 hover:border-cyan-500/40 text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 hover:border-cyan-500/40 text-xs font-mono text-slate-300 hover:text-cyan-300 transition-colors flex items-center gap-1.5"
             >
               <span>←</span>
               <span>Public Website</span>
@@ -1540,11 +885,11 @@ export default function AdminDashboardPage() {
                   TESA CONTROL SUITE
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
-                  v3.1 PRO
+                  MINIMALIST v4.0
                 </span>
               </div>
               <span className="text-[10px] font-mono text-slate-400 hidden sm:block">
-                SGGSIE&amp;T Textile Engineering Students Association • Project: tesa-62f59
+                SGGSIE&amp;T Textile Engineering Students Association
               </span>
             </div>
           </div>
@@ -1556,12 +901,12 @@ export default function AdminDashboardPage() {
                 <img
                   src={user.photoURL}
                   alt={user.displayName || "Admin"}
-                  className="w-7 h-7 rounded-full border border-cyan-400/40"
+                  className="w-7 h-7 rounded-lg border border-cyan-400/40 object-cover"
                 />
               )}
               <div className="hidden md:block text-left text-xs font-mono">
                 <span className="font-bold text-white block leading-none">
-                  {user.displayName || "Admin User"}
+                  {user.displayName || "Admin"}
                 </span>
                 <span className="text-[10px] text-emerald-400 leading-none">
                   AUTHORIZED
@@ -1580,21 +925,20 @@ export default function AdminDashboardPage() {
       </header>
 
       {/* Main Admin Console */}
-      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
-        {/* Navigation Tabs Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/[0.08]">
+      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-12">
+        {/* Navigation Tabs Bar: Team is #1 */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { id: "events", label: "EVENTS", icon: "📅", count: eventsList.length },
-              { id: "team", label: "TESA COUNCIL", icon: "👥", count: teamList.length },
-              { id: "faculty_staff", label: "FACULTY & STAFF", icon: "🎓", count: facultyList.length + staffList.length },
-              { id: "registrations", label: "REGISTRATIONS", icon: "📋", count: registrations.length },
-              { id: "media_cms", label: "MEDIA & CMS", icon: "🖼️", count: mediaList.length },
+              { id: "team", label: "MANAGE TESA TEAM", icon: "👥", count: teamList.length },
+              { id: "events", label: "MANAGE EVENTS", icon: "📅", count: eventsList.length },
+              { id: "registrations", label: "STUDENT REGISTRATIONS", icon: "📋", count: registrations.length },
+              { id: "all", label: "STACKED VIEW (ALL)", icon: "🌟", count: null },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-mono font-semibold tracking-wide border transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-semibold tracking-wide border transition-all cursor-pointer ${
                   activeTab === tab.id
                     ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]"
                     : "bg-white/[0.03] text-slate-300 border-white/10 hover:border-cyan-500/40 hover:text-white"
@@ -1602,11 +946,13 @@ export default function AdminDashboardPage() {
               >
                 <span>{tab.icon}</span>
                 <span>{tab.label}</span>
-                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                  activeTab === tab.id ? "bg-black/30 text-black font-bold" : "bg-white/10 text-slate-400"
-                }`}>
-                  {tab.count}
-                </span>
+                {tab.count !== null && (
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                    activeTab === tab.id ? "bg-black/30 text-black font-bold" : "bg-white/10 text-slate-400"
+                  }`}>
+                    {tab.count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -1630,7 +976,7 @@ export default function AdminDashboardPage() {
         {/* Global Toast */}
         {toastMessage && (
           <div
-            className={`mb-6 p-4 rounded-xl text-xs font-mono border transition-all ${
+            className={`p-4 rounded-xl text-xs font-mono border transition-all ${
               toastMessage.type === "success"
                 ? "bg-emerald-950/80 border-emerald-500/50 text-emerald-200"
                 : toastMessage.type === "info"
@@ -1642,26 +988,173 @@ export default function AdminDashboardPage() {
           </div>
         )}
 
-        {/* =========================================================================
-            TAB 1: EVENT MANAGEMENT
-            ========================================================================= */}
-        {activeTab === "events" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-2xl border border-white/10 bg-slate-950/70 backdrop-blur-md">
+        {/* =====================================================================
+            STEP 1: SECTION 1 — MANAGE TESA TEAM (POSITION #1 AT THE VERY TOP)
+            ===================================================================== */}
+        {(activeTab === "team" || activeTab === "all") && (
+          <section id="section-team" className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-2xl border border-cyan-500/30 bg-slate-950/80 backdrop-blur-xl shadow-xl">
               <div>
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
-                  EVENT OPERATIONS
-                </span>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
-                  Events &amp; Symposia Management
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/40 bg-cyan-950/50 text-[11px] font-mono text-cyan-300 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <span>PRIMARY MANAGEMENT • POSITION #1</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Manage TESA Council Team
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Create, edit, and organize conclaves, hackathons, and laboratory workshops displayed across the website.
+                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                  Upload portrait photos, update leadership roles, technical specializations, and manage the student council displayed on the homepage.
                 </p>
               </div>
+
+              <button
+                onClick={handleOpenAddTeamModal}
+                className="px-5 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer shrink-0"
+              >
+                <span>+</span>
+                <span>Add Council Member</span>
+              </button>
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex flex-wrap items-center gap-2">
+              {[
+                { id: "all", label: "ALL MEMBERS" },
+                { id: "core", label: "CORE COUNCIL" },
+                { id: "technical", label: "TECHNICAL & RESEARCH" },
+                { id: "events", label: "EVENTS & OPERATIONS" },
+                { id: "outreach", label: "OUTREACH & ALUMNI" },
+              ].map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setTeamCategoryFilter(c.id)}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                    teamCategoryFilter === c.id
+                      ? "bg-cyan-500 text-black font-bold border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.35)]"
+                      : "bg-slate-950/60 text-slate-400 border border-white/10 hover:text-white"
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Team Members Grid: Large Rectangular Portraits (NEVER rounded-full) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {teamList
+                .filter((m) => teamCategoryFilter === "all" || m.category === teamCategoryFilter)
+                .map((member) => (
+                  <div
+                    key={member.id}
+                    className="group rounded-2xl border border-white/10 bg-slate-950/70 p-5 backdrop-blur-md flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(0,240,255,0.15)] transition-all font-mono"
+                  >
+                    <div>
+                      {/* Large Rectangular Portrait Frame with Theme-Blending CSS Filters */}
+                      <div className="relative w-full aspect-[3/4] mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                        {member.photoUrl ? (
+                          <div className="relative w-full h-full">
+                            <img
+                              src={member.photoUrl}
+                              alt={member.name}
+                              className="w-full h-full object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
+                            />
+                            {/* Dark Theme Gradient Overlay */}
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
+                          </div>
+                        ) : (
+                          <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
+                            <div className="w-16 h-16 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-2xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
+                              {member.photoPlaceholder || "TE"}
+                            </div>
+                            <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase">
+                              PORTRAIT ARCHIVE
+                            </span>
+                            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
+                          </div>
+                        )}
+
+                        {/* Category & Year Tag Overlays */}
+                        <span className="absolute top-2.5 left-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 backdrop-blur-md uppercase">
+                          {member.category}
+                        </span>
+                        <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 text-cyan-400 border border-cyan-500/30 backdrop-blur-md">
+                          {member.year}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-bold text-white mb-0.5 group-hover:text-cyan-300 transition-colors">
+                        {member.name}
+                      </h3>
+                      <div className="text-xs text-cyan-400 font-semibold mb-1">
+                        {member.role}
+                      </div>
+                      <div className="text-[10px] text-slate-400 mb-3">
+                        {member.designation}
+                      </div>
+
+                      <p className="text-xs text-slate-300 font-normal mb-3 line-clamp-3">
+                        {member.bio}
+                      </p>
+
+                      <div className="text-[10px] text-purple-300 mb-3 truncate">
+                        ⚡ {member.specialization}
+                      </div>
+
+                      <div className="flex flex-wrap gap-1 mb-4">
+                        {member.skills.slice(0, 3).map((s, idx) => (
+                          <span
+                            key={idx}
+                            className="px-2 py-0.5 rounded bg-white/[0.05] border border-white/5 text-[9px] text-slate-300"
+                          >
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-white/10 flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenEditTeamModal(member)}
+                        className="flex-1 py-2 rounded-lg bg-white/[0.05] hover:bg-cyan-950/60 hover:text-cyan-300 text-xs text-slate-300 border border-white/10 transition-colors cursor-pointer text-center"
+                      >
+                        ✏ Edit Details &amp; Photo
+                      </button>
+                      <button
+                        onClick={() => handleDeleteTeamMember(member.id, member.name)}
+                        className="py-2 px-3 rounded-lg bg-red-950/40 hover:bg-red-900 border border-red-500/30 text-xs text-red-300 transition-colors cursor-pointer"
+                        title="Delete member"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </section>
+        )}
+
+        {/* =====================================================================
+            STEP 1: SECTION 2 — MANAGE EVENTS (DIRECTLY BELOW TEAM)
+            ===================================================================== */}
+        {(activeTab === "events" || activeTab === "all") && (
+          <section id="section-events" className="space-y-6 pt-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl shadow-xl">
+              <div>
+                <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
+                  EVENT OPERATIONS • POSITION #2
+                </span>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Manage Events &amp; Conclaves
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                  Publish and organize national symposiums, hackathons, and workshops displayed on the public events feed.
+                </p>
+              </div>
+
               <button
                 onClick={handleOpenAddEventModal}
-                className="px-4 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer shrink-0"
+                className="px-5 py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer shrink-0"
               >
                 <span>+</span>
                 <span>Publish New Event</span>
@@ -1677,9 +1170,10 @@ export default function AdminDashboardPage() {
                 >
                   <div>
                     {ev.mediaUrl ? (
-                      <div className="h-40 w-full overflow-hidden relative">
+                      <div className="h-44 w-full overflow-hidden relative">
                         <img src={ev.mediaUrl} alt={ev.title} className="w-full h-full object-cover" />
-                        <span className="absolute top-2 right-2 px-2.5 py-0.5 rounded-full bg-black/80 text-[10px] font-mono text-cyan-300 border border-cyan-500/30">
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+                        <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/80 text-[10px] font-mono text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
                           {ev.category}
                         </span>
                       </div>
@@ -1703,7 +1197,7 @@ export default function AdminDashboardPage() {
                           ● STATUS: {ev.status}
                         </span>
                         <span className="text-[10px] text-slate-400">
-                          Capacity: {ev.capacity}
+                          Capacity: {ev.capacity || "Unlimited"}
                         </span>
                       </div>
 
@@ -1742,1121 +1236,386 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
-          </div>
+          </section>
         )}
 
-        {/* =========================================================================
-            TAB 2: TESA TEAM MANAGEMENT (With Photo Edit & Upload)
-            ========================================================================= */}
-        {activeTab === "team" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-2xl border border-white/10 bg-slate-950/70 backdrop-blur-md">
+        {/* =====================================================================
+            SECTION 3: STUDENT REGISTRATIONS & EXCEL EXPORT
+            ===================================================================== */}
+        {(activeTab === "registrations" || activeTab === "all") && (
+          <section id="section-registrations" className="space-y-6 pt-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl shadow-xl">
               <div>
                 <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
-                  COUNCIL DIRECTORY
+                  ATTENDEE RECORDS &amp; REPORTING
                 </span>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
-                  TESA Leadership Team Management
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Student Registrations &amp; Export
                 </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Manage student council executives, designations, technical specializations, and profile photos.
+                <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                  Review student attendee applications, verify collegiate credentials, and download complete rosters in Microsoft Excel format.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleOpenAddTeamModal}
-                  className="px-4 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer"
-                >
-                  <span>+</span>
-                  <span>Add Council Member</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Category Filter */}
-            <div className="flex flex-wrap items-center gap-2 pb-2">
-              {[
-                { id: "all", label: "ALL MEMBERS" },
-                { id: "core", label: "CORE COUNCIL" },
-                { id: "technical", label: "TECHNICAL & R&D" },
-                { id: "events", label: "EVENTS & OPERATIONS" },
-                { id: "outreach", label: "OUTREACH & ALUMNI" },
-              ].map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => setTeamCategoryFilter(c.id)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all cursor-pointer ${
-                    teamCategoryFilter === c.id
-                      ? "bg-white/10 text-cyan-300 border border-cyan-400/40"
-                      : "bg-black/40 text-slate-400 border border-white/5 hover:text-white"
-                  }`}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Team Members Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {teamList
-                .filter((m) => teamCategoryFilter === "all" || m.category === teamCategoryFilter)
-                .map((member) => (
-                  <div
-                    key={member.id}
-                    className="rounded-2xl border border-white/10 bg-slate-950/70 p-5 backdrop-blur-md flex flex-col justify-between hover:border-cyan-500/40 transition-all font-mono"
-                  >
-                    <div>
-                      {/* Avatar Image / Monogram Badge & Category */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="w-14 h-14 rounded-2xl border border-cyan-400/40 overflow-hidden flex items-center justify-center font-bold text-cyan-300 text-lg shadow-[0_0_15px_rgba(6,182,212,0.25)] bg-gradient-to-br from-cyan-500/20 to-blue-600/30 shrink-0">
-                          {member.photoUrl ? (
-                            <img src={member.photoUrl} alt={member.name} className="w-full h-full object-cover" />
-                          ) : (
-                            member.photoPlaceholder
-                          )}
-                        </div>
-                        <span className="text-[10px] uppercase px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
-                          {member.category}
-                        </span>
-                      </div>
-
-                      <h3 className="text-base font-bold text-white mb-0.5">
-                        {member.name}
-                      </h3>
-                      <div className="text-xs text-cyan-400 font-semibold mb-1">
-                        {member.role}
-                      </div>
-                      <div className="text-[10px] text-slate-400 mb-3">
-                        {member.designation} • {member.year}
-                      </div>
-
-                      <p className="text-xs text-slate-300 font-normal mb-3 line-clamp-3">
-                        {member.bio}
-                      </p>
-
-                      <div className="text-[10px] text-purple-300 mb-3">
-                        ⚡ {member.specialization}
-                      </div>
-
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {member.skills.map((s, idx) => (
-                          <span
-                            key={idx}
-                            className="px-2 py-0.5 rounded bg-white/[0.05] border border-white/5 text-[9px] text-slate-300"
-                          >
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="pt-3 border-t border-white/10 flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEditTeamModal(member)}
-                        className="flex-1 py-1.5 rounded-lg bg-white/[0.05] hover:bg-cyan-950/60 hover:text-cyan-300 text-xs text-slate-300 border border-white/10 transition-colors cursor-pointer text-center"
-                      >
-                        ✏ Edit Info &amp; Photo
-                      </button>
-                      <button
-                        onClick={() => handleDeleteTeamMember(member.id, member.name)}
-                        className="py-1.5 px-3 rounded-lg bg-red-950/40 hover:bg-red-900 border border-red-500/30 text-xs text-red-300 transition-colors cursor-pointer"
-                        title="Delete member"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </div>
-          </div>
-        )}
-
-        {/* =========================================================================
-            TAB 3: FACULTY & STAFF MANAGEMENT (With Photo Edit & Upload)
-            ========================================================================= */}
-        {activeTab === "faculty_staff" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 rounded-2xl border border-white/10 bg-slate-950/70 backdrop-blur-md">
-              <div>
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
-                  DEPARTMENT REGISTRY
-                </span>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
-                  Faculty &amp; Technical Staff Management
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Maintain records, designations, research focus, operational skills, and official profile photos.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                {facStaffSubTab === "faculty" ? (
-                  <button
-                    onClick={handleOpenAddFacultyModal}
-                    className="px-4 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer"
-                  >
-                    <span>+</span>
-                    <span>Add Faculty Member</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleOpenAddStaffModal}
-                    className="px-4 py-2.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.4)] flex items-center gap-2 cursor-pointer"
-                  >
-                    <span>+</span>
-                    <span>Add Technical Staff</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Sub-Tabs: Faculty vs Staff */}
-            <div className="flex items-center gap-3 border-b border-white/10 pb-3">
-              <button
-                onClick={() => setFacStaffSubTab("faculty")}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
-                  facStaffSubTab === "faculty"
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/50"
-                    : "bg-white/[0.03] text-slate-400 border border-white/5 hover:text-white"
-                }`}
-              >
-                PROFESSORS &amp; FACULTY ({facultyList.length})
-              </button>
-              <button
-                onClick={() => setFacStaffSubTab("staff")}
-                className={`px-4 py-2 rounded-xl text-xs font-mono font-bold transition-all cursor-pointer ${
-                  facStaffSubTab === "staff"
-                    ? "bg-cyan-500/20 text-cyan-300 border border-cyan-400/50"
-                    : "bg-white/[0.03] text-slate-400 border border-white/5 hover:text-white"
-                }`}
-              >
-                LABORATORY &amp; TECHNICAL STAFF ({staffList.length})
-              </button>
-            </div>
-
-            {/* FACULTY VIEW */}
-            {facStaffSubTab === "faculty" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {facultyList.map((fac) => (
-                  <div
-                    key={fac.id}
-                    className="rounded-2xl border border-white/10 bg-slate-950/70 p-6 backdrop-blur-md flex flex-col justify-between hover:border-cyan-500/40 transition-all font-mono"
-                  >
-                    <div>
-                      {/* Photo / Monogram & Designation */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-14 h-14 rounded-2xl border border-cyan-400/40 overflow-hidden flex items-center justify-center font-bold text-cyan-300 text-sm shadow-[0_0_15px_rgba(6,182,212,0.2)] bg-cyan-950/60 shrink-0">
-                            {fac.photoUrl ? (
-                              <img src={fac.photoUrl} alt={fac.name} className="w-full h-full object-cover" />
-                            ) : (
-                              fac.name.split(" ").map((w) => w[0]).filter((c) => c && c.match(/[A-Za-z]/)).slice(0, 2).join("") || "DR"
-                            )}
-                          </div>
-                          <div>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/30 uppercase inline-block mb-1">
-                              {fac.designation}
-                            </span>
-                            <h3 className="text-base font-bold text-white line-clamp-1">
-                              {fac.name}
-                            </h3>
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-slate-400 shrink-0">
-                          {fac.experience}
-                        </span>
-                      </div>
-
-                      <p className="text-xs text-slate-300 font-normal mb-3">
-                        🎓 {fac.qualification}
-                      </p>
-
-                      <div className="text-xs text-cyan-200/90 mb-3 leading-relaxed">
-                        <strong className="text-slate-400 block text-[10px] uppercase">Specialization:</strong>
-                        {fac.specialization}
-                      </div>
-
-                      <div className="text-xs text-slate-400 mb-4">
-                        📧 <a href={`mailto:${fac.email}`} className="text-cyan-400 underline">{fac.email}</a>
-                      </div>
-
-                      <div className="mb-4">
-                        <span className="text-[10px] uppercase text-slate-400 block mb-1.5">
-                          Research Focus:
-                        </span>
-                        <div className="flex flex-wrap gap-1.5">
-                          {fac.researchFocus.map((rf, idx) => (
-                            <span
-                              key={idx}
-                              className="px-2 py-0.5 rounded bg-white/[0.05] border border-white/5 text-[10px] text-slate-300"
-                            >
-                              {rf}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-white/10 flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEditFacultyModal(fac)}
-                        className="flex-1 py-1.5 rounded-lg bg-white/[0.05] hover:bg-cyan-950/60 hover:text-cyan-300 text-xs text-slate-300 border border-white/10 transition-colors cursor-pointer text-center"
-                      >
-                        ✏ Edit Details &amp; Photo
-                      </button>
-                      <button
-                        onClick={() => handleDeleteFaculty(fac.id, fac.name)}
-                        className="py-1.5 px-3 rounded-lg bg-red-950/40 hover:bg-red-900 border border-red-500/30 text-xs text-red-300 transition-colors cursor-pointer"
-                        title="Delete faculty"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* STAFF VIEW */}
-            {facStaffSubTab === "staff" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {staffList.map((stf) => (
-                  <div
-                    key={stf.id}
-                    className="rounded-2xl border border-white/10 bg-slate-950/70 p-6 backdrop-blur-md flex flex-col justify-between hover:border-teal-500/40 transition-all font-mono"
-                  >
-                    <div>
-                      {/* Photo / Monogram & Designation */}
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-14 h-14 rounded-2xl border border-teal-400/40 overflow-hidden flex items-center justify-center font-bold text-teal-300 text-sm shadow-[0_0_15px_rgba(20,184,166,0.2)] bg-teal-950/60 shrink-0">
-                            {stf.photoUrl ? (
-                              <img src={stf.photoUrl} alt={stf.name} className="w-full h-full object-cover" />
-                            ) : (
-                              stf.name.split(" ").map((w) => w[0]).filter((c) => c && c.match(/[A-Za-z]/)).slice(0, 2).join("") || "ST"
-                            )}
-                          </div>
-                          <div>
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal-950/80 text-teal-300 border border-teal-500/30 uppercase inline-block mb-1">
-                              {stf.designation}
-                            </span>
-                            <h3 className="text-base font-bold text-white line-clamp-1">
-                              {stf.name}
-                            </h3>
-                          </div>
-                        </div>
-                        <span className="text-[10px] text-slate-400 shrink-0">
-                          {stf.experience}
-                        </span>
-                      </div>
-
-                      <div className="text-xs text-teal-300 font-semibold mb-2">
-                        🏭 {stf.labAssigned}
-                      </div>
-
-                      <p className="text-xs text-slate-300 font-normal mb-3">
-                        {stf.qualification}
-                      </p>
-
-                      <div className="text-xs text-slate-400 leading-relaxed mb-4">
-                        <strong className="text-slate-300 block text-[10px] uppercase mb-1">Operational Skills:</strong>
-                        {stf.skills}
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-white/10 flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenEditStaffModal(stf)}
-                        className="flex-1 py-1.5 rounded-lg bg-white/[0.05] hover:bg-teal-950/60 hover:text-teal-300 text-xs text-slate-300 border border-white/10 transition-colors cursor-pointer text-center"
-                      >
-                        ✏ Edit Details &amp; Photo
-                      </button>
-                      <button
-                        onClick={() => handleDeleteStaff(stf.id, stf.name)}
-                        className="py-1.5 px-3 rounded-lg bg-red-950/40 hover:bg-red-900 border border-red-500/30 text-xs text-red-300 transition-colors cursor-pointer"
-                        title="Delete staff"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* =========================================================================
-            TAB 4: REGISTRATION MANAGEMENT & EXCEL EXPORT (XLSX)
-            ========================================================================= */}
-        {activeTab === "registrations" && (
-          <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-6 sm:p-8 backdrop-blur-md">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-              <div>
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
-                  PARTICIPANT MANAGEMENT &amp; EXCEL EXPORT
-                </span>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
-                  Student Event Registrations
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Verify candidate PRNs, change approval status, and export full reports directly to native Excel (.xlsx).
-                </p>
-              </div>
-
-              {/* Action Buttons */}
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
-                  onClick={() => setIsAddRegModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-white/[0.05] border border-white/10 hover:border-cyan-400 text-xs font-mono text-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
-                >
-                  <span>+</span>
-                  <span>On-Spot Entry</span>
-                </button>
-
-                <button
                   onClick={handleExportToExcel}
-                  className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] flex items-center gap-2 cursor-pointer"
-                  title="Export to formatted Microsoft Excel (.xlsx)"
+                  className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(16,185,129,0.35)] flex items-center gap-2 cursor-pointer"
                 >
                   <span>📊</span>
                   <span>Export to Excel (.xlsx)</span>
                 </button>
-
-                <button
-                  onClick={handleExportCSV}
-                  className="px-3 py-2 rounded-xl bg-white/[0.05] border border-white/10 text-xs font-mono text-slate-300 hover:text-white cursor-pointer"
-                  title="Export to raw CSV"
-                >
-                  CSV
-                </button>
               </div>
             </div>
 
-            {/* Filter and Search Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 p-4 rounded-xl bg-black/40 border border-white/10">
-              <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Search Candidates</label>
+            {/* Filter & Search Bar */}
+            <div className="p-4 rounded-xl border border-white/10 bg-slate-950/60 backdrop-blur-md flex flex-col md:flex-row items-center gap-3 font-mono text-xs">
+              <div className="relative flex-1 w-full">
                 <input
                   type="text"
-                  placeholder="Student name, PRN, email..."
+                  placeholder="Search by student name, PRN, or email..."
                   value={registrationSearch}
                   onChange={(e) => setRegistrationSearch(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/80 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs font-mono"
+                  className="w-full pl-9 pr-4 py-2 rounded-lg bg-black/60 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
                 />
+                <span className="absolute left-3 top-2.5 text-slate-500">🔍</span>
               </div>
 
-              <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Filter by Event</label>
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
                 <select
                   value={filterEvent}
                   onChange={(e) => setFilterEvent(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/80 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs font-mono"
+                  className="px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-slate-300 focus:outline-none focus:border-cyan-400 cursor-pointer"
                 >
-                  <option value="all">All Events</option>
+                  <option value="all">All Registered Events</option>
                   {eventsList.map((ev) => (
                     <option key={ev.id} value={ev.title}>
                       {ev.title}
                     </option>
                   ))}
                 </select>
-              </div>
 
-              <div>
-                <label className="block text-[10px] font-mono text-slate-400 uppercase mb-1">Filter by Status</label>
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/80 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs font-mono"
+                  className="px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-slate-300 focus:outline-none focus:border-cyan-400 cursor-pointer"
                 >
-                  <option value="all">All Verification Statuses</option>
-                  <option value="approved">Approved Only</option>
-                  <option value="pending">Pending Only</option>
-                  <option value="rejected">Rejected Only</option>
+                  <option value="all">All Statuses</option>
+                  <option value="approved">Approved</option>
+                  <option value="pending">Pending</option>
+                  <option value="rejected">Rejected</option>
                 </select>
               </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-x-auto rounded-xl border border-white/10">
-              <table className="w-full text-left font-mono text-xs text-slate-300">
-                <thead className="bg-cyan-950/40 text-cyan-300 text-[11px] uppercase border-b border-white/10">
-                  <tr>
-                    <th className="py-3 px-4">Student &amp; PRN</th>
-                    <th className="py-3 px-4">Event Target</th>
-                    <th className="py-3 px-4">Department &amp; Year</th>
-                    <th className="py-3 px-4">Registered At</th>
-                    <th className="py-3 px-4">Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 bg-slate-950/40">
-                  {filteredRegistrations.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-8 text-center text-slate-500">
-                        No registrations matching your search filter.
-                      </td>
+            {/* Registrations Data Table */}
+            <div className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden backdrop-blur-md font-mono text-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[11px] uppercase tracking-wider">
+                      <th className="py-3 px-4">#</th>
+                      <th className="py-3 px-4">Student Name</th>
+                      <th className="py-3 px-4">PRN / Roll</th>
+                      <th className="py-3 px-4">Event Name</th>
+                      <th className="py-3 px-4">Year</th>
+                      <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
-                  ) : (
-                    filteredRegistrations.map((reg) => (
-                      <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
-                        <td className="py-3 px-4">
-                          <span className="font-bold text-white block">
-                            {reg.studentName}
-                          </span>
-                          <span className="text-[10px] text-cyan-400">
-                            {reg.prn} • {reg.email}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-slate-200">
-                          {reg.eventTitle}
-                        </td>
-                        <td className="py-3 px-4 text-slate-400">
-                          <div>{reg.department}</div>
-                          <span className="text-[10px] text-slate-500">{reg.year}</span>
-                        </td>
-                        <td className="py-3 px-4 text-[10px] text-slate-400">
-                          {reg.registeredAt}
-                        </td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                              reg.status === "approved"
-                                ? "bg-emerald-950/90 text-emerald-300 border border-emerald-500/40"
-                                : reg.status === "rejected"
-                                ? "bg-red-950/90 text-red-300 border border-red-500/40"
-                                : "bg-amber-950/90 text-amber-300 border border-amber-500/40"
-                            }`}
-                          >
-                            {reg.status}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-right space-x-1.5">
-                          {reg.status !== "approved" && (
-                            <button
-                              onClick={() => handleUpdateRegStatus(reg.id, "approved")}
-                              className="px-2 py-1 rounded bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 text-[10px] uppercase font-bold cursor-pointer"
-                              title="Approve registration"
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filteredRegistrations.length > 0 ? (
+                      filteredRegistrations.map((reg, idx) => (
+                        <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
+                          <td className="py-3.5 px-4 text-slate-500">{idx + 1}</td>
+                          <td className="py-3.5 px-4">
+                            <span className="font-bold text-white block">{reg.studentName}</span>
+                            <span className="text-[10px] text-slate-400">{reg.email}</span>
+                          </td>
+                          <td className="py-3.5 px-4 text-cyan-300">{reg.prn}</td>
+                          <td className="py-3.5 px-4 text-slate-200 max-w-xs truncate">{reg.eventTitle}</td>
+                          <td className="py-3.5 px-4 text-slate-400">{reg.year}</td>
+                          <td className="py-3.5 px-4 text-slate-400">{reg.registeredAt}</td>
+                          <td className="py-3.5 px-4">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
+                                reg.status === "approved"
+                                  ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30"
+                                  : reg.status === "pending"
+                                  ? "bg-amber-950/80 text-amber-300 border border-amber-500/30"
+                                  : "bg-red-950/80 text-red-300 border border-red-500/30"
+                              }`}
                             >
-                              Approve
-                            </button>
-                          )}
-                          {reg.status !== "rejected" && (
+                              {reg.status}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-4 text-right space-x-1.5">
+                            {reg.status !== "approved" && (
+                              <button
+                                onClick={() => handleUpdateRegStatus(reg.id, "approved")}
+                                className="px-2 py-1 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/30 text-[10px] transition-colors cursor-pointer"
+                                title="Approve"
+                              >
+                                ✔
+                              </button>
+                            )}
+                            {reg.status !== "rejected" && (
+                              <button
+                                onClick={() => handleUpdateRegStatus(reg.id, "rejected")}
+                                className="px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-900 text-amber-300 border border-amber-500/30 text-[10px] transition-colors cursor-pointer"
+                                title="Reject"
+                              >
+                                ✖
+                              </button>
+                            )}
                             <button
-                              onClick={() => handleUpdateRegStatus(reg.id, "rejected")}
-                              className="px-2 py-1 rounded bg-red-950/60 hover:bg-red-900 border border-red-500/40 text-red-300 text-[10px] uppercase font-bold cursor-pointer"
-                              title="Reject registration"
+                              onClick={() => handleDeleteRegistration(reg.id)}
+                              className="px-2 py-1 rounded bg-red-950/40 hover:bg-red-900 text-red-300 border border-red-500/30 text-[10px] transition-colors cursor-pointer"
+                              title="Delete record"
                             >
-                              Reject
+                              🗑
                             </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteRegistration(reg.id)}
-                            className="px-2 py-1 rounded bg-white/[0.05] hover:bg-white/10 text-slate-400 hover:text-white text-[10px] cursor-pointer"
-                            title="Delete record"
-                          >
-                            ✕
-                          </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-slate-500">
+                          No student registrations matching your filters.
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* =========================================================================
-            TAB 5: MEDIA & SITE CMS MANAGEMENT
-            ========================================================================= */}
-        {activeTab === "media_cms" && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Left: Media Asset Manager */}
-            <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-6 sm:p-8 backdrop-blur-md">
-              <div className="mb-6">
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
-                  DIGITAL ASSET VAULT
-                </span>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
-                  Media Library &amp; Banners
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Upload promotional banners, event images, portrait photos, and research assets.
-                </p>
-              </div>
-
-              {/* Add Media Form */}
-              <form onSubmit={handleAddMedia} className="space-y-4 p-4 rounded-xl bg-black/40 border border-white/10 mb-6 font-mono text-xs">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Media Title</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Smart Looms Lab Banner"
-                    value={newMediaName}
-                    onChange={(e) => setNewMediaName(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-slate-300 uppercase mb-1">Category</label>
-                    <select
-                      value={newMediaCategory}
-                      onChange={(e) => setNewMediaCategory(e.target.value as any)}
-                      className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                    >
-                      <option value="event">Event Banner</option>
-                      <option value="lab">Lab Facility</option>
-                      <option value="portrait">Member / Faculty Portrait</option>
-                      <option value="banner">Ribbon Banner</option>
-                      <option value="general">General Asset</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-slate-300 uppercase mb-1">Upload File (Max 2MB)</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleMediaUploadFile}
-                      className="w-full text-[10px] file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 text-slate-400 cursor-pointer"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Or Direct Image URL</label>
-                  <input
-                    type="url"
-                    placeholder="https://..."
-                    value={newMediaUrl}
-                    onChange={(e) => setNewMediaUrl(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                  />
-                </div>
-
-                {newMediaUrl && (
-                  <div className="h-24 w-full rounded-lg overflow-hidden border border-cyan-500/30">
-                    <img src={newMediaUrl} alt="Preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="w-full py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  + Add Media to Vault
-                </button>
-              </form>
-
-              {/* Media Gallery */}
-              <h3 className="text-sm font-bold font-mono text-white mb-3">Saved Media Assets ({mediaList.length})</h3>
-              <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-1">
-                {mediaList.map((m) => (
-                  <div
-                    key={m.id}
-                    className="group relative rounded-xl border border-white/10 bg-black/40 overflow-hidden font-mono text-xs"
-                  >
-                    <div className="h-28 w-full overflow-hidden">
-                      <img src={m.url} alt={m.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                    </div>
-                    <div className="p-2.5">
-                      <span className="text-[9px] uppercase px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/20">
-                        {m.category}
-                      </span>
-                      <h4 className="text-[11px] font-bold text-white mt-1 line-clamp-1">{m.name}</h4>
-                      <div className="flex items-center justify-between gap-1 mt-2">
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(m.url);
-                            showToast("Copied image URL to clipboard!");
-                          }}
-                          className="px-2 py-0.5 rounded bg-white/[0.08] hover:bg-white/20 text-[9px] text-cyan-300 cursor-pointer"
-                        >
-                          Copy URL
-                        </button>
-                        <button
-                          onClick={() => handleDeleteMedia(m.id)}
-                          className="px-1.5 py-0.5 rounded bg-red-950/60 hover:bg-red-900 text-[9px] text-red-300 cursor-pointer"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
-
-            {/* Right: Site Content CMS */}
-            <div className="rounded-2xl border border-white/10 bg-slate-950/70 p-6 sm:p-8 backdrop-blur-md">
-              <div className="mb-6">
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
-                  CMS CONTROL PANEL
-                </span>
-                <h2 className="text-2xl font-bold text-white tracking-tight">
-                  Website Copy &amp; Ribbons
-                </h2>
-                <p className="text-xs text-slate-400 mt-1">
-                  Edit site-wide notification banners, hero headlines, registration status, and department notices.
-                </p>
-              </div>
-
-              <form onSubmit={handleSaveSiteContent} className="space-y-5 font-mono text-xs">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Top Announcement Ribbon</label>
-                  <input
-                    type="text"
-                    value={siteContent.announcementBanner}
-                    onChange={(e) => setSiteContent({ ...siteContent, announcementBanner: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Hero Primary Headline</label>
-                  <input
-                    type="text"
-                    value={siteContent.heroHeadline}
-                    onChange={(e) => setSiteContent({ ...siteContent, heroHeadline: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Hero Subheadline</label>
-                  <textarea
-                    rows={3}
-                    value={siteContent.heroSubheadline}
-                    onChange={(e) => setSiteContent({ ...siteContent, heroSubheadline: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-300 uppercase mb-1">Target Conclave Dates</label>
-                    <input
-                      type="text"
-                      value={siteContent.upcomingConclaveDate}
-                      onChange={(e) => setSiteContent({ ...siteContent, upcomingConclaveDate: e.target.value })}
-                      className="w-full px-3 py-2.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-300 uppercase mb-1">Registration Portal State</label>
-                    <select
-                      value={siteContent.registrationStatus}
-                      onChange={(e) => setSiteContent({ ...siteContent, registrationStatus: e.target.value })}
-                      className="w-full px-3 py-2.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                    >
-                      <option value="OPEN">REGISTRATIONS OPEN</option>
-                      <option value="CLOSING SOON">CLOSING SOON</option>
-                      <option value="CLOSED">REGISTRATIONS CLOSED</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Department Lab &amp; Research Notice</label>
-                  <textarea
-                    rows={2}
-                    value={siteContent.departmentNotice}
-                    onChange={(e) => setSiteContent({ ...siteContent, departmentNotice: e.target.value })}
-                    className="w-full px-3 py-2.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 focus:outline-none text-white text-xs"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSavingContent}
-                  className="w-full py-3 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider shadow-[0_0_20px_rgba(6,182,212,0.4)] transition-all cursor-pointer"
-                >
-                  {isSavingContent ? "SAVING..." : "COMMIT WEBSITE CHANGES →"}
-                </button>
-              </form>
-            </div>
-          </div>
+          </section>
         )}
       </main>
 
-      {/* =========================================================================
-          MODAL: ADD / EDIT EVENT (With Media Banner Upload & Presets)
-          ========================================================================= */}
-      {isEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-slate-950 border border-white/10 rounded-2xl p-6 sm:p-8 my-8 shadow-2xl font-mono text-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
-              <h3 className="text-lg font-bold text-white">
-                {editingEventId ? "Edit Event Details & Banner" : "Publish New Event"}
-              </h3>
-              <button
-                onClick={() => setIsEventModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveEvent} className="space-y-4">
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Event Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. NATIONAL WEAVING HACKATHON 2026"
-                  value={eventForm.title}
-                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Category</label>
-                  <select
-                    value={eventForm.category}
-                    onChange={(e) => setEventForm({ ...eventForm, category: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  >
-                    <option value="National Conclave">National Conclave</option>
-                    <option value="Technical Hackathon">Technical Hackathon</option>
-                    <option value="Laboratory Workshop">Laboratory Workshop</option>
-                    <option value="Industrial Tour">Industrial Tour</option>
-                    <option value="Research Webinar">Research Webinar</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Event Date(s) *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. April 28–29, 2026"
-                    value={eventForm.date}
-                    onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Venue</label>
-                  <input
-                    type="text"
-                    value={eventForm.venue}
-                    onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Deadline</label>
-                  <input
-                    type="text"
-                    value={eventForm.deadline}
-                    onChange={(e) => setEventForm({ ...eventForm, deadline: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Status</label>
-                  <select
-                    value={eventForm.status}
-                    onChange={(e) => setEventForm({ ...eventForm, status: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  >
-                    <option value="open">Registration Open</option>
-                    <option value="upcoming">Coming Soon</option>
-                    <option value="closed">Registration Closed</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Media Banner Section with Upload & URL */}
-              <div className="p-4 rounded-xl border border-white/10 bg-black/40 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-slate-200 uppercase font-bold text-[11px]">
-                    Event Media Banner (Upload File or URL)
-                  </label>
-                  <span className="text-[10px] text-cyan-400">PNG, JPG, WebP</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleEventMediaUpload}
-                    className="w-full text-[10px] file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 cursor-pointer text-slate-400"
-                  />
-                  <input
-                    type="url"
-                    placeholder="Or paste external banner URL..."
-                    value={eventForm.mediaUrl}
-                    onChange={(e) => setEventForm({ ...eventForm, mediaUrl: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white text-[11px]"
-                  />
-                </div>
-
-                {eventForm.mediaUrl && (
-                  <div className="relative h-28 w-full rounded-lg overflow-hidden border border-cyan-500/30">
-                    <img src={eventForm.mediaUrl} alt="Preview" className="w-full h-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setEventForm({ ...eventForm, mediaUrl: "" })}
-                      className="absolute top-2 right-2 px-2 py-0.5 rounded bg-black/80 hover:bg-red-950 text-[10px] text-red-300 border border-red-500/30 cursor-pointer"
-                    >
-                      Remove Banner
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Summary Description</label>
-                <textarea
-                  rows={2}
-                  required
-                  value={eventForm.summary}
-                  onChange={(e) => setEventForm({ ...eventForm, summary: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Highlights / Cash Pool / Perks</label>
-                <input
-                  type="text"
-                  value={eventForm.highlights}
-                  onChange={(e) => setEventForm({ ...eventForm, highlights: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsEventModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingEvent}
-                  className="px-5 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider cursor-pointer"
-                >
-                  {isSubmittingEvent ? "Saving..." : "Confirm & Save Event"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL: ADD / EDIT TESA TEAM MEMBER (With Photo Edit Option)
-          ========================================================================= */}
+      {/* =======================================================================
+          MODAL: ADD / EDIT COUNCIL MEMBER (With Large Rectangular Photo Preview)
+          ======================================================================= */}
       {isTeamModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-xl bg-slate-950 border border-white/10 rounded-2xl p-6 sm:p-8 my-8 shadow-2xl font-mono text-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
-              <h3 className="text-lg font-bold text-white">
-                {editingTeamMember ? "Edit Council Member Profile" : "Add Council Member"}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#090b10] border border-cyan-500/40 rounded-2xl p-6 sm:p-7 shadow-2xl font-mono text-xs my-8">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+              <div>
+                <span className="text-[10px] text-cyan-400 uppercase tracking-widest block">
+                  COUNCIL DIRECTORY
+                </span>
+                <h3 className="text-xl font-bold text-white">
+                  {editingTeamMember ? "Edit Council Member & Portrait" : "Add New Council Member"}
+                </h3>
+              </div>
               <button
                 onClick={() => setIsTeamModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveTeamMember} className="space-y-4">
+            <form onSubmit={handleSaveTeamMember} className="space-y-5">
+              {/* Image Preview & Upload Section (Large Tall Rectangle - NEVER rounded-full) */}
+              <div className="p-4 rounded-xl border border-cyan-500/30 bg-slate-950/80 space-y-4">
+                <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
+                  1. Member Portrait Photo (Theme-Blended Tall Rectangle)
+                </span>
+
+                <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-start">
+                  {/* Portrait Frame Preview */}
+                  <div className="relative w-36 aspect-[3/4] rounded-xl border border-cyan-500/40 bg-zinc-950 overflow-hidden shrink-0 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                    {teamForm.photoUrl ? (
+                      <div className="relative w-full h-full">
+                        <img
+                          src={teamForm.photoUrl}
+                          alt="Preview"
+                          className="w-full h-full object-cover mix-blend-luminosity grayscale-[40%] contrast-110"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
+                      </div>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 text-slate-500">
+                        <span className="text-2xl mb-1">📷</span>
+                        <span className="text-[9px] leading-tight">No Photo Attached</span>
+                      </div>
+                    )}
+
+                    {isUploadingPhoto && (
+                      <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-[10px] text-cyan-300">
+                        <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-1" />
+                        <span>Uploading...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Upload Controls & URL input */}
+                  <div className="flex-1 w-full space-y-3">
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-1.5 uppercase">
+                        Upload Image File to Firebase Storage:
+                      </label>
+                      <input
+                        ref={teamFileInputRef}
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        onChange={handleTeamPhotoFileChange}
+                        className="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-1 uppercase">
+                        Or Paste Direct Image URL:
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://images.unsplash.com/..."
+                        value={teamForm.photoUrl || ""}
+                        onChange={(e) => setTeamForm({ ...teamForm, photoUrl: e.target.value })}
+                        className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+
+                    {/* Quick Sample Portraits Picker */}
+                    <div>
+                      <span className="text-[9px] text-slate-500 block mb-1.5">
+                        Quick testing portraits:
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {SAMPLE_PORTRAITS.map((sample, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setTeamForm({ ...teamForm, photoUrl: sample.url })}
+                            className="px-2 py-1 rounded bg-white/[0.04] hover:bg-cyan-950 hover:text-cyan-300 border border-white/10 text-[10px] text-slate-400 transition-colors cursor-pointer"
+                          >
+                            {sample.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Text Fields */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 uppercase mb-1">Full Name *</label>
+                  <label className="text-slate-400 block mb-1">Full Name *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Aarav Deshmukh"
                     value={teamForm.name}
                     onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-slate-300 uppercase mb-1">Council Role *</label>
+                  <label className="text-slate-400 block mb-1">Role / Position *</label>
                   <input
                     type="text"
                     required
-                    placeholder="e.g. President / Vice President"
+                    placeholder="e.g. President"
                     value={teamForm.role}
                     onChange={(e) => setTeamForm({ ...teamForm, role: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-              </div>
-
-              {/* PHOTO UPLOAD & URL EDIT SECTION */}
-              <div className="p-4 rounded-xl border border-white/10 bg-black/40 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-slate-200 uppercase font-bold text-[11px]">
-                    Member Profile Photo (File Upload or URL)
-                  </label>
-                  <span className="text-[10px] text-cyan-400">PNG, JPG, WebP</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleTeamPhotoUpload}
-                    className="w-full text-[10px] file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 cursor-pointer text-slate-400"
-                  />
-                  <input
-                    type="url"
-                    placeholder="Or paste image URL (https://...)"
-                    value={teamForm.photoUrl || ""}
-                    onChange={(e) => setTeamForm({ ...teamForm, photoUrl: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white text-[11px]"
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
 
-                {/* Sample Presets Quick Pick */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[9px] text-slate-500 uppercase">Presets:</span>
-                  {SAMPLE_PORTRAITS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setTeamForm({ ...teamForm, photoUrl: p.url })}
-                      className="px-2 py-0.5 rounded bg-white/[0.05] hover:bg-cyan-950/60 hover:text-cyan-300 border border-white/10 text-[9px] text-slate-300 cursor-pointer"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Photo Preview & Monogram Fallback */}
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="w-14 h-14 rounded-2xl border border-cyan-400/50 bg-slate-900 overflow-hidden flex items-center justify-center shrink-0 shadow-md">
-                    {teamForm.photoUrl ? (
-                      <img src={teamForm.photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="font-bold text-cyan-300 text-base">
-                        {teamForm.photoPlaceholder || (teamForm.name ? teamForm.name.slice(0, 2).toUpperCase() : "PH")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-slate-400 flex-1">
-                    {teamForm.photoUrl ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-emerald-400 font-semibold">✔ Custom profile photo attached</span>
-                        <button
-                          type="button"
-                          onClick={() => setTeamForm({ ...teamForm, photoUrl: "" })}
-                          className="px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-500/30 hover:bg-red-900 cursor-pointer"
-                        >
-                          Remove Photo
-                        </button>
-                      </div>
-                    ) : (
-                      <span>No photo set — will display stylized monogram initials badge.</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-slate-300 uppercase mb-1">Designation</label>
+                  <label className="text-slate-400 block mb-1">Official Designation</label>
                   <input
                     type="text"
-                    placeholder="e.g. Executive Head"
+                    placeholder="e.g. Executive Head, TESA Council"
                     value={teamForm.designation}
                     onChange={(e) => setTeamForm({ ...teamForm, designation: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-slate-300 uppercase mb-1">Academic Year</label>
+                  <label className="text-slate-400 block mb-1">Academic Year</label>
                   <select
                     value={teamForm.year}
                     onChange={(e) => setTeamForm({ ...teamForm, year: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
                   >
                     <option value="Final Year B.Tech">Final Year B.Tech</option>
                     <option value="Third Year B.Tech">Third Year B.Tech</option>
                     <option value="Second Year B.Tech">Second Year B.Tech</option>
+                    <option value="First Year B.Tech">First Year B.Tech</option>
                     <option value="M.Tech Scholar">M.Tech Scholar</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="block text-slate-300 uppercase mb-1">Category</label>
+                  <label className="text-slate-400 block mb-1">Category</label>
                   <select
                     value={teamForm.category}
                     onChange={(e) => setTeamForm({ ...teamForm, category: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
                   >
                     <option value="core">Core Council</option>
-                    <option value="technical">Technical Track</option>
-                    <option value="events">Events &amp; Logistics</option>
-                    <option value="outreach">Outreach &amp; PR</option>
+                    <option value="technical">Technical &amp; Research</option>
+                    <option value="events">Events &amp; Operations</option>
+                    <option value="outreach">Public Relations &amp; Outreach</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1">Technical Specialization</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Smart &amp; Conductive Textiles"
+                    value={teamForm.specialization}
+                    onChange={(e) => setTeamForm({ ...teamForm, specialization: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-300 uppercase mb-1">Technical Specialization</label>
+                <label className="text-slate-400 block mb-1">Skills (Comma-separated)</label>
                 <input
                   type="text"
-                  placeholder="e.g. Smart & Conductive Textiles"
-                  value={teamForm.specialization}
-                  onChange={(e) => setTeamForm({ ...teamForm, specialization: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Key Skills (Comma-separated)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. E-Textiles, Leadership, CAD"
+                  placeholder="e.g. E-Textiles, Project Leadership, Research &amp; Dev"
                   value={skillsInput}
                   onChange={(e) => setSkillsInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-300 uppercase mb-1">Bio Description</label>
+                <label className="text-slate-400 block mb-1">Member Bio / Overview</label>
                 <textarea
-                  rows={2}
-                  placeholder="Brief summary of council initiatives, research, and responsibilities..."
+                  rows={3}
+                  placeholder="Short bio detailing council leadership contributions..."
                   value={teamForm.bio}
                   onChange={(e) => setTeamForm({ ...teamForm, bio: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 font-sans text-xs"
                 />
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setIsTeamModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 cursor-pointer"
+                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider cursor-pointer"
+                  disabled={isUploadingPhoto}
+                  className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
                 >
-                  Save Member Profile
+                  {editingTeamMember ? "Save Changes" : "Create Member"}
                 </button>
               </div>
             </form>
@@ -2864,512 +1623,189 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* =========================================================================
-          MODAL: ADD / EDIT FACULTY (With Photo Edit Option)
-          ========================================================================= */}
-      {isFacultyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-xl bg-slate-950 border border-white/10 rounded-2xl p-6 sm:p-8 my-8 shadow-2xl font-mono text-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
-              <h3 className="text-lg font-bold text-white">
-                {editingFacultyId ? "Edit Faculty Profile" : "Add Faculty Member"}
-              </h3>
+      {/* =======================================================================
+          MODAL: ADD / EDIT EVENT
+          ======================================================================= */}
+      {isEventModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+          <div className="relative w-full max-w-2xl bg-[#090b10] border border-cyan-500/40 rounded-2xl p-6 sm:p-7 shadow-2xl font-mono text-xs my-8">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+              <div>
+                <span className="text-[10px] text-cyan-400 uppercase tracking-widest block">
+                  EVENT OPERATIONS
+                </span>
+                <h3 className="text-xl font-bold text-white">
+                  {editingEventId ? "Edit Event Details & Banner" : "Publish New Event"}
+                </h3>
+              </div>
               <button
-                onClick={() => setIsFacultyModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+                onClick={() => setIsEventModalOpen(false)}
+                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveFaculty} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Faculty Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Dr. Ravindra V. Adivarekar"
-                    value={facultyForm.name}
-                    onChange={(e) => setFacultyForm({ ...facultyForm, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Designation</label>
-                  <select
-                    value={facultyForm.designation}
-                    onChange={(e) => setFacultyForm({ ...facultyForm, designation: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  >
-                    <option value="Professor & Head of Department">Professor &amp; Head of Department</option>
-                    <option value="Professor">Professor</option>
-                    <option value="Associate Professor">Associate Professor</option>
-                    <option value="Assistant Professor">Assistant Professor</option>
-                    <option value="Adjunct Professor">Adjunct Professor</option>
-                  </select>
-                </div>
-              </div>
+            <form onSubmit={handleSaveEvent} className="space-y-4">
+              {/* Event Banner Section */}
+              <div className="p-4 rounded-xl border border-white/10 bg-slate-950/80 space-y-3">
+                <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
+                  Event Banner Image (Storage Upload / URL)
+                </span>
 
-              {/* FACULTY PHOTO UPLOAD & URL EDIT SECTION */}
-              <div className="p-4 rounded-xl border border-white/10 bg-black/40 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-slate-200 uppercase font-bold text-[11px]">
-                    Faculty Portrait Photo (File Upload or URL)
-                  </label>
-                  <span className="text-[10px] text-cyan-400">PNG, JPG, WebP</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFacultyPhotoUpload}
-                    className="w-full text-[10px] file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 cursor-pointer text-slate-400"
-                  />
-                  <input
-                    type="url"
-                    placeholder="Or paste portrait image URL..."
-                    value={facultyForm.photoUrl || ""}
-                    onChange={(e) => setFacultyForm({ ...facultyForm, photoUrl: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white text-[11px]"
-                  />
-                </div>
-
-                {/* Presets Quick Pick */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[9px] text-slate-500 uppercase">Presets:</span>
-                  {SAMPLE_PORTRAITS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setFacultyForm({ ...facultyForm, photoUrl: p.url })}
-                      className="px-2 py-0.5 rounded bg-white/[0.05] hover:bg-cyan-950/60 hover:text-cyan-300 border border-white/10 text-[9px] text-slate-300 cursor-pointer"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Photo Preview & Monogram Fallback */}
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="w-14 h-14 rounded-2xl border border-cyan-400/50 bg-slate-900 overflow-hidden flex items-center justify-center shrink-0 shadow-md">
-                    {facultyForm.photoUrl ? (
-                      <img src={facultyForm.photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                  <div className="w-40 h-24 rounded-lg border border-white/10 bg-black overflow-hidden shrink-0 relative">
+                    {eventForm.mediaUrl ? (
+                      <img src={eventForm.mediaUrl} alt="Banner" className="w-full h-full object-cover" />
                     ) : (
-                      <span className="font-bold text-cyan-300 text-base">
-                        {facultyForm.name ? facultyForm.name.slice(0, 2).toUpperCase() : "DR"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-slate-400 flex-1">
-                    {facultyForm.photoUrl ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-emerald-400 font-semibold">✔ Faculty portrait attached</span>
-                        <button
-                          type="button"
-                          onClick={() => setFacultyForm({ ...facultyForm, photoUrl: "" })}
-                          className="px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-500/30 hover:bg-red-900 cursor-pointer"
-                        >
-                          Remove Photo
-                        </button>
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500 text-center p-2">
+                        No Banner
                       </div>
-                    ) : (
-                      <span>No photo set — will display academic crest monogram.</span>
                     )}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Qualifications</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Ph.D. (Tech) Textile Chemistry, ICT Mumbai"
-                  value={facultyForm.qualification}
-                  onChange={(e) => setFacultyForm({ ...facultyForm, qualification: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Experience</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 25+ Years Experience"
-                    value={facultyForm.experience}
-                    onChange={(e) => setFacultyForm({ ...facultyForm, experience: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Official Email *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="hod.textile@sggs.ac.in"
-                    value={facultyForm.email}
-                    onChange={(e) => setFacultyForm({ ...facultyForm, email: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Specialization</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Eco-Friendly Wet Processing, Natural Dyeing"
-                  value={facultyForm.specialization}
-                  onChange={(e) => setFacultyForm({ ...facultyForm, specialization: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Research Focus (Comma-separated)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Green Chemistry, Nanoparticle Finishing, Plasma Technology"
-                  value={researchFocusInput}
-                  onChange={(e) => setResearchFocusInput(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                />
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsFacultyModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider cursor-pointer"
-                >
-                  Save Faculty Profile
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL: ADD / EDIT STAFF (With Photo Edit Option)
-          ========================================================================= */}
-      {isStaffModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-xl bg-slate-950 border border-white/10 rounded-2xl p-6 sm:p-8 my-8 shadow-2xl font-mono text-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
-              <h3 className="text-lg font-bold text-white">
-                {editingStaffId ? "Edit Technical Staff Record" : "Add Technical Staff"}
-              </h3>
-              <button
-                onClick={() => setIsStaffModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveStaff} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Staff Member Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Mr. Sunil V. Rathod"
-                    value={staffForm.name}
-                    onChange={(e) => setStaffForm({ ...staffForm, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Designation</label>
-                  <select
-                    value={staffForm.designation}
-                    onChange={(e) => setStaffForm({ ...staffForm, designation: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  >
-                    <option value="Senior Technical Superintendent">Senior Technical Superintendent</option>
-                    <option value="Laboratory Assistant">Laboratory Assistant</option>
-                    <option value="Technical Instructor">Technical Instructor</option>
-                    <option value="Senior Testing Assistant">Senior Testing Assistant</option>
-                    <option value="CAD/CAM & Computation Lab Assistant">CAD/CAM &amp; Computation Lab Assistant</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* STAFF PHOTO UPLOAD & URL EDIT SECTION */}
-              <div className="p-4 rounded-xl border border-white/10 bg-black/40 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-slate-200 uppercase font-bold text-[11px]">
-                    Staff Member Photo (File Upload or URL)
-                  </label>
-                  <span className="text-[10px] text-teal-400">PNG, JPG, WebP</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleStaffPhotoUpload}
-                    className="w-full text-[10px] file:mr-2 file:py-1.5 file:px-2.5 file:rounded-lg file:border-0 file:bg-teal-500 file:text-black hover:file:bg-teal-400 cursor-pointer text-slate-400"
-                  />
-                  <input
-                    type="url"
-                    placeholder="Or paste staff image URL..."
-                    value={staffForm.photoUrl || ""}
-                    onChange={(e) => setStaffForm({ ...staffForm, photoUrl: e.target.value })}
-                    className="w-full px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 focus:border-teal-400 text-white text-[11px]"
-                  />
-                </div>
-
-                {/* Presets Quick Pick */}
-                <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                  <span className="text-[9px] text-slate-500 uppercase">Presets:</span>
-                  {SAMPLE_PORTRAITS.map((p) => (
-                    <button
-                      key={p.label}
-                      type="button"
-                      onClick={() => setStaffForm({ ...staffForm, photoUrl: p.url })}
-                      className="px-2 py-0.5 rounded bg-white/[0.05] hover:bg-teal-950/60 hover:text-teal-300 border border-white/10 text-[9px] text-slate-300 cursor-pointer"
-                    >
-                      {p.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Photo Preview & Monogram Fallback */}
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="w-14 h-14 rounded-2xl border border-teal-400/50 bg-slate-900 overflow-hidden flex items-center justify-center shrink-0 shadow-md">
-                    {staffForm.photoUrl ? (
-                      <img src={staffForm.photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="font-bold text-teal-300 text-base">
-                        {staffForm.name ? staffForm.name.slice(0, 2).toUpperCase() : "ST"}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-[10px] text-slate-400 flex-1">
-                    {staffForm.photoUrl ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-emerald-400 font-semibold">✔ Staff photo attached</span>
-                        <button
-                          type="button"
-                          onClick={() => setStaffForm({ ...staffForm, photoUrl: "" })}
-                          className="px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-500/30 hover:bg-red-900 cursor-pointer"
-                        >
-                          Remove Photo
-                        </button>
+                    {isUploadingBanner && (
+                      <div className="absolute inset-0 bg-black/80 flex items-center justify-center text-cyan-300 text-[10px]">
+                        Uploading...
                       </div>
-                    ) : (
-                      <span>No photo set — will display technical staff badge.</span>
                     )}
+                  </div>
+
+                  <div className="flex-1 w-full space-y-2">
+                    <input
+                      ref={eventFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleEventBannerFileChange}
+                      className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer"
+                    />
+                    <input
+                      type="url"
+                      placeholder="Or paste banner image URL..."
+                      value={eventForm.mediaUrl || ""}
+                      onChange={(e) => setEventForm({ ...eventForm, mediaUrl: e.target.value })}
+                      className="w-full px-3 py-1.5 rounded-lg bg-black/60 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400"
+                    />
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-300 uppercase mb-1">Assigned Laboratory Floor *</label>
+                <label className="text-slate-400 block mb-1">Event Title *</label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Fabric Weaving & Loom Shed"
-                  value={staffForm.labAssigned}
-                  onChange={(e) => setStaffForm({ ...staffForm, labAssigned: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                  placeholder="e.g. TEX-CONCLAVE 2026: National Smart Fibers Symposium"
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-slate-300 uppercase mb-1">Qualification</label>
+                  <label className="text-slate-400 block mb-1">Category</label>
                   <input
                     type="text"
-                    placeholder="e.g. Diploma in Textile Manufacturing (DTM)"
-                    value={staffForm.qualification}
-                    onChange={(e) => setStaffForm({ ...staffForm, qualification: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                    placeholder="e.g. National Conclave / Hackathon"
+                    value={eventForm.category}
+                    onChange={(e) => setEventForm({ ...eventForm, category: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-slate-300 uppercase mb-1">Experience</label>
+                  <label className="text-slate-400 block mb-1">Status</label>
+                  <select
+                    value={eventForm.status}
+                    onChange={(e) => setEventForm({ ...eventForm, status: e.target.value as any })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                  >
+                    <option value="open">Registration Open</option>
+                    <option value="upcoming">Upcoming</option>
+                    <option value="closed">Concluded / Archive</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1">Date &amp; Schedule *</label>
                   <input
                     type="text"
-                    placeholder="e.g. 22 Years"
-                    value={staffForm.experience}
-                    onChange={(e) => setStaffForm({ ...staffForm, experience: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                    required
+                    placeholder="e.g. April 28–29, 2026"
+                    value={eventForm.date}
+                    onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1">Venue / Complex</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. SGGSIE&amp;T Main Auditorium"
+                    value={eventForm.venue}
+                    onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1">Registration Capacity</label>
+                  <input
+                    type="number"
+                    value={eventForm.capacity || 100}
+                    onChange={(e) => setEventForm({ ...eventForm, capacity: Number(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-slate-400 block mb-1">Registration Deadline</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. April 15, 2026"
+                    value={eventForm.deadline || ""}
+                    onChange={(e) => setEventForm({ ...eventForm, deadline: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-slate-300 uppercase mb-1">Machine &amp; Operational Skills</label>
+                <label className="text-slate-400 block mb-1">Key Highlights Pill</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE"
+                  value={eventForm.highlights || ""}
+                  onChange={(e) => setEventForm({ ...eventForm, highlights: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-400 block mb-1">Event Summary</label>
                 <textarea
-                  rows={2}
-                  placeholder="e.g. Electronic Jacquard Card Punching, Rapier Loom Timing Calibration, Loom Maintenance..."
-                  value={staffForm.skills}
-                  onChange={(e) => setStaffForm({ ...staffForm, skills: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
+                  rows={3}
+                  placeholder="Detailed synopsis of symposium tracks, competitions..."
+                  value={eventForm.summary}
+                  onChange={(e) => setEventForm({ ...eventForm, summary: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 font-sans text-xs"
                 />
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
                 <button
                   type="button"
-                  onClick={() => setIsStaffModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 cursor-pointer"
+                  onClick={() => setIsEventModalOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider cursor-pointer"
+                  disabled={isSubmittingEvent || isUploadingBanner}
+                  className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
                 >
-                  Save Staff Record
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* =========================================================================
-          MODAL: ADD MANUAL ON-SPOT REGISTRATION
-          ========================================================================= */}
-      {isAddRegModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto">
-          <div className="relative w-full max-w-lg bg-slate-950 border border-white/10 rounded-2xl p-6 sm:p-8 my-8 shadow-2xl font-mono text-xs">
-            <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-5">
-              <h3 className="text-lg font-bold text-white">
-                Record On-Spot Student Registration
-              </h3>
-              <button
-                onClick={() => setIsAddRegModalOpen(false)}
-                className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleAddManualRegistration} className="space-y-4">
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Student Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Shruti Patil"
-                  value={newRegForm.studentName}
-                  onChange={(e) => setNewRegForm({ ...newRegForm, studentName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">College PRN / Roll *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="2023BTE055"
-                    value={newRegForm.prn}
-                    onChange={(e) => setNewRegForm({ ...newRegForm, prn: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Email Address *</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="2023bte055@sggs.ac.in"
-                    value={newRegForm.email}
-                    onChange={(e) => setNewRegForm({ ...newRegForm, email: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Department</label>
-                  <select
-                    value={newRegForm.department}
-                    onChange={(e) => setNewRegForm({ ...newRegForm, department: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  >
-                    <option value="Textile Technology">Textile Technology</option>
-                    <option value="Mechanical Engineering">Mechanical Engineering</option>
-                    <option value="Information Technology">Information Technology</option>
-                    <option value="Computer Science">Computer Science</option>
-                    <option value="Electronics & Telecommunication">Electronics &amp; Telecom</option>
-                    <option value="Chemical Engineering">Chemical Engineering</option>
-                    <option value="Other Institution">Other Institution</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-slate-300 uppercase mb-1">Academic Year</label>
-                  <select
-                    value={newRegForm.year}
-                    onChange={(e) => setNewRegForm({ ...newRegForm, year: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                  >
-                    <option value="First Year B.Tech">First Year B.Tech</option>
-                    <option value="Second Year B.Tech">Second Year B.Tech</option>
-                    <option value="Third Year B.Tech">Third Year B.Tech</option>
-                    <option value="Final Year B.Tech">Final Year B.Tech</option>
-                    <option value="M.Tech Scholar">M.Tech Scholar</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Target Event</label>
-                <select
-                  value={newRegForm.eventTitle}
-                  onChange={(e) => setNewRegForm({ ...newRegForm, eventTitle: e.target.value })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                >
-                  {eventsList.map((ev) => (
-                    <option key={ev.id} value={ev.title}>
-                      {ev.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-slate-300 uppercase mb-1">Initial Status</label>
-                <select
-                  value={newRegForm.status}
-                  onChange={(e) => setNewRegForm({ ...newRegForm, status: e.target.value as any })}
-                  className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 focus:border-cyan-400 text-white"
-                >
-                  <option value="approved">Approved (Spot Verified)</option>
-                  <option value="pending">Pending Document Verification</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsAddRegModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider cursor-pointer"
-                >
-                  Register Student
+                  {editingEventId ? "Save Changes" : "Publish Event"}
                 </button>
               </div>
             </form>

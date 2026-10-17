@@ -268,34 +268,30 @@ export default function TesaTeamSection() {
 
                 {/* Upper: Photo Placeholder Frame */}
                 <div>
-                  <div className="relative w-full aspect-square mb-4 rounded-xl border border-dashed border-cyan-500/30 bg-gradient-to-br from-slate-950 via-[#0a0f18] to-slate-900/80 p-2 flex flex-col items-center justify-center overflow-hidden group-hover:border-cyan-400/70 transition-colors">
-                    {/* Animated background radial within photo slot */}
-                    <div
-                      className={`absolute inset-0 bg-gradient-to-tr ${member.accentColor} opacity-50 group-hover:opacity-100 transition-opacity blur-xl`}
-                    />
-
-                    {/* Photo Display / Placeholder Emblem */}
+                  <div className="relative w-full aspect-[3/4] mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                     {member.photoUrl ? (
-                      <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-cyan-400/70 overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.3)] group-hover:scale-105 transition-transform">
+                      <div className="relative w-full h-full">
                         <img
                           src={member.photoUrl}
                           alt={member.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
                         />
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
                       </div>
                     ) : (
-                      <div className="relative z-10 w-20 h-20 sm:w-24 sm:h-24 rounded-full border border-cyan-500/40 bg-black/70 flex flex-col items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-                        <span className="font-mono text-xl sm:text-2xl font-black text-cyan-300">
-                          {member.photoPlaceholder}
+                      <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
+                        <div className="w-16 h-16 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-2xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
+                          {member.photoPlaceholder || "TE"}
+                        </div>
+                        <span className="text-[8px] font-mono tracking-widest text-slate-400 uppercase">
+                          PORTRAIT ARCHIVE
                         </span>
-                        <span className="text-[8px] font-mono tracking-widest text-slate-400 uppercase mt-0.5">
-                          PHOTO
-                        </span>
+                        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
                       </div>
                     )}
 
                     {/* Member Year Badge */}
-                    <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded bg-black/80 text-cyan-400 border border-cyan-500/30">
+                    <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 text-cyan-400 border border-cyan-500/30">
                       {member.year}
                     </span>
                   </div>
