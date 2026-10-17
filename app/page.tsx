@@ -12,10 +12,11 @@ import MouseTiltCard from "@/components/MouseTiltCard";
 import TeamDetailModal from "@/components/TeamDetailModal";
 import EventDetailModal, { CustomFormField } from "@/components/EventDetailModal";
 import ConductiveThreadDivider from "@/components/ConductiveThreadDivider";
+import { useFabricTheme } from "@/context/FabricThemeContext";
 
-// Client-only dynamic WebGL Liquid Ether & Particle Background (ssr: false prevents hydration mismatches)
-const LiquidEtherBackground = dynamic(
-  () => import("@/components/LiquidEtherBackground"),
+// Client-only dynamic WebGL 3D Live Textile & Woven Fabric Simulation (ssr: false prevents hydration mismatches)
+const TextileCanvas3D = dynamic(
+  () => import("@/components/TextileCanvas3D"),
   { ssr: false }
 );
 
@@ -325,6 +326,8 @@ const cardSlideUpVariants: Variants = {
 };
 
 export default function Home() {
+  const { config: fabricTheme } = useFabricTheme();
+
   // State for events & team data
   const [eventsList, setEventsList] = useState<EventItem[]>(DEFAULT_EVENTS);
   const [teamList, setTeamList] = useState<TeamMember[]>(DEFAULT_TEAM);
@@ -454,10 +457,9 @@ export default function Home() {
       : teamList.filter((m) => m.category === teamCategoryFilter);
 
   return (
-    <main className="overflow-x-hidden max-w-full w-full bg-zinc-950 text-white min-h-screen relative selection:bg-cyan-500/30 selection:text-cyan-200">
-      {/* 3D WebGL Liquid Ether Particle Background */}
-       {/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */}
-      <div className="warp-weft-grid" />
+    <main className="overflow-x-hidden max-w-full w-full bg-transparent text-white min-h-screen relative selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* Live Interactive 3D Textile & Woven Fabric Simulation */}
+      <TextileCanvas3D />
 
       {/* Minimalist Top Sticky Navigation Bar */}
       <Navbar
@@ -724,12 +726,12 @@ export default function Home() {
                         key={event.id}
                         variants={cardSlideUpVariants}
                         layout
-                        whileHover={{ y: -6, transition: { duration: 0.25 } }}
+                        whileHover={{ y: -8, rotateX: 2, transition: { duration: 0.3 } }}
                         onClick={() => {
                           setSelectedEvent(event);
                           setModalInitialMode("detail");
                         }}
-                        className="selvedge-card group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/75 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
+                        className="selvedge-card group relative flex flex-col justify-between rounded-2xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-6 sm:p-7 overflow-hidden shadow-2xl hover:border-cyan-400 hover:shadow-[0_20px_50px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
                       >
                         {/* Woven background texture */}
                         <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
@@ -902,11 +904,12 @@ export default function Home() {
                         key={event.id}
                         variants={cardSlideUpVariants}
                         layout
+                        whileHover={{ y: -8, rotateX: 2, transition: { duration: 0.3 } }}
                         onClick={() => {
                           setSelectedEvent(event);
                           setModalInitialMode("detail");
                         }}
-                        className="selvedge-card group relative rounded-3xl border border-cyan-500/30 bg-slate-950/75 backdrop-blur-2xl p-6 sm:p-8 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.9)] hover:border-cyan-400/80 hover:shadow-[0_0_40px_rgba(0,240,255,0.2)] transition-all duration-300 cursor-pointer"
+                        className="selvedge-card group relative rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl p-6 sm:p-8 overflow-hidden shadow-2xl hover:border-cyan-400/80 hover:shadow-[0_25px_60px_rgba(0,240,255,0.2)] transition-all duration-300 cursor-pointer"
                       >
                         {/* Woven background texture */}
                         <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-20" />
@@ -1320,7 +1323,7 @@ export default function Home() {
       {/* =========================================================================
           HYPER-MODERN FOOTER
           ========================================================================= */}
-      <footer className="relative z-20 w-full border-t border-white/[0.08] bg-[#070512]/90 backdrop-blur-xl">
+      <footer className="relative z-20 w-full border-t border-white/10 bg-black/40 backdrop-blur-2xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-slate-400">
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-center sm:text-left">
             <div className="flex items-center gap-2.5">

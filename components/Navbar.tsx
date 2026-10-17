@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import LoginButton from "./LoginButton";
+import FabricSwatchPicker from "./FabricSwatchPicker";
 
 interface NavbarProps {
   onOpenRegister: () => void;
@@ -118,8 +119,10 @@ export default function Navbar({ onOpenRegister, onOpenVerifiedList }: NavbarPro
             ))}
           </nav>
 
-          {/* Right: Actions (Auth, Register Button, & Mobile Hamburger Menu) */}
+          {/* Right: Actions (3D Fabric Swatch Picker, Auth, Register Button, & Mobile Hamburger Menu) */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <FabricSwatchPicker />
+
             <LoginButton />
 
             {onOpenVerifiedList && (
@@ -232,8 +235,16 @@ export default function Navbar({ onOpenRegister, onOpenVerifiedList }: NavbarPro
                   </button>
                 ))}
 
+                {/* Mobile 3D Fabric Theme Switcher */}
+                <div className="py-2 px-1">
+                  <span className="text-[10px] uppercase text-cyan-400/80 tracking-widest block mb-2 font-bold">
+                    3D FABRIC SWATCH PRESET
+                  </span>
+                  <FabricSwatchPicker />
+                </div>
+
                 {/* Mobile Conclave Registration & Verified List Actions */}
-                <div className="pt-4 mt-2 border-t border-white/[0.08] space-y-2.5">
+                <div className="pt-3 mt-2 border-t border-white/[0.08] space-y-2.5">
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);

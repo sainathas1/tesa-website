@@ -510,10 +510,8 @@ export default function EventDetailModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-modal-title"
-            className="relative z-50 w-full max-w-2xl rounded-3xl border border-cyan-500/40 bg-slate-950/95 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_40px_rgba(0,240,255,0.2)] overflow-hidden my-8 selvedge-card group"
+            className="relative z-50 w-full max-w-2xl rounded-3xl border border-white/15 bg-slate-950/80 backdrop-blur-xl p-6 sm:p-8 shadow-2xl overflow-hidden my-8 selvedge-card group"
           >
-            {/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */}
-            <div className="warp-weft-grid" />
             <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-cyan-500/10 blur-3xl rounded-full" />
 
             {/* Industrial Serged Seam Top Edge */}

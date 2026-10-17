@@ -22,10 +22,18 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
+import dynamic from "next/dynamic";
 import { auth, googleProvider, db, isFirebaseConfigured } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import ConductiveThreadDivider from "@/components/ConductiveThreadDivider";
+import FabricSwatchPicker from "@/components/FabricSwatchPicker";
 import * as XLSX from "xlsx";
+
+// Client-only dynamic WebGL 3D Live Textile & Woven Fabric Simulation (ssr: false prevents hydration mismatches)
+const TextileCanvas3D = dynamic(
+  () => import("@/components/TextileCanvas3D"),
+  { ssr: false }
+);
 
 // ============================================================================
 // DATA INTERFACES & SCHEMAS (Synced with Minimalist Architecture)
@@ -1176,8 +1184,9 @@ export default function AdminDashboardPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#06070a] text-slate-100 flex items-center justify-center p-4">
-        <div className="flex flex-col items-center gap-3 font-mono text-xs text-cyan-400">
+      <div className="min-h-screen bg-transparent text-slate-100 flex items-center justify-center p-4 relative">
+        <TextileCanvas3D />
+        <div className="relative z-10 flex flex-col items-center gap-3 font-mono text-xs text-cyan-400 p-6 rounded-2xl bg-white/[0.04] backdrop-blur-xl border border-white/15 shadow-2xl">
           <div className="w-8 h-8 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
           <span>INITIALIZING TESA ADMIN CONSOLE...</span>
         </div>
@@ -1187,13 +1196,15 @@ export default function AdminDashboardPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col justify-between relative overflow-hidden">
+      <div className="min-h-screen bg-transparent text-slate-100 flex flex-col justify-between relative overflow-hidden">
         {/* Top Connection Checker Banner */}
         {renderConnectionBanner()}
 
-        <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
-          <div className="warp-weft-grid" />
-          <div className="relative z-10 w-full max-w-md p-8 rounded-2xl border border-cyan-500/30 bg-slate-950/80 backdrop-blur-xl text-center shadow-2xl selvedge-card relative overflow-hidden group">
+        {/* Live Interactive 3D Textile & Woven Fabric Simulation */}
+        <TextileCanvas3D />
+
+        <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
+          <div className="relative z-10 w-full max-w-md p-8 rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl text-center shadow-2xl selvedge-card relative overflow-hidden group">
             {/* Industrial Serged Seam Top Edge */}
             <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
 
@@ -1298,15 +1309,15 @@ export default function AdminDashboardPage() {
   // --------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen bg-transparent text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden w-full max-w-full relative">
       {/* Top Connection Checker Banner */}
       {renderConnectionBanner()}
 
-      {/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */}
-      <div className="warp-weft-grid" />
+      {/* Live Interactive 3D Textile & Woven Fabric Simulation */}
+      <TextileCanvas3D />
 
       {/* Top Header */}
-      <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#06070a]/95 backdrop-blur-md">
+      <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-slate-950/70 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <Link
@@ -1344,7 +1355,9 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* User Profile & Sign Out */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <FabricSwatchPicker />
+
             <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10">
               {user.photoURL && (
                 <Image
@@ -1451,7 +1464,7 @@ export default function AdminDashboardPage() {
             ===================================================================== */}
         {(activeTab === "team" || activeTab === "all") && (
           <section id="section-team" className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-2xl border border-cyan-500/30 bg-slate-950/80 backdrop-blur-xl shadow-xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl shadow-2xl">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/40 bg-cyan-950/50 text-[11px] font-mono text-cyan-300 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
@@ -1505,7 +1518,7 @@ export default function AdminDashboardPage() {
                 .map((member) => (
                   <div
                     key={member.id}
-                    className="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 sm:p-5 backdrop-blur-md flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(0,240,255,0.15)] transition-all font-mono selvedge-card relative overflow-hidden"
+                    className="group rounded-3xl border border-white/15 bg-white/[0.04] p-4 sm:p-5 backdrop-blur-xl flex flex-col justify-between hover:border-cyan-400 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 font-mono selvedge-card relative overflow-hidden"
                   >
                     {/* Industrial Serged Seam Top Edge */}
                     <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
@@ -1621,7 +1634,7 @@ export default function AdminDashboardPage() {
             ===================================================================== */}
         {(activeTab === "events" || activeTab === "all") && (
           <section id="section-events" className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl shadow-xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl shadow-2xl">
               <div>
                 <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
                   EVENT OPERATIONS • POSITION #2
@@ -1648,7 +1661,7 @@ export default function AdminDashboardPage() {
               {eventsList.map((ev) => (
                 <div
                   key={ev.id}
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden flex flex-col justify-between hover:border-cyan-500/40 transition-all backdrop-blur-md selvedge-card relative group"
+                  className="rounded-3xl border border-white/15 bg-white/[0.04] overflow-hidden flex flex-col justify-between hover:border-cyan-400 transition-all backdrop-blur-xl shadow-2xl hover:-translate-y-1 duration-300 selvedge-card relative group"
                 >
                   {/* Industrial Serged Seam Top Edge */}
                   <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
@@ -1753,7 +1766,7 @@ export default function AdminDashboardPage() {
             ===================================================================== */}
         {(activeTab === "registrations" || activeTab === "all") && (
           <section id="section-registrations" className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-2xl border border-cyan-500/30 bg-slate-950/80 backdrop-blur-xl shadow-xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/15 bg-white/[0.04] backdrop-blur-xl shadow-2xl">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/40 bg-cyan-950/50 text-[11px] font-mono text-cyan-300 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -1865,7 +1878,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Registrations Data Table with Selvedge & Serged Seam */}
-            <div className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden backdrop-blur-md font-mono text-xs shadow-2xl selvedge-card relative">
+            <div className="rounded-3xl border border-white/15 bg-white/[0.04] overflow-hidden backdrop-blur-xl font-mono text-xs shadow-2xl selvedge-card relative">
               <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
               <div className="flex items-center justify-between px-4 py-2 bg-slate-950/90 border-b border-white/5 text-[9px] text-cyan-400/70 uppercase">
                 <span className="flex items-center gap-1.5">

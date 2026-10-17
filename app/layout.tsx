@@ -12,6 +12,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { FabricThemeProvider } from "@/context/FabricThemeContext";
+
 export const metadata: Metadata = {
   title: "TESA | Textile Engineering Students Association • SGGSIE&T",
   description:
@@ -28,8 +30,8 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full dark antialiased scroll-smooth overflow-x-hidden max-w-full`}
     >
-      <body className="min-h-full flex flex-col bg-[#040508] text-slate-100 selection:bg-purple-500/30 selection:text-purple-200 overflow-x-hidden w-full max-w-full relative">
-        {children}
+      <body className="min-h-full flex flex-col bg-[#030408] text-slate-100 selection:bg-amber-500/30 selection:text-amber-200 overflow-x-hidden w-full max-w-full relative">
+        <FabricThemeProvider>{children}</FabricThemeProvider>
       </body>
     </html>
   );

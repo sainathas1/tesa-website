@@ -77,7 +77,7 @@ export default function MouseTiltCard({
           y: -8,
           transition: { duration: 0.3 },
         }}
-        className={`relative rounded-2xl p-5 sm:p-6 backdrop-blur-2xl bg-slate-950/65 border border-cyan-500/30 hover:border-cyan-400 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:shadow-[0_0_35px_rgba(0,240,255,0.35)] ${className}`}
+        className={`relative rounded-2xl p-5 sm:p-6 backdrop-blur-xl bg-white/[0.04] border border-white/15 hover:border-cyan-400 transition-all duration-300 shadow-2xl hover:shadow-[0_25px_50px_rgba(0,240,255,0.25)] ${className}`}
       >
         {/* Subtle Woven Texture Overlay */}
         <div className="pointer-events-none absolute inset-0 rounded-2xl bg-woven-texture opacity-25" />
