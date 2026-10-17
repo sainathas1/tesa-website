@@ -759,8 +759,14 @@ export default function Home() {
       <footer className="relative z-20 w-full border-t border-white/[0.08] bg-[#070512]/90 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-slate-400">
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-center sm:text-left">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-6 h-6 rounded-full border border-cyan-400/40 p-0.5 overflow-hidden bg-slate-950 shrink-0 shadow-[0_0_10px_rgba(0,240,255,0.25)]">
+                <img
+                  src="/tesa-logo.png"
+                  alt="TESA Logo"
+                  className="w-full h-full object-cover rounded-full"
+                />
+              </div>
               <span className="text-white font-bold text-sm tracking-wide">
                 TESA • SGGSIE&amp;T NANDED
               </span>
@@ -771,7 +777,7 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-5 text-slate-300">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-slate-300">
             <a href="#hero" className="hover:text-cyan-300 transition-colors">
               Home
             </a>
@@ -781,13 +787,6 @@ export default function Home() {
             <a href="#team" className="hover:text-cyan-300 transition-colors">
               TESA Team
             </a>
-            <Link
-              href="/admin"
-              className="px-3 py-1 rounded-full bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 hover:text-white transition-all flex items-center gap-1.5"
-            >
-              <span>🔒</span>
-              <span>Admin Console</span>
-            </Link>
           </div>
         </div>
 

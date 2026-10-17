@@ -39,38 +39,27 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
             : "bg-slate-950/65 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
         }`}
       >
-        {/* Left: Brand Identity */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500/30 via-indigo-500/20 to-purple-500/30 border border-cyan-500/40 flex items-center justify-center text-cyan-300 group-hover:scale-105 transition-transform shadow-[0_0_12px_rgba(0,240,255,0.3)]">
-            <svg
-              className="w-4 h-4 text-cyan-300"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M4 6h16" />
-              <path d="M4 12h16" />
-              <path d="M4 18h16" />
-              <path d="M6 4v16" />
-              <path d="M12 4v16" />
-              <path d="M18 4v16" />
-            </svg>
+        {/* Left: Brand Identity with Official TESA Logo */}
+        <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group">
+          <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-cyan-400/50 p-0.5 overflow-hidden bg-slate-950 group-hover:scale-105 group-hover:border-cyan-300 transition-all shadow-[0_0_15px_rgba(0,240,255,0.35)] shrink-0">
+            <img
+              src="/tesa-logo.png"
+              alt="TESA Logo"
+              className="w-full h-full object-cover rounded-full"
+            />
           </div>
           <div className="flex flex-col">
             <span className="font-bold text-xs sm:text-sm tracking-wider text-white group-hover:text-cyan-300 transition-colors">
               TESA
             </span>
-            <span className="text-[9px] font-mono text-cyan-300/70 -mt-0.5 tracking-tight hidden sm:block">
-              SGGSIE&amp;T
+            <span className="text-[9px] font-mono text-cyan-300/80 -mt-0.5 tracking-tight hidden sm:block">
+              SGGSIE&amp;T NANDED
             </span>
           </div>
         </Link>
 
         {/* Center: Clean Text Navigation Links */}
-        <div className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-300">
+        <div className="hidden md:flex items-center gap-7 text-xs font-medium text-slate-300">
           <Link
             href="#hero"
             className="hover:text-cyan-300 transition-colors relative py-1"
@@ -89,14 +78,6 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
           >
             TESA Team
           </Link>
-          {user && (
-            <Link
-              href="/admin"
-              className="text-cyan-400 hover:text-cyan-300 transition-colors text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-950/50 border border-cyan-500/30"
-            >
-              Admin Portal
-            </Link>
-          )}
         </div>
 
         {/* Right: Highlighted Register Button & Auth */}

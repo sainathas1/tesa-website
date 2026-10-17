@@ -879,18 +879,27 @@ export default function AdminDashboardPage() {
               <span>Public Website</span>
             </Link>
             <div className="h-4 w-px bg-white/10 hidden sm:block" />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs sm:text-sm font-bold text-white tracking-wider">
-                  TESA CONTROL SUITE
-                </span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
-                  MINIMALIST v4.0
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full border border-cyan-400/40 p-0.5 overflow-hidden bg-slate-950 shrink-0 shadow-[0_0_10px_rgba(0,240,255,0.25)]">
+                <img
+                  src="/tesa-logo.png"
+                  alt="TESA Logo"
+                  className="w-full h-full object-cover rounded-full"
+                />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs sm:text-sm font-bold text-white tracking-wider">
+                    TESA CONTROL SUITE
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
+                    MINIMALIST v4.0
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-slate-400 hidden sm:block">
+                  SGGSIE&amp;T Textile Engineering Students Association
                 </span>
               </div>
-              <span className="text-[10px] font-mono text-slate-400 hidden sm:block">
-                SGGSIE&amp;T Textile Engineering Students Association
-              </span>
             </div>
           </div>
 
