@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 export interface TeamMember {
@@ -80,11 +81,11 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
               +
             </span>
 
-            {/* Top Close (X) Button */}
+            {/* Top Close (X) Button (Minimum 44x44px touch target) */}
             <button
               onClick={onClose}
               aria-label="Close modal"
-              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 w-9 h-9 rounded-full bg-white/[0.05] hover:bg-red-950/60 hover:border-red-500/50 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-lg"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-white/[0.05] hover:bg-red-950/60 hover:border-red-500/50 border border-white/10 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer shadow-lg"
             >
               <svg
                 className="w-4 h-4"
@@ -112,10 +113,12 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
               <div className="relative w-full sm:w-52 h-64 sm:h-72 rounded-2xl border border-cyan-500/40 bg-zinc-950 overflow-hidden shrink-0 shadow-[0_15px_35px_rgba(0,0,0,0.85)] group">
                 {member.photoUrl ? (
                   <div className="relative w-full h-full">
-                    <img
+                    <Image
                       src={member.photoUrl}
                       alt={member.name}
-                      className="w-full h-full object-cover mix-blend-luminosity grayscale-[25%] contrast-110 hover:grayscale-0 hover:mix-blend-normal transition-all duration-500"
+                      fill
+                      sizes="(max-width: 640px) 100vw, 208px"
+                      className="object-cover mix-blend-luminosity grayscale-[25%] contrast-110 hover:grayscale-0 hover:mix-blend-normal transition-all duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/30 to-transparent pointer-events-none" />
                     <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />

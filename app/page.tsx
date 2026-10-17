@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -258,6 +259,7 @@ export default function Home() {
   // State for events & team data
   const [eventsList, setEventsList] = useState<EventItem[]>(DEFAULT_EVENTS);
   const [teamList, setTeamList] = useState<TeamMember[]>(DEFAULT_TEAM);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Filter states
   const [eventCategoryFilter, setEventCategoryFilter] = useState<"all" | "open" | "upcoming" | "closed">("all");
@@ -319,10 +321,19 @@ export default function Home() {
         }
       } catch (err) {
         console.warn("Firestore live sync offline, using local cached data:", err);
+      } finally {
+        setIsDataLoading(false);
       }
     }
 
     syncFirestoreData();
+
+    // Safety timeout: Ensure pulse skeleton stops after at most 1.2s to prevent lingering spinners
+    const timeoutId = setTimeout(() => {
+      setIsDataLoading(false);
+    }, 1200);
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   const handleOpenRegistration = (eventTitle: string = "TEX-CONCLAVE 2026") => {
@@ -342,7 +353,7 @@ export default function Home() {
       : teamList.filter((m) => m.category === teamCategoryFilter);
 
   return (
-    <main className="overflow-x-hidden bg-zinc-950 text-white min-h-screen relative selection:bg-cyan-500/30 selection:text-cyan-200">
+    <main className="overflow-x-hidden max-w-full w-full bg-zinc-950 text-white min-h-screen relative selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* 3D WebGL Liquid Ether Particle Background */}
       <LiquidEtherBackground />
 
@@ -403,19 +414,19 @@ export default function Home() {
           >
             <a
               href="#events"
-              className="px-6 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_25px_rgba(0,240,255,0.4)] hover:shadow-[0_0_35px_rgba(0,240,255,0.6)]"
+              className="min-h-[44px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_25px_rgba(0,240,255,0.4)] hover:shadow-[0_0_35px_rgba(0,240,255,0.6)] cursor-pointer"
             >
               Explore Events →
             </a>
             <a
               href="#team"
-              className="px-6 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-cyan-500/40 text-slate-200 hover:text-white transition-all backdrop-blur-md"
+              className="min-h-[44px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-cyan-500/40 text-slate-200 hover:text-white transition-all backdrop-blur-md cursor-pointer"
             >
               Meet the Team
             </a>
             <button
               onClick={() => handleOpenRegistration("TEX-CONCLAVE 2026")}
-              className="px-6 py-3 rounded-full bg-purple-950/70 hover:bg-purple-900 border border-purple-500/40 text-purple-300 hover:text-white transition-all backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.25)]"
+              className="min-h-[44px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-purple-950/70 hover:bg-purple-900 border border-purple-500/40 text-purple-300 hover:text-white transition-all backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.25)] cursor-pointer"
             >
               Register for Conclave &apos;26
             </button>
@@ -466,7 +477,7 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setEventCategoryFilter(tab.id as any)}
-                  className={`px-3.5 py-1.5 rounded-lg border transition-all duration-200 ${
+                  className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3.5 py-2 rounded-lg border transition-all duration-200 cursor-pointer ${
                     eventCategoryFilter === tab.id
                       ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
                       : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
@@ -478,131 +489,165 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Clean Glassmorphic Events Flex/Grid Layout */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-30px" }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7"
-          >
-            <AnimatePresence mode="popLayout">
-              {filteredEvents.map((event) => {
-                const isOpen = event.status === "open";
-                const isUpcoming = event.status === "upcoming";
-
-                return (
-                  <motion.div
-                    key={event.id}
-                    variants={cardSlideUpVariants}
-                    layout
-                    whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                    onClick={() => setSelectedEvent(event)}
-                    className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
-                  >
-                    {/* Woven background texture */}
-                    <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
-
-                    {/* Corner Accent Decorator */}
-                    <span className="pointer-events-none absolute top-3 left-3 font-mono text-[9px] text-cyan-500/40">
-                      +
-                    </span>
-                    <span className="pointer-events-none absolute top-3 right-3 font-mono text-[9px] text-cyan-500/40">
-                      +
-                    </span>
-
-                    <div className="relative z-10">
-                      {/* Status & Category Row */}
-                      <div className="flex items-center justify-between gap-2 mb-4">
-                        <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider">
-                          {event.category}
-                        </span>
-
-                        <span
-                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
-                            isOpen
-                              ? "bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
-                              : isUpcoming
-                              ? "bg-amber-950/70 text-amber-300 border-amber-500/40"
-                              : "bg-slate-900/80 text-slate-400 border-slate-700/50"
-                          }`}
-                        >
-                          {isOpen ? "● OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
-                        </span>
-                      </div>
-
-                      {/* Event Title */}
-                      <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight mb-2">
-                        {event.title}
-                      </h3>
-
-                      {/* Date & Venue Badges */}
-                      <div className="flex flex-col gap-1.5 text-xs font-mono text-slate-400 mb-4">
-                        <div className="flex items-center gap-2">
-                          <span className="text-cyan-400">📅</span>
-                          <span>{event.date}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-cyan-400">📍</span>
-                          <span className="truncate">{event.venue}</span>
-                        </div>
-                      </div>
-
-                      {/* Event Summary */}
-                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5 font-normal">
-                        {event.summary}
-                      </p>
-
-                      {/* Highlights Pill */}
-                      {event.highlights && (
-                        <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-4 flex items-center gap-2">
-                          <span className="text-cyan-400">✦</span>
-                          <span className="leading-snug">{event.highlights}</span>
-                        </div>
-                      )}
-
-                      {/* Card click hint */}
-                      <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors py-1.5 border-t border-white/[0.05] mb-2">
-                        <span>CLICK TO EXPAND EVENT DOSSIER</span>
-                        <span>🔍</span>
-                      </div>
+          {/* Clean Glassmorphic Events Flex/Grid Layout or Pulsing Skeleton */}
+          {isDataLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={`event-skel-${n}`}
+                  className="relative flex flex-col justify-between rounded-2xl border border-cyan-500/15 bg-slate-950/70 p-6 sm:p-7 overflow-hidden animate-pulse min-h-[380px] shadow-[0_20px_50px_rgba(0,0,0,0.85)]"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="h-5 w-28 rounded-full bg-slate-800/80" />
+                      <div className="h-4 w-16 rounded-full bg-slate-800/60" />
                     </div>
-
-                    {/* Bottom CTA & Registration Action */}
-                    <div className="relative z-10 pt-3 border-t border-white/[0.08] flex items-center justify-between font-mono text-xs">
-                      {isOpen ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenRegistration(event.title);
-                          }}
-                          className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <span>Register Online</span>
-                          <span>→</span>
-                        </button>
-                      ) : isUpcoming ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenRegistration(event.title);
-                          }}
-                          className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <span>Pre-Register / Notify Me</span>
-                          <span>→</span>
-                        </button>
-                      ) : (
-                        <div className="w-full py-2 text-center text-slate-500 text-[11px] font-mono">
-                          Archive Recorded • Event Concluded
-                        </div>
-                      )}
+                    <div className="space-y-2 pt-2">
+                      <div className="h-6 w-5/6 rounded-lg bg-slate-800/90" />
+                      <div className="h-6 w-3/5 rounded-lg bg-slate-800/70" />
                     </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </motion.div>
+                    <div className="space-y-2 pt-2">
+                      <div className="h-4 w-40 rounded bg-slate-800/60" />
+                      <div className="h-4 w-48 rounded bg-slate-800/60" />
+                    </div>
+                    <div className="space-y-2 pt-3">
+                      <div className="h-3.5 w-full rounded bg-slate-800/40" />
+                      <div className="h-3.5 w-4/5 rounded bg-slate-800/40" />
+                      <div className="h-3.5 w-2/3 rounded bg-slate-800/40" />
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-white/[0.08]">
+                    <div className="h-11 w-full rounded-xl bg-slate-800/80" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-30px" }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7"
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredEvents.map((event) => {
+                  const isOpen = event.status === "open";
+                  const isUpcoming = event.status === "upcoming";
+
+                  return (
+                    <motion.div
+                      key={event.id}
+                      variants={cardSlideUpVariants}
+                      layout
+                      whileHover={{ y: -6, transition: { duration: 0.25 } }}
+                      onClick={() => setSelectedEvent(event)}
+                      className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
+                    >
+                      {/* Woven background texture */}
+                      <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
+
+                      {/* Corner Accent Decorator */}
+                      <span className="pointer-events-none absolute top-3 left-3 font-mono text-[9px] text-cyan-500/40">
+                        +
+                      </span>
+                      <span className="pointer-events-none absolute top-3 right-3 font-mono text-[9px] text-cyan-500/40">
+                        +
+                      </span>
+
+                      <div className="relative z-10">
+                        {/* Status & Category Row */}
+                        <div className="flex items-center justify-between gap-2 mb-4">
+                          <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider">
+                            {event.category}
+                          </span>
+
+                          <span
+                            className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
+                              isOpen
+                                ? "bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                                : isUpcoming
+                                ? "bg-amber-950/70 text-amber-300 border-amber-500/40"
+                                : "bg-slate-900/80 text-slate-400 border-slate-700/50"
+                            }`}
+                          >
+                            {isOpen ? "● OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
+                          </span>
+                        </div>
+
+                        {/* Event Title */}
+                        <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight mb-2">
+                          {event.title}
+                        </h3>
+
+                        {/* Date & Venue Badges */}
+                        <div className="flex flex-col gap-1.5 text-xs font-mono text-slate-400 mb-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-cyan-400">📅</span>
+                            <span>{event.date}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-cyan-400">📍</span>
+                            <span className="truncate">{event.venue}</span>
+                          </div>
+                        </div>
+
+                        {/* Event Summary */}
+                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5 font-normal">
+                          {event.summary}
+                        </p>
+
+                        {/* Highlights Pill */}
+                        {event.highlights && (
+                          <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-4 flex items-center gap-2">
+                            <span className="text-cyan-400">✦</span>
+                            <span className="leading-snug">{event.highlights}</span>
+                          </div>
+                        )}
+
+                        {/* Card click hint */}
+                        <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors py-1.5 border-t border-white/[0.05] mb-2">
+                          <span>CLICK TO EXPAND EVENT DOSSIER</span>
+                          <span>🔍</span>
+                        </div>
+                      </div>
+
+                      {/* Bottom CTA & Registration Action */}
+                      <div className="relative z-10 pt-3 border-t border-white/[0.08] flex items-center justify-between font-mono text-xs">
+                        {isOpen ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenRegistration(event.title);
+                            }}
+                            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <span>Register Online</span>
+                            <span>→</span>
+                          </button>
+                        ) : isUpcoming ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenRegistration(event.title);
+                            }}
+                            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                          >
+                            <span>Pre-Register / Notify Me</span>
+                            <span>→</span>
+                          </button>
+                        ) : (
+                          <div className="w-full min-h-[44px] flex items-center justify-center text-slate-500 text-[11px] font-mono">
+                            Archive Recorded • Event Concluded
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </motion.div>
+          )}
         </div>
       </section>
 
@@ -650,7 +695,7 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setTeamCategoryFilter(tab.id)}
-                  className={`px-3 py-1.5 rounded-lg border transition-all duration-200 ${
+                  className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3.5 py-2 rounded-lg border transition-all duration-200 cursor-pointer ${
                     teamCategoryFilter === tab.id
                       ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
                       : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
@@ -662,109 +707,142 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Medium-Sized Staggered 3D Tilt Card Grid: 1 Col Mobile, 2 Col Tablet, 4 Col Desktop */}
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-30px" }}
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6"
-          >
-            <AnimatePresence mode="popLayout">
-              {filteredTeam.map((member) => (
-                <motion.div
-                  key={member.id}
-                  variants={cardSlideUpVariants}
-                  layout
-                  className="h-full"
+          {/* Medium-Sized Staggered 3D Tilt Card Grid or Pulsing Skeleton */}
+          {isDataLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+              {[1, 2, 3, 4].map((n) => (
+                <div
+                  key={`team-skel-${n}`}
+                  className="relative flex flex-col justify-between rounded-2xl border border-cyan-500/15 bg-slate-950/70 p-4 sm:p-5 overflow-hidden animate-pulse min-h-[440px] shadow-[0_20px_50px_rgba(0,0,0,0.85)]"
                 >
-                  <MouseTiltCard
-                    glowColor="rgba(0, 240, 255, 0.4)"
-                    borderColor="rgba(0, 240, 255, 0.55)"
-                    onClick={() => setSelectedMember(member)}
-                    className="h-full border-cyan-500/30 cursor-pointer"
+                  <div>
+                    {/* Portrait Frame Skeleton */}
+                    <div className="w-full h-52 sm:h-56 mb-4 rounded-xl bg-slate-800/80" />
+                    <div className="h-4 w-20 rounded bg-slate-800/70 mb-2" />
+                    <div className="h-5 w-36 rounded bg-slate-800/90 mb-2" />
+                    <div className="h-3.5 w-28 rounded bg-slate-800/60 mb-3" />
+                    <div className="space-y-1.5 mb-4">
+                      <div className="h-3 w-full rounded bg-slate-800/40" />
+                      <div className="h-3 w-4/5 rounded bg-slate-800/40" />
+                    </div>
+                  </div>
+                  <div className="pt-3 border-t border-white/[0.08] space-y-2">
+                    <div className="h-3 w-24 rounded bg-slate-800/50" />
+                    <div className="flex gap-1.5">
+                      <div className="h-4 w-12 rounded bg-slate-800/60" />
+                      <div className="h-4 w-14 rounded bg-slate-800/60" />
+                      <div className="h-4 w-10 rounded bg-slate-800/60" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-30px" }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6"
+            >
+              <AnimatePresence mode="popLayout">
+                {filteredTeam.map((member) => (
+                  <motion.div
+                    key={member.id}
+                    variants={cardSlideUpVariants}
+                    layout
+                    className="h-full"
                   >
-                    <div className="flex flex-col justify-between h-full">
-                      <div>
-                        {/* Upper: Member Medium Portrait Frame */}
-                        <div className="relative w-full h-52 sm:h-56 mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
-                          {member.photoUrl ? (
-                            <div className="relative w-full h-full">
-                              <img
-                                src={member.photoUrl}
-                                alt={member.name}
-                                className="w-full h-full object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
-                              />
-                              {/* Dark Theme Vignette & Gradient Overlay */}
-                              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
-                              <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
-                            </div>
-                          ) : (
-                            <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
-                              <div className="w-14 h-14 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
-                                {member.photoPlaceholder || "TE"}
+                    <MouseTiltCard
+                      glowColor="rgba(0, 240, 255, 0.4)"
+                      borderColor="rgba(0, 240, 255, 0.55)"
+                      onClick={() => setSelectedMember(member)}
+                      className="h-full border-cyan-500/30 cursor-pointer"
+                    >
+                      <div className="flex flex-col justify-between h-full">
+                        <div>
+                          {/* Upper: Member Medium Portrait Frame */}
+                          <div className="relative w-full h-52 sm:h-56 mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                            {member.photoUrl ? (
+                              <div className="relative w-full h-full">
+                                <Image
+                                  src={member.photoUrl}
+                                  alt={member.name}
+                                  fill
+                                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                                  className="object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
+                                />
+                                {/* Dark Theme Vignette & Gradient Overlay */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
+                                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
                               </div>
-                              <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase">
-                                PORTRAIT ARCHIVE
-                              </span>
-                              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
-                            </div>
-                          )}
+                            ) : (
+                              <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-cyan-950/40 flex flex-col items-center justify-center p-4 text-center">
+                                <div className="w-14 h-14 rounded-xl border border-cyan-500/40 bg-cyan-950/40 flex items-center justify-center font-mono text-xl font-black text-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.25)] mb-2">
+                                  {member.photoPlaceholder || "TE"}
+                                </div>
+                                <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase">
+                                  PORTRAIT ARCHIVE
+                                </span>
+                                <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
+                              </div>
+                            )}
 
-                          {/* Member Year Badge */}
-                          <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-cyan-300 border border-cyan-500/40 shadow-md">
-                            {member.year}
-                          </span>
+                            {/* Member Year Badge */}
+                            <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-cyan-300 border border-cyan-500/40 shadow-md">
+                              {member.year}
+                            </span>
 
-                          {/* Accent glow line at bottom of photo */}
-                          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
-                        </div>
-
-                        {/* Name & Role Designation */}
-                        <div className="mb-2.5">
-                          <div className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 uppercase tracking-wider mb-1">
-                            {member.role}
+                            {/* Accent glow line at bottom of photo */}
+                            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
                           </div>
-                          <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
-                            {member.name}
-                          </h3>
-                          <p className="text-[11px] font-mono text-slate-400 mt-0.5 truncate">
-                            {member.designation}
+
+                          {/* Name & Role Designation */}
+                          <div className="mb-2.5">
+                            <div className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 uppercase tracking-wider mb-1">
+                              {member.role}
+                            </div>
+                            <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
+                              {member.name}
+                            </h3>
+                            <p className="text-[11px] font-mono text-slate-400 mt-0.5 truncate">
+                              {member.designation}
+                            </p>
+                          </div>
+
+                          {/* Bio Description */}
+                          <p className="text-xs text-slate-300 leading-relaxed mb-3 line-clamp-2">
+                            {member.bio}
                           </p>
                         </div>
 
-                        {/* Bio Description */}
-                        <p className="text-xs text-slate-300 leading-relaxed mb-3 line-clamp-2">
-                          {member.bio}
-                        </p>
-                      </div>
-
-                      {/* Lower: Focus Area & Skills Badges */}
-                      <div className="pt-2.5 border-t border-white/[0.08]">
-                        <div className="text-[9px] font-mono text-cyan-400/80 uppercase tracking-wider mb-1.5 truncate">
-                          FOCUS: {member.specialization}
-                        </div>
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {member.skills.slice(0, 3).map((skill, sIdx) => (
-                            <span
-                              key={sIdx}
-                              className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-slate-300 border border-white/[0.08]"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between text-[9px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors pt-1.5 border-t border-white/[0.04]">
-                          <span>VIEW MEMBER DOSSIER</span>
-                          <span>→</span>
+                        {/* Lower: Focus Area & Skills Badges */}
+                        <div className="pt-2.5 border-t border-white/[0.08]">
+                          <div className="text-[9px] font-mono text-cyan-400/80 uppercase tracking-wider mb-1.5 truncate">
+                            FOCUS: {member.specialization}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mb-2">
+                            {member.skills.slice(0, 3).map((skill, sIdx) => (
+                              <span
+                                key={sIdx}
+                                className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-slate-300 border border-white/[0.08]"
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex items-center justify-between text-[9px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors pt-1.5 border-t border-white/[0.04]">
+                            <span>VIEW MEMBER DOSSIER</span>
+                            <span>→</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </MouseTiltCard>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+                    </MouseTiltCard>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
         </div>
       </section>
 
@@ -801,10 +879,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-slate-400">
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-center sm:text-left">
             <div className="flex items-center gap-2.5">
-              <div className="w-6 h-6 rounded-full border border-cyan-400/40 p-0.5 overflow-hidden bg-slate-950 shrink-0 shadow-[0_0_10px_rgba(0,240,255,0.25)]">
-                <img
+              <div className="relative w-6 h-6 rounded-full border border-cyan-400/40 p-0.5 overflow-hidden bg-slate-950 shrink-0 shadow-[0_0_10px_rgba(0,240,255,0.25)]">
+                <Image
                   src="/tesa-logo.png"
                   alt="TESA Logo"
+                  width={24}
+                  height={24}
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>
@@ -819,13 +899,13 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-slate-300">
-            <a href="#hero" className="hover:text-cyan-300 transition-colors">
+            <a href="#hero" className="min-h-[44px] inline-flex items-center px-2 hover:text-cyan-300 transition-colors cursor-pointer">
               Home
             </a>
-            <a href="#events" className="hover:text-cyan-300 transition-colors">
+            <a href="#events" className="min-h-[44px] inline-flex items-center px-2 hover:text-cyan-300 transition-colors cursor-pointer">
               Events
             </a>
-            <a href="#team" className="hover:text-cyan-300 transition-colors">
+            <a href="#team" className="min-h-[44px] inline-flex items-center px-2 hover:text-cyan-300 transition-colors cursor-pointer">
               TESA Team
             </a>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 interface FacultyMember {
@@ -341,8 +342,8 @@ export default function DepartmentOverviewSection() {
                     <div className="flex items-start justify-between gap-2 mb-3">
                       <div className="flex items-center gap-3">
                         {faculty.photoUrl ? (
-                          <div className="w-12 h-12 rounded-full border border-cyan-400/50 overflow-hidden shrink-0 shadow-md">
-                            <img src={faculty.photoUrl} alt={faculty.name} className="w-full h-full object-cover" />
+                          <div className="relative w-12 h-12 rounded-full border border-cyan-400/50 overflow-hidden shrink-0 shadow-md">
+                            <Image src={faculty.photoUrl} alt={faculty.name} fill sizes="48px" className="object-cover" />
                           </div>
                         ) : (
                           <div className="w-12 h-12 rounded-full border border-cyan-500/30 bg-cyan-950/50 flex items-center justify-center shrink-0 font-mono text-cyan-300 font-bold text-xs">
@@ -443,8 +444,8 @@ export default function DepartmentOverviewSection() {
 
                     <div className="flex items-center gap-3 mb-2">
                       {staff.photoUrl ? (
-                        <div className="w-11 h-11 rounded-full border border-teal-400/50 overflow-hidden shrink-0 shadow-md">
-                          <img src={staff.photoUrl} alt={staff.name} className="w-full h-full object-cover" />
+                        <div className="relative w-11 h-11 rounded-full border border-teal-400/50 overflow-hidden shrink-0 shadow-md">
+                          <Image src={staff.photoUrl} alt={staff.name} fill sizes="44px" className="object-cover" />
                         </div>
                       ) : (
                         <div className="w-11 h-11 rounded-full border border-teal-500/30 bg-teal-950/50 flex items-center justify-center shrink-0 font-mono text-teal-300 font-bold text-xs">

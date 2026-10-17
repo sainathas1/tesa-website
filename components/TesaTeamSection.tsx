@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import Image from "next/image";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 
 interface TeamMember {
@@ -217,7 +218,7 @@ export default function TesaTeamSection() {
               <button
                 key={tab.id}
                 onClick={() => setActiveCategory(tab.id)}
-                className={`px-3 py-1.5 rounded-lg border transition-all duration-200 ${
+                className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3.5 py-2 rounded-lg border transition-all duration-200 cursor-pointer ${
                   activeCategory === tab.id
                     ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
                     : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
@@ -271,10 +272,12 @@ export default function TesaTeamSection() {
                   <div className="relative w-full h-52 sm:h-56 mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                     {member.photoUrl ? (
                       <div className="relative w-full h-full">
-                        <img
+                        <Image
                           src={member.photoUrl}
                           alt={member.name}
-                          className="w-full h-full object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                          className="object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
                       </div>

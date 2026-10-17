@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import {
   signInWithPopup,
   signOut,
@@ -79,7 +80,7 @@ export default function LoginButton() {
 
   if (loading) {
     return (
-      <div className="h-9 px-3 rounded-lg bg-white/[0.04] border border-white/10 flex items-center gap-2 text-xs font-mono text-slate-400 animate-pulse">
+      <div className="min-h-[44px] px-3 rounded-xl bg-white/[0.04] border border-white/10 flex items-center gap-2 text-xs font-mono text-slate-400 animate-pulse">
         <span className="w-2 h-2 rounded-full bg-cyan-400" />
         <span>AUTH INIT...</span>
       </div>
@@ -95,17 +96,19 @@ export default function LoginButton() {
         <div>
           <button
             onClick={() => setDropdownOpen((prev) => !prev)}
-            className="group flex items-center gap-2.5 px-3 py-1.5 rounded-lg border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-950/70 hover:border-cyan-400 transition-all text-left"
+            className="group flex items-center gap-2.5 px-3 min-h-[44px] rounded-xl border border-cyan-500/30 bg-cyan-950/40 hover:bg-cyan-950/70 hover:border-cyan-400 transition-all text-left cursor-pointer"
             title="User Account"
           >
             {/* User Avatar with Fallback */}
             <div className="relative w-7 h-7 rounded-full overflow-hidden border border-cyan-400/50 bg-slate-800 flex items-center justify-center shrink-0">
               {user.photoURL ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={user.photoURL}
                   alt={user.displayName || "User avatar"}
+                  width={28}
+                  height={28}
                   className="w-full h-full object-cover"
+                  unoptimized
                 />
               ) : (
                 <span className="font-mono text-xs font-bold text-cyan-300">
@@ -199,7 +202,7 @@ export default function LoginButton() {
         <button
           onClick={handleGoogleSignIn}
           disabled={signingIn}
-          className="relative inline-flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2 rounded-lg text-xs font-mono font-semibold tracking-wide text-slate-100 bg-white/[0.05] border border-white/[0.15] hover:bg-white/[0.1] hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
+          className="relative inline-flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2 min-h-[44px] rounded-xl text-xs font-mono font-semibold tracking-wide text-slate-100 bg-white/[0.05] border border-white/[0.15] hover:bg-white/[0.1] hover:border-cyan-400 hover:shadow-[0_0_15px_rgba(6,182,212,0.3)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed group cursor-pointer"
           title="Sign in with your Google account"
         >
           {/* Official Google G Multicolored SVG */}

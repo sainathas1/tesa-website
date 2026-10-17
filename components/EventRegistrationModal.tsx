@@ -108,7 +108,8 @@ export default function EventRegistrationModal({
           </div>
           <button
             onClick={handleResetAndClose}
-            className="w-7 h-7 rounded-lg border border-white/10 hover:border-red-400/50 hover:bg-red-950/40 text-slate-400 hover:text-red-300 flex items-center justify-center text-xs font-mono transition-colors"
+            aria-label="Close registration modal"
+            className="min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl border border-white/10 hover:border-red-400/50 hover:bg-red-950/40 text-slate-400 hover:text-red-300 flex items-center justify-center text-xs font-mono transition-colors cursor-pointer"
           >
             ✕
           </button>
@@ -152,7 +153,7 @@ export default function EventRegistrationModal({
 
               <button
                 onClick={handleResetAndClose}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)]"
+                className="w-full min-h-[44px] py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(6,182,212,0.3)] cursor-pointer"
               >
                 Close &amp; Return to Website
               </button>
@@ -309,7 +310,7 @@ export default function EventRegistrationModal({
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 hover:from-cyan-400 hover:to-teal-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2"
+                  className="w-full min-h-[44px] py-3 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-400 to-cyan-500 hover:from-cyan-400 hover:to-teal-300 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all disabled:opacity-50 shadow-[0_0_20px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isSubmitting ? (
                     <>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 export interface EventItem {
@@ -87,11 +88,11 @@ export default function EventDetailModal({
               +
             </span>
 
-            {/* Top Close (X) Button */}
+            {/* Top Close (X) Button (Minimum 44x44px touch target) */}
             <button
               onClick={onClose}
               aria-label="Close modal"
-              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 w-9 h-9 rounded-full bg-black/60 hover:bg-red-950/80 hover:border-red-500/50 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-lg"
+              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-black/60 hover:bg-red-950/80 hover:border-red-500/50 border border-white/20 text-slate-300 hover:text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-lg"
             >
               <svg
                 className="w-4 h-4"
@@ -110,10 +111,12 @@ export default function EventDetailModal({
             {/* Event Media / Banner */}
             {event.mediaUrl ? (
               <div className="relative w-full h-48 sm:h-60 rounded-2xl overflow-hidden border border-cyan-500/30 mb-6 shadow-xl">
-                <img
+                <Image
                   src={event.mediaUrl}
                   alt={event.title}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="(max-width: 640px) 100vw, 680px"
+                  className="object-cover"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent pointer-events-none" />
 

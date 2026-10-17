@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   onAuthStateChanged,
   signInWithPopup,
@@ -863,7 +864,7 @@ export default function AdminDashboardPage() {
   // --------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden w-full max-w-full">
       {/* Background Decor */}
       <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-30" />
 
@@ -873,17 +874,19 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="px-3 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 hover:border-cyan-500/40 text-xs font-mono text-slate-300 hover:text-cyan-300 transition-colors flex items-center gap-1.5"
+              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-white/[0.05] border border-white/10 hover:border-cyan-500/40 text-xs font-mono text-slate-300 hover:text-cyan-300 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <span>←</span>
               <span>Public Website</span>
             </Link>
             <div className="h-4 w-px bg-white/10 hidden sm:block" />
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-full border border-cyan-400/40 p-0.5 overflow-hidden bg-slate-950 shrink-0 shadow-[0_0_10px_rgba(0,240,255,0.25)]">
-                <img
+              <div className="relative w-8 h-8 rounded-full border border-cyan-400/40 p-0.5 overflow-hidden bg-slate-950 shrink-0 shadow-[0_0_10px_rgba(0,240,255,0.25)]">
+                <Image
                   src="/tesa-logo.png"
                   alt="TESA Logo"
+                  width={32}
+                  height={32}
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>
@@ -907,9 +910,12 @@ export default function AdminDashboardPage() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10">
               {user.photoURL && (
-                <img
+                <Image
                   src={user.photoURL}
                   alt={user.displayName || "Admin"}
+                  width={28}
+                  height={28}
+                  unoptimized
                   className="w-7 h-7 rounded-lg border border-cyan-400/40 object-cover"
                 />
               )}
@@ -923,7 +929,7 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 onClick={() => signOut(auth)}
-                className="px-2.5 py-1 rounded bg-white/[0.05] border border-white/10 hover:bg-red-950/40 hover:border-red-500/40 hover:text-red-300 text-xs font-mono transition-colors cursor-pointer"
+                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-white/[0.05] border border-white/10 hover:bg-red-950/40 hover:border-red-500/40 hover:text-red-300 text-xs font-mono transition-colors cursor-pointer"
                 title="Sign out"
               >
                 Sign Out
@@ -1062,10 +1068,12 @@ export default function AdminDashboardPage() {
                       <div className="relative w-full h-48 sm:h-52 mb-3.5 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                         {member.photoUrl ? (
                           <div className="relative w-full h-full">
-                            <img
+                            <Image
                               src={member.photoUrl}
                               alt={member.name}
-                              className="w-full h-full object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
+                              fill
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                              className="object-cover mix-blend-luminosity grayscale-[40%] contrast-110 group-hover:grayscale-0 group-hover:mix-blend-normal group-hover:scale-105 transition-all duration-700 ease-out"
                             />
                             {/* Dark Theme Gradient Overlay */}
                             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
@@ -1180,8 +1188,14 @@ export default function AdminDashboardPage() {
                   <div>
                     {ev.mediaUrl ? (
                       <div className="h-44 w-full overflow-hidden relative">
-                        <img src={ev.mediaUrl} alt={ev.title} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
+                        <Image
+                          src={ev.mediaUrl}
+                          alt={ev.title}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
                         <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/80 text-[10px] font-mono text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
                           {ev.category}
                         </span>
@@ -1438,10 +1452,12 @@ export default function AdminDashboardPage() {
                   <div className="relative w-36 aspect-[3/4] rounded-xl border border-cyan-500/40 bg-zinc-950 overflow-hidden shrink-0 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                     {teamForm.photoUrl ? (
                       <div className="relative w-full h-full">
-                        <img
+                        <Image
                           src={teamForm.photoUrl}
                           alt="Preview"
-                          className="w-full h-full object-cover mix-blend-luminosity grayscale-[40%] contrast-110"
+                          fill
+                          unoptimized
+                          className="object-cover mix-blend-luminosity grayscale-[40%] contrast-110"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-900/40 to-transparent pointer-events-none" />
                         <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-xl" />
@@ -1665,7 +1681,13 @@ export default function AdminDashboardPage() {
                 <div className="flex flex-col sm:flex-row gap-4 items-center">
                   <div className="w-40 h-24 rounded-lg border border-white/10 bg-black overflow-hidden shrink-0 relative">
                     {eventForm.mediaUrl ? (
-                      <img src={eventForm.mediaUrl} alt="Banner" className="w-full h-full object-cover" />
+                      <Image
+                        src={eventForm.mediaUrl}
+                        alt="Banner"
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-500 text-center p-2">
                         No Banner

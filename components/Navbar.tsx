@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { auth } from "@/lib/firebase";
@@ -77,13 +78,16 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
           <Link
             href="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 sm:gap-3 group shrink-0"
+            className="flex items-center gap-2.5 sm:gap-3 group shrink-0 min-h-[44px]"
           >
             <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-cyan-400/50 p-0.5 overflow-hidden bg-slate-950 group-hover:scale-105 group-hover:border-cyan-300 transition-all shadow-[0_0_15px_rgba(0,240,255,0.35)] shrink-0">
-              <img
+              <Image
                 src="/tesa-logo.png"
-                alt="TESA Logo"
+                alt="TESA Official Emblem Logo"
+                width={36}
+                height={36}
                 className="w-full h-full object-cover rounded-full"
+                priority
               />
             </div>
             <div className="flex flex-col">
@@ -105,7 +109,7 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
               <a
                 key={link.id}
                 href={link.href}
-                className="relative py-1 hover:text-cyan-300 transition-colors duration-200 group"
+                className="relative py-2 hover:text-cyan-300 transition-colors duration-200 group min-h-[44px] flex items-center"
               >
                 <span>{link.label}</span>
                 <span className="absolute bottom-0 left-0 w-0 h-[2px] bg-gradient-to-r from-cyan-400 to-teal-300 group-hover:w-full transition-all duration-300 rounded-full" />
@@ -119,7 +123,7 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
 
             <button
               onClick={onOpenRegister}
-              className="relative group overflow-hidden px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-semibold text-white tracking-wide transition-all duration-300 shadow-[0_0_15px_rgba(0,240,255,0.35)] hover:shadow-[0_0_25px_rgba(0,240,255,0.55)] border border-cyan-400/40 cursor-pointer shrink-0"
+              className="relative group overflow-hidden px-4 sm:px-5 min-h-[44px] rounded-full text-xs font-semibold text-white tracking-wide transition-all duration-300 shadow-[0_0_15px_rgba(0,240,255,0.35)] hover:shadow-[0_0_25px_rgba(0,240,255,0.55)] border border-cyan-400/40 cursor-pointer shrink-0 inline-flex items-center justify-center"
             >
               <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-sky-600 to-purple-600 transition-transform duration-300 group-hover:scale-105" />
               <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -140,13 +144,13 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
               </span>
             </button>
 
-            {/* Mobile Hamburger Toggle Button (Visible on < md screens) */}
+            {/* Mobile Hamburger Toggle Button (Minimum 44x44px touch target) */}
             <button
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
               aria-expanded={mobileMenuOpen}
-              className="md:hidden relative w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.04] border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-white flex flex-col items-center justify-center gap-1.5 p-2 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-400/40 shrink-0"
+              className="md:hidden relative min-w-[44px] min-h-[44px] w-11 h-11 rounded-xl bg-white/[0.04] border border-cyan-500/30 hover:border-cyan-400 text-cyan-300 hover:text-white flex flex-col items-center justify-center gap-1.5 p-2 transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-400/40 shrink-0"
             >
               <span
                 className={`w-4 h-0.5 bg-current rounded-full transition-transform duration-300 origin-center ${
@@ -202,7 +206,7 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
                   <button
                     key={link.id}
                     onClick={() => handleNavClick(link.id)}
-                    className="w-full text-left py-3 px-4 rounded-xl text-sm font-semibold tracking-wide text-slate-200 hover:text-cyan-300 bg-white/[0.03] hover:bg-cyan-950/50 border border-white/[0.06] hover:border-cyan-500/40 transition-all flex items-center justify-between group cursor-pointer"
+                    className="w-full text-left min-h-[48px] py-3 px-4 rounded-xl text-sm font-semibold tracking-wide text-slate-200 hover:text-cyan-300 bg-white/[0.03] hover:bg-cyan-950/50 border border-white/[0.06] hover:border-cyan-500/40 transition-all flex items-center justify-between group cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-cyan-400 group-hover:scale-110 transition-transform">
@@ -223,7 +227,7 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
                       setMobileMenuOpen(false);
                       onOpenRegister();
                     }}
-                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(0,240,255,0.4)] flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full min-h-[48px] py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_20px_rgba(0,240,255,0.4)] flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>Register for Conclave &amp; Events</span>
                     <span>→</span>
