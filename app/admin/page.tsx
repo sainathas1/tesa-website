@@ -20,8 +20,9 @@ import {
   serverTimestamp,
   query,
   orderBy,
+  limit,
 } from "firebase/firestore";
-import { auth, googleProvider, db } from "@/lib/firebase";
+import { auth, googleProvider, db, isFirebaseConfigured } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import * as XLSX from "xlsx";
 
@@ -309,7 +310,9 @@ export default function AdminDashboardPage() {
   const [activeTab, setActiveTab] = useState<"team" | "events" | "registrations" | "all">("team");
 
   // Connectivity state for Firestore
-  const [firestoreStatus, setFirestoreStatus] = useState<"checking" | "connected" | "not_provisioned">("checking");
+  const [firestoreStatus, setFirestoreStatus] = useState<
+    "checking" | "connected" | "missing_env" | "not_provisioned"
+  >(!isFirebaseConfigured ? "missing_env" : "checking");
 
   // Toast feedback
   const [toastMessage, setToastMessage] = useState<{ text: string; type: "success" | "error" | "info" } | null>(null);
@@ -377,6 +380,115 @@ export default function AdminDashboardPage() {
   const [filterEvent, setFilterEvent] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
 
+  // --------------------------------------------------------------------------
+  // TOP CONNECTION CHECKER BANNER
+  // --------------------------------------------------------------------------
+  const renderConnectionBanner = () => {
+    if (!isFirebaseConfigured || firestoreStatus === "missing_env") {
+      return (
+        <div
+          id="firebase-conn-missing"
+          className="w-full bg-gradient-to-r from-red-950 via-red-900 to-red-950 border-b border-red-500/60 px-4 py-3 text-red-100 text-xs font-mono flex items-center justify-between gap-3 shadow-[0_4px_25px_rgba(239,68,68,0.3)] z-50 sticky top-0"
+        >
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500" />
+            </span>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="font-bold uppercase tracking-wider text-white">
+                Error: Firebase Environment Variables Missing.
+              </span>
+              <span className="hidden sm:inline text-red-300">
+                NEXT_PUBLIC_FIREBASE_PROJECT_ID is not configured in environment variables.
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="https://vercel.com/dashboard"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              Open Vercel →
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    if (firestoreStatus === "not_provisioned") {
+      return (
+        <div
+          id="firebase-conn-not-provisioned"
+          className="w-full bg-gradient-to-r from-amber-950 via-amber-900 to-amber-950 border-b border-amber-500/60 px-4 py-3 text-amber-100 text-xs font-mono flex items-center justify-between gap-3 shadow-[0_4px_25px_rgba(245,158,11,0.3)] z-50 sticky top-0"
+        >
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-3 w-3 shrink-0">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500" />
+            </span>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="font-bold uppercase tracking-wider text-amber-200">
+                Database &apos;(default)&apos; Not Found in Firebase Console.
+              </span>
+              <span className="hidden sm:inline text-amber-300">
+                Open Firebase Console &gt; Firestore Database &gt; Click &apos;Create database&apos; (Start in Test mode).
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <a
+              href="https://console.firebase.google.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] uppercase tracking-wider transition-colors cursor-pointer"
+            >
+              Firebase Console →
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    if (firestoreStatus === "connected") {
+      return (
+        <div
+          id="firebase-conn-active"
+          className="w-full bg-gradient-to-r from-emerald-950/95 via-emerald-900/90 to-emerald-950/95 border-b border-emerald-500/60 px-4 py-2.5 text-emerald-100 text-xs font-mono flex items-center justify-between gap-3 shadow-[0_4px_20px_rgba(16,185,129,0.25)] z-50 sticky top-0"
+        >
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 animate-pulse" />
+            </span>
+            <div className="flex flex-wrap items-center gap-x-2">
+              <span className="font-bold uppercase tracking-wider text-white">
+                Firebase Database Connected.
+              </span>
+              <span className="hidden sm:inline text-emerald-300">
+                Cloud Firestore &quot;(default)&quot; is live and operational.
+              </span>
+            </div>
+          </div>
+          <span className="px-2 py-0.5 rounded-full bg-emerald-900/80 border border-emerald-500/40 text-[10px] text-emerald-300 font-bold shrink-0">
+            ONLINE
+          </span>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        id="firebase-conn-checking"
+        className="w-full bg-slate-900/90 border-b border-white/10 px-4 py-2 text-slate-300 text-xs font-mono flex items-center gap-2.5 z-50 sticky top-0"
+      >
+        <div className="w-3 h-3 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin shrink-0" />
+        <span className="text-[11px] text-slate-400">Verifying Cloud Firestore connectivity...</span>
+      </div>
+    );
+  };
+
   const showToast = (text: string, type: "success" | "error" | "info" = "success") => {
     setToastMessage({ text, type });
     setTimeout(() => {
@@ -416,6 +528,30 @@ export default function AdminDashboardPage() {
       console.warn("localStorage note:", err);
     }
 
+    // Probe Firestore connectivity immediately
+    if (!isFirebaseConfigured) {
+      setFirestoreStatus("missing_env");
+    } else {
+      (async () => {
+        try {
+          await getDocs(query(collection(db, "events"), limit(1)));
+          setFirestoreStatus("connected");
+        } catch (err: any) {
+          const msg = err?.message || "";
+          if (
+            msg.includes("Database '(default)' not found") ||
+            err?.code === "not-found"
+          ) {
+            setFirestoreStatus("not_provisioned");
+          } else if (err?.code === "permission-denied") {
+            setFirestoreStatus("connected");
+          } else if (!isFirebaseConfigured) {
+            setFirestoreStatus("missing_env");
+          }
+        }
+      })();
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setAuthLoading(false);
@@ -428,6 +564,10 @@ export default function AdminDashboardPage() {
   }, []);
 
   const syncFromFirestore = async () => {
+    if (!isFirebaseConfigured) {
+      setFirestoreStatus("missing_env");
+      return;
+    }
     try {
       // 1. Team sync
       const teamSnap = await getDocs(collection(db, "team"));
@@ -492,8 +632,9 @@ export default function AdminDashboardPage() {
       const msg = err?.message || "";
       if (msg.includes("Database '(default)' not found") || err?.code === "not-found") {
         setFirestoreStatus("not_provisioned");
+      } else {
+        console.warn("Firestore sync status:", msg);
       }
-      console.warn("Firestore sync status:", msg);
     }
   };
 
@@ -569,6 +710,10 @@ export default function AdminDashboardPage() {
 
   const handleSaveTeamMember = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFirebaseConfigured) {
+      showToast("Error: Firebase Environment Variables Missing. Database disconnected.", "error");
+      return;
+    }
     if (!teamForm.name.trim() || !teamForm.role.trim()) {
       showToast("Please provide Member Name and Role.", "error");
       return;
@@ -726,6 +871,10 @@ export default function AdminDashboardPage() {
 
   const handleSaveEvent = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFirebaseConfigured) {
+      showToast("Error: Firebase Environment Variables Missing. Database disconnected.", "error");
+      return;
+    }
     if (!eventForm.title.trim() || !eventForm.date.trim()) {
       showToast("Please provide an Event Title and Date.", "error");
       return;
@@ -950,33 +1099,38 @@ export default function AdminDashboardPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-tech-grid opacity-30" />
-        <div className="relative z-10 w-full max-w-md p-8 rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl text-center shadow-2xl">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
-            <svg className="w-8 h-8 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-            </svg>
+      <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col justify-between relative overflow-hidden">
+        {/* Top Connection Checker Banner */}
+        {renderConnectionBanner()}
+
+        <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
+          <div className="pointer-events-none absolute inset-0 bg-tech-grid opacity-30" />
+          <div className="relative z-10 w-full max-w-md p-8 rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl text-center shadow-2xl">
+            <div className="w-16 h-16 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
+              <svg className="w-8 h-8 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+            </div>
+            <h1 className="text-xl font-mono font-bold text-white mb-2 uppercase tracking-wider">
+              TESA Administrative Access
+            </h1>
+            <p className="text-xs text-slate-400 font-mono mb-6 leading-relaxed">
+              Restricted portal for SGGSIE&amp;T Textile Engineering Students Association authorized executives. Sign in with Google to manage the Council Team and Events.
+            </p>
+            <button
+              onClick={handleGoogleLogin}
+              className="w-full py-3 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-wider bg-white text-black hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center justify-center gap-3 cursor-pointer"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+              </svg>
+              <span>Authorize with Google</span>
+            </button>
           </div>
-          <h1 className="text-xl font-mono font-bold text-white mb-2 uppercase tracking-wider">
-            TESA Administrative Access
-          </h1>
-          <p className="text-xs text-slate-400 font-mono mb-6 leading-relaxed">
-            Restricted portal for SGGSIE&amp;T Textile Engineering Students Association authorized executives. Sign in with Google to manage the Council Team and Events.
-          </p>
-          <button
-            onClick={handleGoogleLogin}
-            className="w-full py-3 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-wider bg-white text-black hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] flex items-center justify-center gap-3 cursor-pointer"
-          >
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
-            </svg>
-            <span>Authorize with Google</span>
-          </button>
         </div>
       </div>
     );
@@ -988,6 +1142,9 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#06070a] text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden w-full max-w-full">
+      {/* Top Connection Checker Banner */}
+      {renderConnectionBanner()}
+
       {/* Background Decor */}
       <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-30" />
 
@@ -1101,6 +1258,11 @@ export default function AdminDashboardPage() {
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-500/40 font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 FIRESTORE LIVE
+              </span>
+            ) : firestoreStatus === "missing_env" ? (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-950/70 text-red-300 border border-red-500/40 font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
+                DATABASE DISCONNECTED
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/70 text-amber-300 border border-amber-500/40 font-bold">
@@ -1786,10 +1948,19 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isUploadingPhoto}
-                  className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                  disabled={!isFirebaseConfigured || isUploadingPhoto}
+                  className={`px-5 py-2.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                    !isFirebaseConfigured
+                      ? "bg-red-950/70 border border-red-500/40 text-red-300 cursor-not-allowed opacity-75"
+                      : "bg-cyan-400 hover:bg-cyan-300 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
+                  }`}
                 >
-                  {isUploadingPhoto ? (
+                  {!isFirebaseConfigured ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-red-400" />
+                      <span>Database Disconnected</span>
+                    </>
+                  ) : isUploadingPhoto ? (
                     <>
                       <span className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
                       <span>Uploading Media...</span>
@@ -2074,21 +2245,30 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingEvent || isUploadingBanner || isUploadingGallery}
-                  className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
+                  disabled={!isFirebaseConfigured || isSubmittingEvent || isUploadingBanner || isUploadingGallery}
+                  className={`px-5 py-2.5 rounded-lg font-bold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                    !isFirebaseConfigured
+                      ? "bg-red-950/70 border border-red-500/40 text-red-300 cursor-not-allowed opacity-75"
+                      : "bg-cyan-400 hover:bg-cyan-300 text-black shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
+                  }`}
                 >
-                  {(isUploadingGallery || isUploadingBanner || isSubmittingEvent) && (
-                    <div className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                  {!isFirebaseConfigured ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-red-400" />
+                      <span>Database Disconnected</span>
+                    </>
+                  ) : (isUploadingGallery || isUploadingBanner || isSubmittingEvent) ? (
+                    <>
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                      <span>
+                        {isUploadingGallery || isUploadingBanner
+                          ? "Uploading Media..."
+                          : "Saving Event..."}
+                      </span>
+                    </>
+                  ) : (
+                    <span>{editingEventId ? "Save Changes" : "Save Event"}</span>
                   )}
-                  <span>
-                    {isUploadingGallery || isUploadingBanner
-                      ? "Uploading Media..."
-                      : isSubmittingEvent
-                      ? "Saving Event..."
-                      : editingEventId
-                      ? "Save Changes"
-                      : "Publish Event"}
-                  </span>
                 </button>
               </div>
             </form>
