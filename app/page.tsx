@@ -477,32 +477,40 @@ export default function Home() {
         className="relative min-h-[92vh] sm:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 pt-32 sm:pt-40 pb-20 sm:pb-28 z-10"
       >
         <div className="max-w-4xl mx-auto flex flex-col items-center">
-          {/* Subtle Studio Pill Badge */}
+          {/* Subtle Studio Frosted Glass Pill Badge */}
           <motion.div
             initial={{ opacity: 0, y: -16, filter: "blur(6px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/10 bg-white/[0.03] text-[11px] sm:text-xs font-mono text-zinc-300 mb-8 backdrop-blur-2xl shadow-[0_0_30px_rgba(0,0,0,0.6)]"
+            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/20 bg-white/[0.05] text-[11px] sm:text-xs font-mono text-zinc-200 mb-8 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_10px_30px_rgba(0,0,0,0.6)]"
           >
-            <span className="w-2 h-2 rounded-full bg-violet-400 animate-pulse shadow-[0_0_10px_#a855f7]" />
-            <span>SGGSIE&amp;T • TEXTILE ENGINEERING STUDENTS ASSOCIATION</span>
-            <span className="text-[10px] text-zinc-500 hidden sm:inline">• EST. 1987</span>
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-500 shadow-[0_0_10px_#a855f7]" />
+            </span>
+            <span className="tracking-wide">SGGSIE&amp;T • TEXTILE ENGINEERING STUDENTS ASSOCIATION</span>
+            <span className="text-[10px] text-zinc-400 hidden sm:inline">• EST. 1987</span>
           </motion.div>
 
-          {/* Main Headline: Metallic Silver-to-Zinc Gradient with Violet-Rose Accent Word */}
-          <motion.h1
-            initial={{ opacity: 0, y: 24, filter: "blur(10px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.85, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight mb-6 leading-[1.08]"
-          >
-            <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
-              WEAVE THE{" "}
-            </span>
-            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-rose-400 bg-clip-text text-transparent drop-shadow-[0_0_45px_rgba(168,85,247,0.45)]">
-              FUTURE
-            </span>
-          </motion.h1>
+          {/* Main Headline: Metallic Silver-to-Zinc Gradient with Animated Iridescent Accent Word */}
+          <div className="relative">
+            {/* Ambient Radial Aura behind Hero Headline */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-xl h-44 bg-gradient-to-r from-violet-600/30 via-fuchsia-600/25 to-cyan-500/25 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
+
+            <motion.h1
+              initial={{ opacity: 0, y: 24, filter: "blur(10px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              transition={{ duration: 0.85, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+              className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight mb-6 leading-[1.08]"
+            >
+              <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
+                WEAVE THE{" "}
+              </span>
+              <span className="bg-gradient-to-r from-violet-400 via-fuchsia-300 via-cyan-300 to-rose-400 bg-clip-text text-transparent drop-shadow-[0_0_45px_rgba(168,85,247,0.55)] animate-text-shimmer">
+                FUTURE
+              </span>
+            </motion.h1>
+          </div>
 
           {/* Short Crisp Tagline */}
           <motion.p
@@ -590,9 +598,9 @@ export default function Home() {
               Explore national symposiums, hands-on fabrication sprints, and historical milestones organized by the Textile Engineering Students Association.
             </p>
 
-            {/* Distinct Bento Tabs & Check Verified List Action */}
+            {/* Distinct Frosted Glass Tabs & Check Verified List Action */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <div className="inline-flex p-1.5 rounded-2xl bg-zinc-950/80 border border-white/10 backdrop-blur-2xl shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+              <div className="inline-flex p-1.5 rounded-2xl glass-pill-navbar shadow-[0_15px_35px_rgba(0,0,0,0.7)]">
                 <button
                   onClick={() => setEventTab("upcoming")}
                   className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
@@ -636,11 +644,15 @@ export default function Home() {
 
               <button
                 onClick={() => handleOpenVerifiedList()}
-                className="min-h-[48px] px-5 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400 hover:text-emerald-300 shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer backdrop-blur-xl"
+                className="min-h-[48px] px-5 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 hover:border-emerald-400 text-emerald-400 hover:text-emerald-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_10px_25px_rgba(16,185,129,0.25)] cursor-pointer backdrop-blur-2xl"
               >
                 <span>✔ CHECK REGISTRATION LIST</span>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">
-                  LIVE STATUS
+                <span className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+                  </span>
+                  <span>LIVE STATUS</span>
                 </span>
               </button>
             </div>
@@ -740,17 +752,26 @@ export default function Home() {
                               {event.category}
                             </span>
 
-                            {/* Glowing Neon Status Badge */}
+                            {/* Glowing Neon Status Badge with Live Pulse */}
                             <span
-                              className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border ${
+                              className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border inline-flex items-center gap-1.5 ${
                                 isOpen
-                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]"
+                                  ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
                                   : isUpcoming
-                                  ? "bg-amber-500/10 text-amber-400 border-amber-500/30 shadow-[0_0_12px_rgba(245,158,11,0.2)]"
+                                  ? "bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-[0_0_12px_rgba(245,158,11,0.25)]"
                                   : "bg-zinc-900/80 text-zinc-400 border-zinc-700/50"
                               }`}
                             >
-                              {isOpen ? "● REGISTRATION OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  isOpen
+                                    ? "bg-emerald-400 animate-ping"
+                                    : isUpcoming
+                                    ? "bg-amber-400 animate-pulse"
+                                    : "bg-zinc-500"
+                                }`}
+                              />
+                              <span>{isOpen ? "REGISTRATION OPEN" : isUpcoming ? "UPCOMING" : "CONCLUDED"}</span>
                             </span>
                           </div>
 

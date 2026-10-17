@@ -1196,7 +1196,7 @@ export default function AdminDashboardPage() {
         <AuroraBackground />
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 relative z-10">
-          <div className="bento-card group relative z-10 w-full max-w-md p-8 rounded-3xl border border-white/10 bg-[#0b0c10]/90 backdrop-blur-2xl text-center shadow-[0_0_80px_rgba(0,0,0,0.8),inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden">
+          <div className="glass-modal-panel group relative z-10 w-full max-w-md p-8 sm:p-10 rounded-3xl text-center overflow-hidden">
             {/* Top-Right Ambient Glow */}
             <div className="bento-glow" />
 
@@ -1446,7 +1446,7 @@ export default function AdminDashboardPage() {
             ===================================================================== */}
         {(activeTab === "team" || activeTab === "all") && (
           <section id="section-team" className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/[0.08] bg-[#0b0c10]/90 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl glass-card">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 text-[11px] font-mono text-purple-300 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
@@ -1602,7 +1602,7 @@ export default function AdminDashboardPage() {
             ===================================================================== */}
         {(activeTab === "events" || activeTab === "all") && (
           <section id="section-events" className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/[0.08] bg-[#0b0c10]/90 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl glass-card">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 text-[11px] font-mono text-purple-300 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
@@ -1738,7 +1738,7 @@ export default function AdminDashboardPage() {
             ===================================================================== */}
         {(activeTab === "registrations" || activeTab === "all") && (
           <section id="section-registrations" className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl border border-white/[0.08] bg-[#0b0c10]/90 backdrop-blur-xl shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)]">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl glass-card">
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-950/40 text-[11px] font-mono text-emerald-300 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -1799,7 +1799,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Filter & Search Bar: Dark Command Center */}
-            <div className="p-4 rounded-2xl border border-white/[0.08] bg-[#0b0c10]/80 backdrop-blur-xl flex flex-col md:flex-row items-center gap-3 text-xs">
+            <div className="p-4 rounded-2xl glass-card flex flex-col md:flex-row items-center gap-3 text-xs">
               <div className="relative flex-1 w-full">
                 <input
                   type="text"
@@ -2040,7 +2040,7 @@ export default function AdminDashboardPage() {
                 ============================================================= */}
             {selectedRegForAnswers && (
               <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
-                <div className="relative w-full max-w-2xl bg-[#0b0c10]/95 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.15)] text-xs my-8 backdrop-blur-2xl">
+                <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-6 sm:p-7 text-xs my-8">
                   {/* Top Modal Header */}
                   <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
                     <div>
@@ -2218,7 +2218,7 @@ export default function AdminDashboardPage() {
           ======================================================================= */}
       {isTeamModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-[#0b0c10]/95 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.15)] text-xs my-8 backdrop-blur-2xl">
+          <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-6 sm:p-7 text-xs my-8">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
               <div>
                 <span className="text-[10px] text-purple-400 uppercase tracking-widest block font-mono">
@@ -2475,7 +2475,7 @@ export default function AdminDashboardPage() {
           ======================================================================= */}
       {isEventModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
-          <div className="relative w-full max-w-2xl bg-[#0b0c10]/95 border border-white/10 rounded-3xl p-6 sm:p-7 shadow-[0_25px_70px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.15)] text-xs my-8 backdrop-blur-2xl">
+          <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-6 sm:p-7 text-xs my-8">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
               <div>
                 <span className="text-[10px] text-purple-400 uppercase tracking-widest block font-mono">

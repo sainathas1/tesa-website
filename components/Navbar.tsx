@@ -60,12 +60,12 @@ export default function Navbar({
 
   return (
     <>
-      {/* Floating Pill-Shaped Glass Navbar */}
+      {/* Floating Pill-Shaped Frosted Glass Navbar */}
       <header
         className={`fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-5xl rounded-full transition-all duration-300 ${
           isScrolled
-            ? "bg-zinc-950/85 backdrop-blur-2xl border border-white/15 px-4 sm:px-6 py-2 sm:py-2.5 shadow-[0_10px_40px_rgba(0,0,0,0.9),0_0_25px_rgba(124,58,237,0.15)]"
-            : "bg-zinc-950/70 backdrop-blur-2xl border border-white/10 px-4 sm:px-6 py-2.5 sm:py-3 shadow-[0_0_40px_rgba(0,0,0,0.8)]"
+            ? "glass-pill-navbar px-4 sm:px-6 py-2 sm:py-2.5 shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(124,58,237,0.25)] border-white/20"
+            : "glass-pill-navbar px-4 sm:px-6 py-2.5 sm:py-3 shadow-[0_10px_40px_rgba(0,0,0,0.75)] border-white/15"
         }`}
       >
         <div className="flex items-center justify-between gap-3 sm:gap-4 w-full">
@@ -202,7 +202,7 @@ export default function Navbar({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -16, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-20 left-4 right-4 z-50 md:hidden rounded-3xl border border-white/15 bg-zinc-950/90 backdrop-blur-2xl p-5 shadow-[0_25px_50px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.2)]"
+              className="fixed top-20 left-4 right-4 z-50 md:hidden rounded-3xl glass-modal-panel p-5 shadow-[0_25px_50px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.35)]"
             >
               <div className="flex flex-col gap-2">
                 <span className="text-[10px] uppercase text-zinc-500 font-mono tracking-widest px-2 mb-1">

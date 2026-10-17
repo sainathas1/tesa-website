@@ -510,7 +510,7 @@ export default function EventDetailModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-modal-title"
-            className="relative z-50 w-full max-w-2xl rounded-3xl border border-white/10 bg-[#0b0c10]/95 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_0_80px_rgba(0,0,0,0.9),inset_0_1px_0_0_rgba(255,255,255,0.08)] overflow-hidden my-8 group"
+            className="relative z-50 w-full max-w-2xl rounded-3xl glass-modal-panel p-6 sm:p-8 overflow-hidden my-8 group"
           >
             {/* Ambient Aurora Glow in Corners */}
             <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-violet-600/20 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" />

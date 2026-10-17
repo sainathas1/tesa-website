@@ -28,31 +28,52 @@ body {
    AWWWARDS DARK CREATIVE STUDIO THEME TOKENS & UTILITIES
    ============================================================================ */
 
+/* ============================================================================
+   AWWWARDS DARK CREATIVE STUDIO THEME TOKENS & UTILITIES
+   ============================================================================ */
+
 /* Studio Micro-Dot Mesh Texture */
 .studio-dot-grid {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-  background-size: 28px 28px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
-/* Linear/Raycast Bento Card Styling */
-.bento-card {
+/* Authentic Frosted Glassmorphism (Awwwards / Raycast / Linear Style) */
+.bento-card,
+.glass-card {
   position: relative;
-  background: rgba(11, 12, 16, 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(14, 15, 24, 0.42);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
-    0 20px 40px -15px rgba(0, 0, 0, 0.8);
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.4),
+    0 20px 45px -10px rgba(0, 0, 0, 0.75);
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.bento-card:hover {
-  border-color: rgba(168, 85, 247, 0.35);
-  transform: translateY(-4px);
+.bento-card:hover,
+.glass-card:hover {
+  background: rgba(18, 20, 32, 0.55);
+  border-color: rgba(168, 85, 247, 0.55);
+  transform: translateY(-5px);
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
-    0 25px 50px -12px rgba(124, 58, 237, 0.25);
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.4),
+    0 25px 60px -12px rgba(124, 58, 237, 0.35),
+    0 0 30px rgba(168, 85, 247, 0.2);
+}
+
+/* Modal High-Gloss Frosted Glass Surface */
+.glass-modal-panel {
+  background: rgba(10, 11, 18, 0.65);
+  backdrop-filter: blur(36px) saturate(190%);
+  -webkit-backdrop-filter: blur(36px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.3),
+    0 30px 80px rgba(0, 0, 0, 0.9),
+    0 0 45px rgba(124, 58, 237, 0.25);
 }
 
 /* Top-Right Inner Radial Glow on Hover */
@@ -60,11 +81,11 @@ body {
   position: absolute;
   top: 0;
   right: 0;
-  width: 260px;
-  height: 260px;
-  background: radial-gradient(circle at top right, rgba(168, 85, 247, 0.14), transparent 70%);
+  width: 280px;
+  height: 280px;
+  background: radial-gradient(circle at top right, rgba(168, 85, 247, 0.22), rgba(6, 182, 212, 0.12), transparent 70%);
   pointer-events: none;
-  opacity: 0;
+  opacity: 0.3;
   transition: opacity 0.4s ease;
   border-radius: inherit;
 }
@@ -79,45 +100,45 @@ body {
   background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #db2777 100%);
   color: #ffffff;
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
-    0 0 25px rgba(124, 58, 237, 0.35);
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 25px rgba(124, 58, 237, 0.45);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .glow-button-primary:hover {
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.4),
-    0 0 35px rgba(139, 92, 246, 0.6);
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.6),
+    0 0 35px rgba(139, 92, 246, 0.7);
   transform: translateY(-1px);
 }
 
 /* Secondary Dark Glass Button */
 .glass-button-secondary {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.15);
   color: #e4e4e7;
   transition: all 0.25s ease;
 }
 
 .glass-button-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(168, 85, 247, 0.5);
   color: #ffffff;
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
 }
 
 /* Floating Glass Pill Navbar */
 .glass-pill-navbar {
-  background: rgba(9, 9, 11, 0.75);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(10, 11, 18, 0.45);
+  backdrop-filter: blur(30px) saturate(190%);
+  -webkit-backdrop-filter: blur(30px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   box-shadow: 
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.1),
-    0 20px 45px rgba(0, 0, 0, 0.75);
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.25),
+    0 20px 45px rgba(0, 0, 0, 0.85);
 }
 
 /* 3D Perspective and Transform-style */
@@ -129,28 +150,32 @@ body {
   transform-style: preserve-3d;
 }
 
-/* Aurora Float Keyframes */
+/* ============================================================================
+   LIVE ANIMATIONS & MOTION ENGINE
+   ============================================================================ */
+
+/* Fast, Organic Multi-Orb Aurora Drift Keyframes */
 @keyframes aurora-drift-1 {
   0%, 100% {
-    transform: translate(0px, 0px) scale(1);
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
   }
   33% {
-    transform: translate(60px, -40px) scale(1.12);
+    transform: translate(80px, -50px) scale(1.18) rotate(4deg);
   }
   66% {
-    transform: translate(-40px, 50px) scale(0.92);
+    transform: translate(-50px, 60px) scale(0.88) rotate(-3deg);
   }
 }
 
 @keyframes aurora-drift-2 {
   0%, 100% {
-    transform: translate(0px, 0px) scale(1);
+    transform: translate(0px, 0px) scale(1) rotate(0deg);
   }
   33% {
-    transform: translate(-50px, 40px) scale(1.08);
+    transform: translate(-70px, 60px) scale(1.15) rotate(-5deg);
   }
   66% {
-    transform: translate(40px, -60px) scale(0.95);
+    transform: translate(50px, -70px) scale(0.92) rotate(3deg);
   }
 }
 
@@ -159,20 +184,98 @@ body {
     transform: translate(0px, 0px) scale(1);
   }
   50% {
-    transform: translate(30px, 45px) scale(1.15);
+    transform: translate(60px, 60px) scale(1.22);
+  }
+}
+
+@keyframes aurora-drift-4 {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1) rotate(0deg);
+  }
+  50% {
+    transform: translate(-45%, -55%) scale(1.25) rotate(10deg);
   }
 }
 
 .animate-aurora-1 {
-  animation: aurora-drift-1 22s ease-in-out infinite;
+  animation: aurora-drift-1 10s ease-in-out infinite;
 }
 
 .animate-aurora-2 {
-  animation: aurora-drift-2 26s ease-in-out infinite;
+  animation: aurora-drift-2 13s ease-in-out infinite;
 }
 
 .animate-aurora-3 {
-  animation: aurora-drift-3 18s ease-in-out infinite;
+  animation: aurora-drift-3 11s ease-in-out infinite;
+}
+
+.animate-aurora-4 {
+  animation: aurora-drift-4 12s ease-in-out infinite;
+}
+
+/* Live Floating Sparkle Nodes */
+@keyframes sparkle-float {
+  0%, 100% {
+    transform: translateY(0px) scale(0.9);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateY(-28px) scale(1.25);
+    opacity: 1;
+  }
+}
+
+.animate-sparkle-float {
+  animation: sparkle-float ease-in-out infinite;
+}
+
+/* Ambient Scan Light Beam */
+@keyframes scan-beam {
+  0% {
+    transform: translateX(-100%) rotate(-12deg);
+  }
+  50% {
+    transform: translateX(100%) rotate(-12deg);
+  }
+  100% {
+    transform: translateX(200%) rotate(-12deg);
+  }
+}
+
+.animate-scan-beam {
+  animation: scan-beam 14s linear infinite;
+}
+
+/* Live Animated Gradient Text Shimmer */
+@keyframes text-gradient-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-text-shimmer {
+  background-size: 200% auto;
+  animation: text-gradient-shimmer 4s ease-in-out infinite;
+}
+
+/* Pulsing Beacon Glow */
+@keyframes pulse-beacon {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.4), 0 0 20px rgba(168, 85, 247, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.8), 0 0 40px rgba(168, 85, 247, 0.4);
+  }
+}
+
+.animate-pulse-beacon {
+  animation: pulse-beacon 2.5s ease-in-out infinite;
 }
 
 /* Custom Sleek Scrollbar */
@@ -184,9 +287,9 @@ body {
   background: #050508;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.4);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.7);
+  background: rgba(168, 85, 247, 0.8);
 }
