@@ -532,8 +532,8 @@ export default function AdminDashboardPage() {
   // CLOUDINARY UNSIGNED UPLOAD HELPER
   // --------------------------------------------------------------------------
   const uploadToCloudinary = async (file: File): Promise<string> => {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "tesa-sggsiet";
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "tesa_unsigned";
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "cc0vold0";
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "tesasggs";
 
     const formData = new FormData();
     formData.append("file", file);

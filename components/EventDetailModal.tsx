@@ -157,8 +157,8 @@ export default function EventDetailModal({
 
     try {
       // Step 1: Upload directly to Cloudinary using unsigned preset (Explicit requirement: Do NOT use Firebase Storage)
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "tesa-sggsiet";
-      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "tesa_unsigned";
+      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "cc0vold0";
+      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "tesasggs";
 
       const formData = new FormData();
       formData.append("file", paymentFile);
