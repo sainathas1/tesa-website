@@ -32,9 +32,12 @@ interface EventItem {
   deadline?: string;
   capacity?: number;
   status: "open" | "upcoming" | "closed";
+  eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
   summary: string;
   highlights?: string;
+  galleryUrls?: string[];
+  createdAt?: any;
 }
 
 interface TeamMember {
@@ -66,6 +69,7 @@ const DEFAULT_EVENTS: EventItem[] = [
     deadline: "April 15, 2026",
     capacity: 250,
     status: "open",
+    eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60",
     summary: "Flagship national convention uniting textile researchers, paper presentations, and live CAD weaving contests.",
     highlights: "₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE Certification",
@@ -79,6 +83,7 @@ const DEFAULT_EVENTS: EventItem[] = [
     deadline: "May 1, 2026",
     capacity: 100,
     status: "upcoming",
+    eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
     summary: "36-hour sprint pairing textile engineers with electronics students to build wearable fabric sensors and smart looms.",
     highlights: "Hardware Looms Access • Angel Mentors • Seed Incubation",
@@ -92,6 +97,7 @@ const DEFAULT_EVENTS: EventItem[] = [
     deadline: "May 25, 2026",
     capacity: 60,
     status: "open",
+    eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=60",
     summary: "Hands-on synthesis of polymeric nanofibers for high-efficiency air filters and biomedical wound dressings.",
     highlights: "Live Electrospinner Demo • ASTM Characterization • Kit Provided",
@@ -103,8 +109,16 @@ const DEFAULT_EVENTS: EventItem[] = [
     date: "March 15–16, 2025",
     venue: "SGGSIE&T Main Auditorium",
     status: "closed",
+    eventStatus: "Concluded",
+    mediaUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=60",
     summary: "Over 480 delegates from 28 technical colleges participated in competitive research tracks and industrial roundtables.",
     highlights: "480+ Delegates • 65 Peer-Reviewed Papers • Industry Roundtable",
+    galleryUrls: [
+      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&auto=format&fit=crop&q=80",
+    ],
   },
   {
     id: "ev-hackathon-2024",
@@ -113,8 +127,15 @@ const DEFAULT_EVENTS: EventItem[] = [
     date: "October 18–19, 2024",
     venue: "CAD/CAM Studio & IoT Labs",
     status: "closed",
+    eventStatus: "Concluded",
+    mediaUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
     summary: "36-hour sprint where 32 interdisciplinary teams engineered wearable garment sensors and automated defect scanners.",
     highlights: "32 Teams • 3 Provisional Patents Filed • Industry Mentors",
+    galleryUrls: [
+      "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80",
+    ],
   },
 ];
 
@@ -262,7 +283,8 @@ export default function Home() {
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Filter states
-  const [eventCategoryFilter, setEventCategoryFilter] = useState<"all" | "open" | "upcoming" | "closed">("all");
+  const [eventTab, setEventTab] = useState<"upcoming" | "past">("upcoming");
+  const [upcomingSubFilter, setUpcomingSubFilter] = useState<"all" | "open" | "upcoming">("all");
   const [teamCategoryFilter, setTeamCategoryFilter] = useState<string>("all");
 
   // Registration modal state
@@ -341,11 +363,24 @@ export default function Home() {
     setIsRegModalOpen(true);
   };
 
-  // Filtered collections
-  const filteredEvents =
-    eventCategoryFilter === "all"
-      ? eventsList
-      : eventsList.filter((e) => e.status === eventCategoryFilter);
+  // Distinct Upcoming and Concluded / Past Events categorization
+  const isEventUpcoming = (e: EventItem) => {
+    if (e.eventStatus) return e.eventStatus === "Upcoming";
+    return e.status === "open" || e.status === "upcoming";
+  };
+
+  const isEventPast = (e: EventItem) => {
+    if (e.eventStatus) return e.eventStatus === "Concluded";
+    return e.status === "closed";
+  };
+
+  const upcomingEvents = eventsList.filter(isEventUpcoming);
+  const pastEvents = eventsList.filter(isEventPast);
+
+  const displayedUpcomingEvents =
+    upcomingSubFilter === "all"
+      ? upcomingEvents
+      : upcomingEvents.filter((e) => e.status === upcomingSubFilter);
 
   const filteredTeam =
     teamCategoryFilter === "all"
@@ -448,7 +483,7 @@ export default function Home() {
             whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             viewport={{ once: true, margin: "-40px" }}
             transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center max-w-3xl mx-auto mb-14"
+            className="text-center max-w-3xl mx-auto mb-12"
           >
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
@@ -466,30 +501,74 @@ export default function Home() {
               Explore national symposiums, hands-on fabrication sprints, and historical milestones organized by the Textile Engineering Students Association.
             </p>
 
-            {/* Event Status Filter Tabs */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
-              {[
-                { id: "all", label: "ALL EVENTS" },
-                { id: "open", label: "REGISTRATION OPEN" },
-                { id: "upcoming", label: "UPCOMING" },
-                { id: "closed", label: "COMPLETED ARCHIVE" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setEventCategoryFilter(tab.id as any)}
-                  className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3.5 py-2 rounded-lg border transition-all duration-200 cursor-pointer ${
-                    eventCategoryFilter === tab.id
-                      ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
-                      : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
+            {/* Two Distinct Tabs: Upcoming Events vs Past Events */}
+            <div className="mt-8 inline-flex p-1.5 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-[0_0_25px_rgba(0,240,255,0.15)]">
+              <button
+                onClick={() => setEventTab("upcoming")}
+                className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                  eventTab === "upcoming"
+                    ? "bg-gradient-to-r from-cyan-500 to-teal-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.5)]"
+                    : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                }`}
+              >
+                <span>⚡ UPCOMING EVENTS</span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full ${
+                    eventTab === "upcoming"
+                      ? "bg-black/25 text-black font-extrabold"
+                      : "bg-white/10 text-cyan-300"
                   }`}
                 >
-                  {tab.label}
-                </button>
-              ))}
+                  {upcomingEvents.length}
+                </span>
+              </button>
+
+              <button
+                onClick={() => setEventTab("past")}
+                className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                  eventTab === "past"
+                    ? "bg-gradient-to-r from-cyan-500 to-teal-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.5)]"
+                    : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                }`}
+              >
+                <span>📸 PAST EVENTS &amp; GALLERIES</span>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full ${
+                    eventTab === "past"
+                      ? "bg-black/25 text-black font-extrabold"
+                      : "bg-white/10 text-cyan-300"
+                  }`}
+                >
+                  {pastEvents.length}
+                </span>
+              </button>
             </div>
+
+            {/* Sub-filter for upcoming events */}
+            {eventTab === "upcoming" && upcomingEvents.length > 0 && (
+              <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
+                {[
+                  { id: "all", label: "ALL UPCOMING" },
+                  { id: "open", label: "REGISTRATION OPEN" },
+                  { id: "upcoming", label: "ANNOUNCED SOON" },
+                ].map((sub) => (
+                  <button
+                    key={sub.id}
+                    onClick={() => setUpcomingSubFilter(sub.id as any)}
+                    className={`min-h-[36px] px-3.5 py-1.5 rounded-lg border text-[11px] transition-all cursor-pointer ${
+                      upcomingSubFilter === sub.id
+                        ? "bg-cyan-950/80 text-cyan-300 border-cyan-400 font-semibold shadow-[0_0_10px_rgba(0,240,255,0.2)]"
+                        : "bg-black/40 text-slate-400 border-white/10 hover:text-slate-200"
+                    }`}
+                  >
+                    {sub.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </motion.div>
 
-          {/* Clean Glassmorphic Events Flex/Grid Layout or Pulsing Skeleton */}
+          {/* Clean Glassmorphic Events Layout or Pulsing Skeleton */}
           {isDataLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
               {[1, 2, 3].map((n) => (
@@ -522,131 +601,322 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          ) : eventTab === "upcoming" ? (
+            /* ================= TAB 1: UPCOMING EVENTS ================= */
+            displayedUpcomingEvents.length === 0 ? (
+              <div className="text-center py-16 px-6 rounded-3xl border border-cyan-500/20 bg-slate-950/50 backdrop-blur-xl">
+                <span className="text-3xl mb-3 block">🗓️</span>
+                <h3 className="text-xl font-mono font-bold text-white mb-2">No Upcoming Events In This Category</h3>
+                <p className="text-sm text-slate-400 font-sans max-w-md mx-auto">
+                  New student symposiums, hackathons, and laboratory workshops will be published here soon.
+                </p>
+              </div>
+            ) : (
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7"
+              >
+                <AnimatePresence mode="popLayout">
+                  {displayedUpcomingEvents.map((event) => {
+                    const isOpen = event.status === "open";
+                    const isUpcoming = event.status === "upcoming";
+
+                    return (
+                      <motion.div
+                        key={event.id}
+                        variants={cardSlideUpVariants}
+                        layout
+                        whileHover={{ y: -6, transition: { duration: 0.25 } }}
+                        onClick={() => setSelectedEvent(event)}
+                        className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
+                      >
+                        {/* Woven background texture */}
+                        <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
+
+                        {/* Corner Accent Decorator */}
+                        <span className="pointer-events-none absolute top-3 left-3 font-mono text-[9px] text-cyan-500/40">
+                          +
+                        </span>
+                        <span className="pointer-events-none absolute top-3 right-3 font-mono text-[9px] text-cyan-500/40">
+                          +
+                        </span>
+
+                        <div className="relative z-10">
+                          {/* Status & Category Row */}
+                          <div className="flex items-center justify-between gap-2 mb-4">
+                            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider">
+                              {event.category}
+                            </span>
+
+                            <span
+                              className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
+                                isOpen
+                                  ? "bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                                  : isUpcoming
+                                  ? "bg-amber-950/70 text-amber-300 border-amber-500/40"
+                                  : "bg-slate-900/80 text-slate-400 border-slate-700/50"
+                              }`}
+                            >
+                              {isOpen ? "● REGISTRATION OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
+                            </span>
+                          </div>
+
+                          {/* Event Media Banner */}
+                          {event.mediaUrl && (
+                            <div className="relative w-full h-36 rounded-xl overflow-hidden mb-4 border border-cyan-500/20 group-hover:border-cyan-400/50 transition-colors">
+                              <Image
+                                src={event.mediaUrl}
+                                alt={event.title}
+                                fill
+                                unoptimized={event.mediaUrl.startsWith("data:")}
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent pointer-events-none" />
+                            </div>
+                          )}
+
+                          {/* Event Title */}
+                          <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight mb-2">
+                            {event.title}
+                          </h3>
+
+                          {/* Date & Venue Badges */}
+                          <div className="flex flex-col gap-1.5 text-xs font-mono text-slate-400 mb-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-cyan-400">📅</span>
+                              <span>{event.date}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-cyan-400">📍</span>
+                              <span className="truncate">{event.venue}</span>
+                            </div>
+                          </div>
+
+                          {/* Event Summary */}
+                          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5 font-normal">
+                            {event.summary}
+                          </p>
+
+                          {/* Highlights Pill */}
+                          {event.highlights && (
+                            <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-4 flex items-center gap-2">
+                              <span className="text-cyan-400">✦</span>
+                              <span className="leading-snug">{event.highlights}</span>
+                            </div>
+                          )}
+
+                          {/* Card click hint */}
+                          <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors py-1.5 border-t border-white/[0.05] mb-2">
+                            <span>CLICK TO EXPAND EVENT DOSSIER</span>
+                            <span>🔍</span>
+                          </div>
+                        </div>
+
+                        {/* Bottom CTA & Registration Action */}
+                        <div className="relative z-10 pt-3 border-t border-white/[0.08] flex items-center justify-between font-mono text-xs">
+                          {isOpen ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenRegistration(event.title);
+                              }}
+                              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <span>Register Online</span>
+                              <span>→</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenRegistration(event.title);
+                              }}
+                              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <span>Pre-Register / Notify Me</span>
+                              <span>→</span>
+                            </button>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </motion.div>
+            )
           ) : (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-30px" }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7"
-            >
-              <AnimatePresence mode="popLayout">
-                {filteredEvents.map((event) => {
-                  const isOpen = event.status === "open";
-                  const isUpcoming = event.status === "upcoming";
+            /* ================= TAB 2: PAST EVENTS & HORIZONTAL GALLERIES ================= */
+            pastEvents.length === 0 ? (
+              <div className="text-center py-16 px-6 rounded-3xl border border-cyan-500/20 bg-slate-950/50 backdrop-blur-xl">
+                <span className="text-3xl mb-3 block">📸</span>
+                <h3 className="text-xl font-mono font-bold text-white mb-2">No Past Events In Archives</h3>
+                <p className="text-sm text-slate-400 font-sans max-w-md mx-auto">
+                  Historical symposiums and conclaves will be documented here once concluded.
+                </p>
+              </div>
+            ) : (
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="space-y-8 sm:space-y-10"
+              >
+                <AnimatePresence mode="popLayout">
+                  {pastEvents.map((event) => {
+                    const gallery =
+                      event.galleryUrls && event.galleryUrls.length > 0
+                        ? event.galleryUrls
+                        : event.mediaUrl
+                        ? [event.mediaUrl]
+                        : [];
 
-                  return (
-                    <motion.div
-                      key={event.id}
-                      variants={cardSlideUpVariants}
-                      layout
-                      whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                      onClick={() => setSelectedEvent(event)}
-                      className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
-                    >
-                      {/* Woven background texture */}
-                      <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
+                    return (
+                      <motion.div
+                        key={event.id}
+                        variants={cardSlideUpVariants}
+                        layout
+                        onClick={() => setSelectedEvent(event)}
+                        className="group relative rounded-3xl border border-cyan-500/30 bg-slate-950/75 backdrop-blur-2xl p-6 sm:p-8 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.9)] hover:border-cyan-400/80 hover:shadow-[0_0_40px_rgba(0,240,255,0.2)] transition-all duration-300 cursor-pointer"
+                      >
+                        {/* Woven background texture */}
+                        <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-20" />
 
-                      {/* Corner Accent Decorator */}
-                      <span className="pointer-events-none absolute top-3 left-3 font-mono text-[9px] text-cyan-500/40">
-                        +
-                      </span>
-                      <span className="pointer-events-none absolute top-3 right-3 font-mono text-[9px] text-cyan-500/40">
-                        +
-                      </span>
+                        {/* Corner Accents */}
+                        <span className="pointer-events-none absolute top-4 left-4 font-mono text-[10px] text-cyan-500/40">
+                          +
+                        </span>
+                        <span className="pointer-events-none absolute top-4 right-4 font-mono text-[10px] text-cyan-500/40">
+                          +
+                        </span>
 
-                      <div className="relative z-10">
-                        {/* Status & Category Row */}
-                        <div className="flex items-center justify-between gap-2 mb-4">
-                          <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider">
-                            {event.category}
-                          </span>
+                        <div className="relative z-10">
+                          {/* Top Tag & Status Row (Notice: No Registration Button!) */}
+                          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider font-semibold">
+                                {event.category}
+                              </span>
+                              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-slate-900/90 text-slate-300 border border-slate-700 font-semibold flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                <span>CONCLUDED ARCHIVE</span>
+                              </span>
+                            </div>
 
-                          <span
-                            className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
-                              isOpen
-                                ? "bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
-                                : isUpcoming
-                                ? "bg-amber-950/70 text-amber-300 border-amber-500/40"
-                                : "bg-slate-900/80 text-slate-400 border-slate-700/50"
-                            }`}
-                          >
-                            {isOpen ? "● OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
-                          </span>
+                            {/* Gallery Photo Counter Badge */}
+                            {gallery.length > 0 && (
+                              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+                                📸 {gallery.length} ARCHIVAL PHOTOGRAPHS
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Event Title & Metadata */}
+                          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start mb-6">
+                            <div className="lg:col-span-2">
+                              <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-cyan-300 transition-colors tracking-tight mb-2">
+                                {event.title}
+                              </h3>
+                              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+                                {event.summary}
+                              </p>
+                            </div>
+
+                            <div className="flex flex-col gap-2 p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] text-xs font-mono">
+                              <div className="flex items-center gap-2 text-slate-300">
+                                <span className="text-cyan-400">📅</span>
+                                <span>{event.date}</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-slate-300">
+                                <span className="text-cyan-400">📍</span>
+                                <span className="truncate">{event.venue}</span>
+                              </div>
+                              {event.highlights && (
+                                <div className="text-[11px] text-cyan-300 pt-1 border-t border-white/[0.06] flex items-center gap-1.5">
+                                  <span>✦</span>
+                                  <span>{event.highlights}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Sleek Horizontal Scrolling Image Gallery */}
+                          <div className="pt-2 pb-2">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                                <span className="text-[11px] font-mono uppercase text-cyan-300 tracking-wider font-semibold">
+                                  EVENT PHOTO GALLERY
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-mono text-slate-400 hidden sm:inline-block">
+                                ⇄ SCROLL HORIZONTALLY TO BROWSE
+                              </span>
+                            </div>
+
+                            {gallery.length > 0 ? (
+                              <div className="flex gap-4 overflow-x-auto pb-4 pt-1 snap-x scrollbar-thin scrollbar-thumb-cyan-500/30 scrollbar-track-slate-900/40 -mx-1 px-1">
+                                {gallery.map((photoUrl, pIdx) => (
+                                  <div
+                                    key={pIdx}
+                                    className="relative w-64 sm:w-80 h-44 sm:h-52 flex-shrink-0 rounded-2xl overflow-hidden border border-cyan-500/30 hover:border-cyan-400 group/item shadow-xl snap-start transition-all duration-300 bg-slate-900"
+                                  >
+                                    <Image
+                                      src={photoUrl}
+                                      alt={`${event.title} archival photo ${pIdx + 1}`}
+                                      fill
+                                      unoptimized={photoUrl.startsWith("data:")}
+                                      sizes="(max-width: 640px) 256px, 320px"
+                                      className="object-cover group-hover/item:scale-105 transition-transform duration-500"
+                                    />
+                                    {/* Bottom gradient & caption */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent opacity-80 group-hover/item:opacity-90 transition-opacity pointer-events-none" />
+
+                                    <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white font-mono text-[10px]">
+                                      <span className="px-2 py-0.5 rounded bg-black/60 border border-white/20 backdrop-blur-md">
+                                        PHOTO #{String(pIdx + 1).padStart(2, "0")}
+                                      </span>
+                                      <span className="text-cyan-300 opacity-0 group-hover/item:opacity-100 transition-opacity">
+                                        🔍 EXPAND
+                                      </span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="w-full py-8 rounded-2xl border border-white/10 bg-slate-900/40 text-center font-mono text-xs text-slate-400">
+                                ✦ Archival Photographs for this Conclave will be synchronized soon.
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Footer Action Bar: NO Registration Button! */}
+                          <div className="mt-4 pt-3 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                            <span className="text-slate-400 text-[11px] flex items-center gap-1.5">
+                              <span className="text-emerald-400">✓</span>
+                              <span>Event successfully concluded • All proceedings documented in SGGSIE&amp;T records</span>
+                            </span>
+
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEvent(event);
+                              }}
+                              className="min-h-[44px] px-5 py-2 rounded-xl bg-white/[0.05] hover:bg-cyan-500/10 border border-white/15 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
+                            >
+                              <span>View Full Conclave Dossier</span>
+                              <span>🔍</span>
+                            </button>
+                          </div>
                         </div>
-
-                        {/* Event Title */}
-                        <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight mb-2">
-                          {event.title}
-                        </h3>
-
-                        {/* Date & Venue Badges */}
-                        <div className="flex flex-col gap-1.5 text-xs font-mono text-slate-400 mb-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-cyan-400">📅</span>
-                            <span>{event.date}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-cyan-400">📍</span>
-                            <span className="truncate">{event.venue}</span>
-                          </div>
-                        </div>
-
-                        {/* Event Summary */}
-                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5 font-normal">
-                          {event.summary}
-                        </p>
-
-                        {/* Highlights Pill */}
-                        {event.highlights && (
-                          <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-4 flex items-center gap-2">
-                            <span className="text-cyan-400">✦</span>
-                            <span className="leading-snug">{event.highlights}</span>
-                          </div>
-                        )}
-
-                        {/* Card click hint */}
-                        <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors py-1.5 border-t border-white/[0.05] mb-2">
-                          <span>CLICK TO EXPAND EVENT DOSSIER</span>
-                          <span>🔍</span>
-                        </div>
-                      </div>
-
-                      {/* Bottom CTA & Registration Action */}
-                      <div className="relative z-10 pt-3 border-t border-white/[0.08] flex items-center justify-between font-mono text-xs">
-                        {isOpen ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenRegistration(event.title);
-                            }}
-                            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Register Online</span>
-                            <span>→</span>
-                          </button>
-                        ) : isUpcoming ? (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenRegistration(event.title);
-                            }}
-                            className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <span>Pre-Register / Notify Me</span>
-                            <span>→</span>
-                          </button>
-                        ) : (
-                          <div className="w-full min-h-[44px] flex items-center justify-center text-slate-500 text-[11px] font-mono">
-                            Archive Recorded • Event Concluded
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </motion.div>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </motion.div>
+            )
           )}
         </div>
       </section>

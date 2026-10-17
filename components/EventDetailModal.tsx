@@ -13,9 +13,11 @@ export interface EventItem {
   deadline?: string;
   capacity?: number;
   status: "open" | "upcoming" | "closed";
+  eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
   summary: string;
   highlights?: string;
+  galleryUrls?: string[];
 }
 
 interface EventDetailModalProps {
@@ -46,8 +48,9 @@ export default function EventDetailModal({
     };
   }, [event, onClose]);
 
-  const isOpen = event?.status === "open";
-  const isUpcoming = event?.status === "upcoming";
+  const isConcluded = event?.eventStatus === "Concluded" || event?.status === "closed";
+  const isOpen = !isConcluded && event?.status === "open";
+  const isUpcoming = !isConcluded && event?.status === "upcoming";
 
   return (
     <AnimatePresence>
@@ -209,6 +212,41 @@ export default function EventDetailModal({
               </div>
             )}
 
+            {/* Event Gallery Photos Grid */}
+            {event.galleryUrls && event.galleryUrls.length > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[10px] font-mono uppercase text-cyan-400 tracking-wider">
+                    EVENT PHOTO ARCHIVE ({event.galleryUrls.length} PHOTOGRAPHS):
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500">CLICK TO VIEW ORIGINAL</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  {event.galleryUrls.map((imgUrl, idx) => (
+                    <a
+                      key={idx}
+                      href={imgUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative aspect-[4/3] rounded-xl overflow-hidden border border-cyan-500/30 hover:border-cyan-400 group/img transition-all block shadow-md"
+                    >
+                      <Image
+                        src={imgUrl}
+                        alt={`${event.title} archival photo ${idx + 1}`}
+                        fill
+                        unoptimized={imgUrl.startsWith("data:")}
+                        sizes="(max-width: 640px) 50vw, 25vw"
+                        className="object-cover group-hover/img:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                        <span className="text-white text-xs font-mono">🔍 VIEW</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Prominent "Register Now" Button Action */}
             <div className="pt-2">
               {isOpen || isUpcoming ? (
@@ -223,8 +261,9 @@ export default function EventDetailModal({
                   <span className="text-base">→</span>
                 </button>
               ) : (
-                <div className="w-full py-3 rounded-xl bg-slate-900/80 border border-white/10 text-center font-mono text-xs text-slate-400">
-                  Archive Recorded • This Conclave Has Concluded
+                <div className="w-full py-3 rounded-xl bg-slate-900/80 border border-white/10 text-center font-mono text-xs text-slate-400 flex items-center justify-center gap-2">
+                  <span className="text-cyan-400">■</span>
+                  <span>Archive Recorded • This Conclave Has Concluded</span>
                 </div>
               )}
             </div>

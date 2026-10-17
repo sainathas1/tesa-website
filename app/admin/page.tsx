@@ -53,9 +53,11 @@ export interface EventItem {
   deadline?: string;
   capacity?: number;
   status: "open" | "upcoming" | "closed";
+  eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
   summary: string;
   highlights?: string;
+  galleryUrls?: string[];
   createdAt?: any;
 }
 
@@ -200,6 +202,7 @@ const INITIAL_EVENTS: EventItem[] = [
     deadline: "April 15, 2026",
     capacity: 250,
     status: "open",
+    eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60",
     summary: "Flagship national convention uniting textile researchers, paper presentations, and live CAD weaving contests.",
     highlights: "₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE Certification",
@@ -213,6 +216,7 @@ const INITIAL_EVENTS: EventItem[] = [
     deadline: "May 1, 2026",
     capacity: 100,
     status: "upcoming",
+    eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
     summary: "36-hour sprint pairing textile engineers with electronics students to build wearable fabric sensors.",
     highlights: "Hardware Looms Access • Angel Mentors • Seed Incubation",
@@ -226,9 +230,28 @@ const INITIAL_EVENTS: EventItem[] = [
     deadline: "May 25, 2026",
     capacity: 60,
     status: "open",
+    eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=60",
     summary: "Hands-on synthesis of polymeric nanofibers for high-efficiency air filters and biomedical wound dressings.",
     highlights: "Live Electrospinner Demo • ASTM Characterization • Kit Provided",
+  },
+  {
+    id: "ev-demo-4",
+    title: "TEX-CONCLAVE 2025: Sustainable Textiles Conclave",
+    category: "National Conclave",
+    date: "March 15–16, 2025",
+    venue: "SGGSIE&T Main Auditorium",
+    status: "closed",
+    eventStatus: "Concluded",
+    mediaUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=60",
+    summary: "Over 480 delegates from 28 technical colleges participated in competitive research tracks and industrial roundtables.",
+    highlights: "480+ Delegates • 65 Peer-Reviewed Papers • Industry Roundtable",
+    galleryUrls: [
+      "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&auto=format&fit=crop&q=80",
+    ],
   },
 ];
 
@@ -324,6 +347,8 @@ export default function AdminDashboardPage() {
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [isEventModalOpen, setIsEventModalOpen] = useState<boolean>(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [isUploadingGallery, setIsUploadingGallery] = useState<boolean>(false);
 
   const [eventForm, setEventForm] = useState<EventItem>({
     id: "",
@@ -334,11 +359,14 @@ export default function AdminDashboardPage() {
     deadline: "",
     capacity: 150,
     status: "open",
+    eventStatus: "Upcoming",
     mediaUrl: "",
     summary: "",
     highlights: "",
+    galleryUrls: [],
   });
   const eventFileInputRef = useRef<HTMLInputElement>(null);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
 
   // --------------------------------------------------------------------------
   // 3. STATE: REGISTRATIONS & EXCEL EXPORT
@@ -465,6 +493,36 @@ export default function AdminDashboardPage() {
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(file);
       });
+    }
+  };
+
+  // --------------------------------------------------------------------------
+  // CLOUDINARY UNSIGNED UPLOAD HELPER
+  // --------------------------------------------------------------------------
+  const uploadToCloudinary = async (file: File): Promise<string> => {
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "tesa-sggsiet";
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "tesa_unsigned";
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", uploadPreset);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData?.error?.message || `Cloudinary upload returned status ${res.status}`);
+      }
+
+      const data = await res.json();
+      return data.secure_url || data.url;
+    } catch (cloudinaryError: any) {
+      console.warn("Cloudinary direct upload failed, using storage fallback:", cloudinaryError);
+      return uploadImageToStorage(file, "event_gallery");
     }
   };
 
@@ -608,6 +666,7 @@ export default function AdminDashboardPage() {
 
   const handleOpenAddEventModal = () => {
     setEditingEventId(null);
+    setGalleryFiles([]);
     setEventForm({
       id: "",
       title: "",
@@ -617,17 +676,45 @@ export default function AdminDashboardPage() {
       deadline: "",
       capacity: 150,
       status: "open",
+      eventStatus: "Upcoming",
       mediaUrl: "",
       summary: "",
       highlights: "",
+      galleryUrls: [],
     });
     setIsEventModalOpen(true);
   };
 
   const handleOpenEditEventModal = (ev: EventItem) => {
     setEditingEventId(ev.id);
-    setEventForm({ ...ev });
+    setGalleryFiles([]);
+    const resolvedStatus: "Upcoming" | "Concluded" =
+      ev.eventStatus || (ev.status === "closed" ? "Concluded" : "Upcoming");
+    setEventForm({
+      ...ev,
+      eventStatus: resolvedStatus,
+      galleryUrls: ev.galleryUrls || [],
+    });
     setIsEventModalOpen(true);
+  };
+
+  const handleGalleryFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selected = Array.from(e.target.files);
+      setGalleryFiles((prev) => [...prev, ...selected]);
+      showToast(`Selected ${selected.length} gallery file(s). Will upload to Cloudinary.`);
+    }
+  };
+
+  const handleRemoveGalleryFile = (index: number) => {
+    setGalleryFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleRemoveExistingGalleryUrl = (urlToRemove: string) => {
+    setEventForm((prev) => ({
+      ...prev,
+      galleryUrls: (prev.galleryUrls || []).filter((u) => u !== urlToRemove),
+    }));
   };
 
   const handleEventBannerFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -661,26 +748,65 @@ export default function AdminDashboardPage() {
 
     try {
       setIsSubmittingEvent(true);
+
+      // Loop through selected gallery files and upload each to Cloudinary (using unsigned preset)
+      let finalGalleryUrls: string[] = [...(eventForm.galleryUrls || [])];
+      if (eventForm.eventStatus === "Concluded" && galleryFiles.length > 0) {
+        setIsUploadingGallery(true);
+        showToast(`Uploading ${galleryFiles.length} photo(s) to Cloudinary...`, "info");
+        try {
+          for (let i = 0; i < galleryFiles.length; i++) {
+            const file = galleryFiles[i];
+            const url = await uploadToCloudinary(file);
+            finalGalleryUrls.push(url);
+          }
+          showToast(`Uploaded ${galleryFiles.length} gallery photo(s) to Cloudinary!`);
+        } catch (uploadErr) {
+          console.error("Gallery upload error:", uploadErr);
+          showToast("Some gallery photos failed to upload to Cloudinary. Saving event.", "error");
+        } finally {
+          setIsUploadingGallery(false);
+        }
+      }
+
+      const isConcluded = eventForm.eventStatus === "Concluded";
+      const mappedStatus: "open" | "upcoming" | "closed" = isConcluded
+        ? "closed"
+        : eventForm.status === "closed"
+        ? "upcoming"
+        : eventForm.status || "upcoming";
+
+      const eventPayload: EventItem = {
+        ...eventForm,
+        eventStatus: eventForm.eventStatus || (isConcluded ? "Concluded" : "Upcoming"),
+        status: mappedStatus,
+        galleryUrls: finalGalleryUrls,
+      };
+
       if (editingEventId) {
         const updatedEvents = eventsList.map((ev) =>
-          ev.id === editingEventId ? { ...eventForm, id: editingEventId } : ev
+          ev.id === editingEventId ? { ...eventPayload, id: editingEventId } : ev
         );
         setEventsList(updatedEvents);
         localStorage.setItem("tesa_events", JSON.stringify(updatedEvents));
 
         try {
-          await setDoc(doc(db, "events", editingEventId), {
-            ...eventForm,
-            updatedAt: serverTimestamp(),
-            updatedBy: user?.email || "admin",
-          }, { merge: true });
+          await setDoc(
+            doc(db, "events", editingEventId),
+            {
+              ...eventPayload,
+              updatedAt: serverTimestamp(),
+              updatedBy: user?.email || "admin",
+            },
+            { merge: true }
+          );
         } catch (err) {}
 
         showToast("Event updated successfully!");
       } else {
         const newId = `ev-${Date.now()}`;
         const newEvent: EventItem = {
-          ...eventForm,
+          ...eventPayload,
           id: newId,
           capacity: Number(eventForm.capacity) || 100,
           createdAt: new Date().toISOString(),
@@ -701,9 +827,11 @@ export default function AdminDashboardPage() {
 
         showToast(`Published "${newEvent.title}"!`);
       }
+      setGalleryFiles([]);
       setIsEventModalOpen(false);
     } finally {
       setIsSubmittingEvent(false);
+      setIsUploadingGallery(false);
     }
   };
 
@@ -1744,15 +1872,21 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div>
-                  <label className="text-slate-400 block mb-1">Status</label>
+                  <label className="text-slate-400 block mb-1">Event Status (eventStatus) *</label>
                   <select
-                    value={eventForm.status}
-                    onChange={(e) => setEventForm({ ...eventForm, status: e.target.value as any })}
-                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                    value={eventForm.eventStatus || (eventForm.status === "closed" ? "Concluded" : "Upcoming")}
+                    onChange={(e) => {
+                      const val = e.target.value as "Upcoming" | "Concluded";
+                      setEventForm({
+                        ...eventForm,
+                        eventStatus: val,
+                        status: val === "Concluded" ? "closed" : "upcoming",
+                      });
+                    }}
+                    className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 cursor-pointer font-mono"
                   >
-                    <option value="open">Registration Open</option>
-                    <option value="upcoming">Upcoming</option>
-                    <option value="closed">Concluded / Archive</option>
+                    <option value="Upcoming">Upcoming</option>
+                    <option value="Concluded">Concluded</option>
                   </select>
                 </div>
 
@@ -1801,6 +1935,80 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {/* Event Gallery Photos Section (Visible for Concluded events) */}
+              {(eventForm.eventStatus === "Concluded" || eventForm.status === "closed") && (
+                <div className="p-4 rounded-xl border border-cyan-500/30 bg-slate-950/80 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
+                        Event Gallery Photos
+                      </span>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        Choose multiple photos. Upon submitting this Concluded event, they will upload to Cloudinary (unsigned preset) and save to Firestore as galleryUrls.
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/30">
+                      {(eventForm.galleryUrls?.length || 0) + galleryFiles.length} Photos Attached
+                    </span>
+                  </div>
+
+                  <input
+                    ref={galleryFileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleGalleryFilesChange}
+                    className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer"
+                  />
+
+                  {/* Previews of newly selected files & existing gallery URLs */}
+                  {((eventForm.galleryUrls && eventForm.galleryUrls.length > 0) || galleryFiles.length > 0) && (
+                    <div className="pt-2 border-t border-white/10 space-y-2">
+                      <span className="text-[10px] font-mono text-slate-400 block">
+                        Gallery Photographs Preview:
+                      </span>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-40 overflow-y-auto p-1">
+                        {eventForm.galleryUrls?.map((url, uIdx) => (
+                          <div key={`existing-${uIdx}`} className="relative aspect-square rounded-lg border border-cyan-500/30 overflow-hidden group bg-black">
+                            <Image src={url} alt={`Gallery ${uIdx}`} fill unoptimized className="object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveExistingGalleryUrl(url)}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-950/90 text-red-300 border border-red-500/40 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              title="Delete from gallery"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+
+                        {galleryFiles.map((file, fIdx) => (
+                          <div key={`file-${fIdx}`} className="relative aspect-square rounded-lg border border-amber-500/40 overflow-hidden group bg-zinc-900 flex flex-col items-center justify-center p-1 text-center">
+                            <span className="text-base">📷</span>
+                            <span className="text-[8px] text-amber-300 truncate w-full px-1">{file.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveGalleryFile(fIdx)}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-950/90 text-red-300 border border-red-500/40 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              title="Remove file"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isUploadingGallery && (
+                    <div className="flex items-center gap-2 text-cyan-300 text-xs font-mono py-1 animate-pulse">
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
+                      <span>Uploading event gallery photos to Cloudinary...</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div>
                 <label className="text-slate-400 block mb-1">Key Highlights Pill</label>
                 <input
@@ -1833,10 +2041,19 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingEvent || isUploadingBanner}
-                  className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
+                  disabled={isSubmittingEvent || isUploadingBanner || isUploadingGallery}
+                  className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
                 >
-                  {editingEventId ? "Save Changes" : "Publish Event"}
+                  {isUploadingGallery && (
+                    <div className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                  )}
+                  <span>
+                    {isUploadingGallery
+                      ? "Uploading to Cloudinary..."
+                      : editingEventId
+                      ? "Save Changes"
+                      : "Publish Event"}
+                  </span>
                 </button>
               </div>
             </form>
