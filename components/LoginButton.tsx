@@ -50,17 +50,27 @@ export default function LoginButton() {
       setSigningIn(true);
       await signInWithPopup(auth, googleProvider);
     } catch (error: any) {
+      console.error("Auth Error Code:", error.code);
+      console.error("Auth Error Message:", error.message);
       console.error("Google sign-in error:", error);
+
+      const code = error?.code || "unknown-code";
+      const message = error?.message || "Google sign-in failed.";
+
+      alert(`Firebase Auth Error [${code}]:\n${message}`);
+
       if (error?.code === "auth/popup-closed-by-user") {
         setErrorMsg("Sign-in popup was closed before completing.");
       } else if (error?.code === "auth/unauthorized-domain") {
         setErrorMsg(
-          "Domain unauthorized: Add localhost in Firebase Console > Authentication > Settings > Authorized Domains."
+          `Domain unauthorized [${code}]: Add domain in Firebase Console > Authentication > Settings > Authorized Domains.`
         );
-      } else if (error?.code === "auth/cancelled-popup-request") {
-        // Ignored if user tapped multiple times
+      } else if (error?.code === "auth/operation-not-allowed") {
+        setErrorMsg(
+          `[${code}]: Google Sign-in provider is disabled in Firebase Console > Authentication > Sign-in method.`
+        );
       } else {
-        setErrorMsg(error?.message || "Failed to sign in with Google.");
+        setErrorMsg(`[${code}]: ${message}`);
       }
     } finally {
       setSigningIn(false);
