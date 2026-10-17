@@ -39,12 +39,12 @@ function SpotlightGridCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 35, filter: "blur(6px)" }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
       viewport={{ once: true, margin: "-50px" }}
-      transition={{ duration: 0.6, delay }}
+      transition={{ duration: 0.85, delay, ease: [0.16, 1, 0.3, 1] }}
       onMouseMove={handleMouseMove}
-      className={`group relative rounded-3xl p-7 sm:p-8 flex flex-col justify-between overflow-hidden bg-zinc-950/80 backdrop-blur-xl border border-white/10 ring-1 ring-inset ring-white/5 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.8)] ${
+      className={`group relative rounded-3xl p-7 sm:p-8 flex flex-col justify-between overflow-hidden bg-slate-950/65 backdrop-blur-2xl border border-cyan-500/30 hover:border-cyan-400 ring-1 ring-inset ring-cyan-500/10 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] ${
         item.colSpan || "col-span-1"
       }`}
     >
@@ -256,15 +256,21 @@ export default function DepartmentEventsGrid() {
       <div className="pointer-events-none absolute bottom-10 -left-40 w-[600px] h-[600px] bg-cyan-900/15 blur-[150px] rounded-full" />
 
       {/* Section Header */}
-      <div className="text-center max-w-3xl mx-auto mb-14 sm:mb-16">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/30 bg-cyan-950/40 text-[11px] font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+      <motion.div
+        initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
+        whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        viewport={{ once: true, margin: "-40px" }}
+        transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+        className="text-center max-w-3xl mx-auto mb-14 sm:mb-16"
+      >
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
           <span>DEPARTMENT RECONNAISSANCE &amp; COMPETITIONS</span>
         </div>
 
         <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight">
           Department &amp;{" "}
-          <span className="bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,240,255,0.3)]">
+          <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,240,255,0.35)]">
             Events Matrix
           </span>
         </h2>
@@ -272,7 +278,7 @@ export default function DepartmentEventsGrid() {
         <p className="text-xs sm:text-sm text-slate-300 mt-3 font-normal leading-relaxed">
           Hover over any card to trigger the ambient neon spotlight. Explore faculty research coordinators, the Bio-Suture Lightning Pitch, and Lap Former workshops.
         </p>
-      </div>
+      </motion.div>
 
       {/* =========================================================================
           THE GRID: Masonry Layout with Spotlight Hover Effect

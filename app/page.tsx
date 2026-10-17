@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import ParallaxHero from "@/components/ParallaxHero";
@@ -10,6 +11,12 @@ import Textile3DCenterpiece from "@/components/Textile3DCenterpiece";
 import DepartmentOverviewSection from "@/components/DepartmentOverviewSection";
 import PastEventsSection from "@/components/PastEventsSection";
 import EventRegistrationModal from "@/components/EventRegistrationModal";
+
+// Client-only dynamic WebGL Liquid Ether & Deep-Sea Creature Particle Flow Background
+const LiquidEtherBackground = dynamic(
+  () => import("@/components/LiquidEtherBackground"),
+  { ssr: false }
+);
 
 export default function Home() {
   const [isRegModalOpen, setIsRegModalOpen] = useState(false);
@@ -21,11 +28,12 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-zinc-950 text-slate-100 flex flex-col justify-between selection:bg-purple-500/30 selection:text-purple-200 overflow-x-hidden">
-      {/* Ambient Neon Backlighting Background Layers */}
-      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-30 z-0" />
-      <div className="pointer-events-none fixed -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[600px] bg-gradient-to-b from-purple-700/20 via-indigo-700/10 to-transparent blur-[140px] rounded-full z-0" />
-      <div className="pointer-events-none fixed bottom-0 right-0 w-[600px] h-[500px] bg-cyan-700/10 blur-[150px] rounded-full z-0" />
+    <div className="relative min-h-screen w-full bg-[#030712] text-slate-100 flex flex-col justify-between selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
+      {/* 3D Interactive Liquid Ether / Deep-Sea Creature Particle Flow Background (pointer-events: none) */}
+      <LiquidEtherBackground />
+
+      {/* Engineering Grid & Subtle Ambient Glow Overlay */}
+      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-25 z-0" />
 
       {/* =========================================================================
           NAVIGATION: Minimalist Pill-Shaped Sticky Navbar at Top Center

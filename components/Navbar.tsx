@@ -35,15 +35,15 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
       <div
         className={`relative flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3 rounded-full transition-all duration-300 ${
           isScrolled
-            ? "bg-[#0b0819]/85 backdrop-blur-xl border border-purple-500/30 shadow-[0_10px_35px_rgba(0,0,0,0.8),0_0_25px_rgba(168,85,247,0.15)]"
-            : "bg-[#090715]/70 backdrop-blur-lg border border-white/10 shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
+            ? "bg-slate-950/80 backdrop-blur-2xl border border-cyan-500/40 shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_25px_rgba(0,240,255,0.2)]"
+            : "bg-slate-950/65 backdrop-blur-xl border border-cyan-500/30 shadow-[0_8px_30px_rgba(0,0,0,0.6)]"
         }`}
       >
         {/* Left: Brand Identity */}
         <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/30 via-indigo-500/20 to-cyan-500/30 border border-purple-500/40 flex items-center justify-center text-purple-300 group-hover:scale-105 transition-transform shadow-[0_0_12px_rgba(168,85,247,0.3)]">
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-500/30 via-indigo-500/20 to-purple-500/30 border border-cyan-500/40 flex items-center justify-center text-cyan-300 group-hover:scale-105 transition-transform shadow-[0_0_12px_rgba(0,240,255,0.3)]">
             <svg
-              className="w-4 h-4 text-purple-300"
+              className="w-4 h-4 text-cyan-300"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
@@ -60,10 +60,10 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
             </svg>
           </div>
           <div className="flex flex-col">
-            <span className="font-bold text-xs sm:text-sm tracking-wider text-white group-hover:text-purple-300 transition-colors">
+            <span className="font-bold text-xs sm:text-sm tracking-wider text-white group-hover:text-cyan-300 transition-colors">
               TESA
             </span>
-            <span className="text-[9px] font-mono text-purple-300/70 -mt-0.5 tracking-tight hidden sm:block">
+            <span className="text-[9px] font-mono text-cyan-300/70 -mt-0.5 tracking-tight hidden sm:block">
               SGGSIE&amp;T
             </span>
           </div>
@@ -73,27 +73,27 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
         <div className="hidden md:flex items-center gap-6 text-xs font-medium text-slate-300">
           <Link
             href="#hero"
-            className="hover:text-purple-300 transition-colors relative py-1"
+            className="hover:text-cyan-300 transition-colors relative py-1"
           >
             Overview
           </Link>
           <Link
             href="#cards"
-            className="hover:text-purple-300 transition-colors relative py-1"
+            className="hover:text-cyan-300 transition-colors relative py-1"
           >
             Highlights
           </Link>
           <Link
             href="#grid"
-            className="hover:text-purple-300 transition-colors relative py-1"
+            className="hover:text-cyan-300 transition-colors relative py-1"
           >
             Faculty &amp; Events
           </Link>
           <Link
             href="#centerpiece"
-            className="hover:text-purple-300 transition-colors relative py-1 flex items-center gap-1 text-purple-400"
+            className="hover:text-cyan-300 transition-colors relative py-1 flex items-center gap-1 text-cyan-400"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
             <span>3D Mesh</span>
           </Link>
           {user && (
@@ -112,10 +112,10 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
 
           <button
             onClick={onOpenRegister}
-            className="relative group overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-semibold text-white tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(168,85,247,0.45)] hover:shadow-[0_0_30px_rgba(168,85,247,0.7)]"
+            className="relative group overflow-hidden px-4 sm:px-5 py-1.5 sm:py-2 rounded-full text-xs font-semibold text-white tracking-wide transition-all duration-300 shadow-[0_0_20px_rgba(0,240,255,0.35)] hover:shadow-[0_0_30px_rgba(0,240,255,0.6)] border border-cyan-400/40"
           >
-            {/* Pulsing neon background gradient */}
-            <span className="absolute inset-0 bg-gradient-to-r from-purple-600 via-indigo-600 to-purple-500 transition-transform duration-300 group-hover:scale-105" />
+            {/* Pulsing neon cyan-blue background gradient */}
+            <span className="absolute inset-0 bg-gradient-to-r from-cyan-600 via-sky-600 to-purple-600 transition-transform duration-300 group-hover:scale-105" />
             <span className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
             <span className="relative flex items-center gap-1.5">
               <span>Register</span>

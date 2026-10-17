@@ -38,34 +38,34 @@ export default function Textile3DCenterpiece({ onOpenRegister }: CenterpieceProp
             ========================================================================= */}
         <div className="lg:col-span-5 relative z-10">
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: -30, filter: "blur(6px)" }}
+            whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7 }}
+            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/60 text-xs font-mono text-cyan-300 mb-6 shadow-[0_0_20px_rgba(0,240,255,0.3)]"
           >
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
             <span>REACT-THREE-FIBER • TEXTILE CENTERPIECE</span>
           </motion.div>
 
           <motion.h2
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: -30, filter: "blur(8px)" }}
+            whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.1 }}
+            transition={{ duration: 0.9, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
             className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white uppercase leading-[1.05] mb-6"
           >
             Build beyond{" "}
-            <span className="block bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(0,240,255,0.4)]">
+            <span className="block bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(0,240,255,0.4)]">
               every limit.
             </span>
           </motion.h2>
 
           <motion.p
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: -30, filter: "blur(6px)" }}
+            whileInView={{ opacity: 1, x: 0, filter: "blur(0px)" }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.2 }}
+            transition={{ duration: 0.9, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className="text-sm sm:text-base text-slate-300 leading-relaxed font-normal mb-8 font-mono"
           >
             Watch the live sine-wave cloth simulation rendered in real-time WebGL. High-gloss physical synthetic fibers illuminated by neon purple and electric blue lights represent the future of technical textiles, bio-resorbable surgical meshes, and carbon composite architectures engineered at SGGSIE&amp;T.
@@ -73,13 +73,13 @@ export default function Textile3DCenterpiece({ onOpenRegister }: CenterpieceProp
 
           {/* Technical Telemetry Badges */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 25, filter: "blur(6px)" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             viewport={{ once: true }}
-            transition={{ duration: 0.7, delay: 0.3 }}
+            transition={{ duration: 0.85, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="grid grid-cols-3 gap-3 mb-8 font-mono"
           >
-            <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-white/10 backdrop-blur-sm">
+            <div className="p-3.5 rounded-2xl bg-slate-950/65 border border-cyan-500/30 hover:border-cyan-400 backdrop-blur-2xl shadow-[0_0_20px_rgba(0,240,255,0.15)] transition-all duration-300">
               <span className="text-xl sm:text-2xl font-bold text-cyan-300 block">
                 6,400
               </span>
@@ -87,7 +87,7 @@ export default function Textile3DCenterpiece({ onOpenRegister }: CenterpieceProp
                 Sim Vertices
               </span>
             </div>
-            <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-white/10 backdrop-blur-sm">
+            <div className="p-3.5 rounded-2xl bg-slate-950/65 border border-cyan-500/30 hover:border-cyan-400 backdrop-blur-2xl shadow-[0_0_20px_rgba(0,240,255,0.15)] transition-all duration-300">
               <span className="text-xl sm:text-2xl font-bold text-purple-300 block">
                 0.94
               </span>
@@ -95,7 +95,7 @@ export default function Textile3DCenterpiece({ onOpenRegister }: CenterpieceProp
                 Metal Sheen
               </span>
             </div>
-            <div className="p-3.5 rounded-2xl bg-zinc-950/80 border border-white/10 backdrop-blur-sm">
+            <div className="p-3.5 rounded-2xl bg-slate-950/65 border border-cyan-500/30 hover:border-cyan-400 backdrop-blur-2xl shadow-[0_0_20px_rgba(0,240,255,0.15)] transition-all duration-300">
               <span className="text-xl sm:text-2xl font-bold text-pink-300 block">
                 60 FPS
               </span>

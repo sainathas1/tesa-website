@@ -55,32 +55,32 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
       {/* Hero Headline & Intro */}
       <div className="relative z-10 text-center max-w-4xl mx-auto mb-10 sm:mb-14">
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-950/40 text-[11px] sm:text-xs font-mono text-purple-300 mb-4 shadow-[0_0_20px_rgba(168,85,247,0.25)]"
+          initial={{ opacity: 0, y: -20, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+          className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-4 shadow-[0_0_20px_rgba(0,240,255,0.25)]"
         >
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_10px_#00f0ff]" />
           <span>SGGSIE&amp;T TEXTILE ENGINEERING STUDENTS ASSOCIATION • TESA</span>
         </motion.div>
 
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
+          initial={{ opacity: 0, y: 25, filter: "blur(10px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.9, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
           className="text-3xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white mb-4 leading-tight"
         >
           Next-Generation{" "}
-          <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(0,240,255,0.4)]">
+          <span className="bg-gradient-to-r from-cyan-400 via-sky-300 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_35px_rgba(0,240,255,0.45)]">
             Computational Weaving
           </span>{" "}
           &amp; Synthetic Polymers
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
+          initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.9, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
           className="text-sm sm:text-base md:text-lg text-slate-300 font-normal max-w-2xl mx-auto leading-relaxed"
         >
           Pioneering smart conductive fibers, electrospun nanofiltration membranes, and autonomous electronic rapier looms at SGGSIE&amp;T Nanded.
@@ -97,25 +97,25 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
       >
         {/* CARD 1: Spinning & Yarn Tech */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.25 }}
+          initial={{ opacity: 0, y: 45, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.9, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-10 hover:z-40 transition-all duration-300"
         >
           <MouseTiltCard
-            glowColor="rgba(0, 240, 255, 0.35)"
-            borderColor="rgba(0, 240, 255, 0.5)"
-            className="group h-full border-cyan-500/30"
+            glowColor="rgba(0, 240, 255, 0.45)"
+            borderColor="rgba(0, 240, 255, 0.6)"
+            className="group h-full border-cyan-500/40"
           >
             <div>
               <div className="flex items-center justify-between mb-5">
-                <span className="text-[10px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+                <span className="text-[10px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
                   POLYMER DYNAMICS
                 </span>
                 <span className="text-[10px] font-mono text-cyan-400">STAGE 01</span>
               </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-cyan-950/70 border border-cyan-400/40 flex items-center justify-center text-cyan-300 mb-5 shadow-[0_0_20px_rgba(0,240,255,0.3)]">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-950/70 border border-cyan-400/50 flex items-center justify-center text-cyan-300 mb-5 shadow-[0_0_20px_rgba(0,240,255,0.35)]">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <circle cx="12" cy="12" r="10" />
                   <path d="m4.93 4.93 4.24 4.24" />
@@ -145,7 +145,7 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/10 flex items-center justify-between font-mono">
+            <div className="pt-4 border-t border-cyan-500/20 flex items-center justify-between font-mono">
               <span className="text-[11px] text-cyan-300 font-semibold">
                 Yarn Mechanics Lab
               </span>
@@ -161,25 +161,25 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
 
         {/* CARD 2: Woven & Knitted Structures */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.35 }}
+          initial={{ opacity: 0, y: 45, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.9, delay: 0.38, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-20 hover:z-40 transition-all duration-300"
         >
           <MouseTiltCard
-            glowColor="rgba(168, 85, 247, 0.45)"
-            borderColor="rgba(168, 85, 247, 0.6)"
-            className="group h-full border-purple-500/40 shadow-[0_30px_70px_rgba(0,0,0,0.9)]"
+            glowColor="rgba(0, 240, 255, 0.4)"
+            borderColor="rgba(0, 240, 255, 0.55)"
+            className="group h-full border-cyan-500/40 shadow-[0_30px_70px_rgba(0,0,0,0.9)]"
           >
             <div>
               <div className="flex items-center justify-between mb-5">
-                <span className="text-[10px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+                <span className="text-[10px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/50 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
                   AUTOMATED LOOMS
                 </span>
-                <span className="text-[10px] font-mono text-purple-400">STAGE 02</span>
+                <span className="text-[10px] font-mono text-cyan-400">STAGE 02</span>
               </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-purple-950/70 border border-purple-400/40 flex items-center justify-center text-purple-300 mb-5 shadow-[0_0_20px_rgba(168,85,247,0.35)]">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-950/70 border border-cyan-400/50 flex items-center justify-center text-cyan-300 mb-5 shadow-[0_0_20px_rgba(0,240,255,0.35)]">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M4 6h16" />
                   <path d="M4 12h16" />
@@ -190,7 +190,7 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
                 </svg>
               </div>
 
-              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-purple-300 transition-colors">
+              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-300 transition-colors">
                 Woven &amp; Knitted Structures
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed mb-6 font-mono">
@@ -199,23 +199,23 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
 
               <div className="space-y-2 mb-6 font-mono text-xs text-slate-400">
                 <div className="flex items-center gap-2">
-                  <span className="text-purple-400">✦</span>
+                  <span className="text-cyan-400">✦</span>
                   <span>1,200 RPM Computerized Rapier Looms</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-purple-400">✦</span>
+                  <span className="text-cyan-400">✦</span>
                   <span>3D Orthogonal Carbon Weaves</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/10 flex items-center justify-between font-mono">
-              <span className="text-[11px] text-purple-300 font-semibold">
+            <div className="pt-4 border-t border-cyan-500/20 flex items-center justify-between font-mono">
+              <span className="text-[11px] text-cyan-300 font-semibold">
                 CAD/CAM Weaving Shed
               </span>
               <button
                 onClick={() => onOpenRegister("SMART WEAVES HACKATHON 2026")}
-                className="text-xs font-bold text-white hover:text-purple-300 flex items-center gap-1 group-hover:translate-x-1 transition-transform"
+                className="text-xs font-bold text-white hover:text-cyan-300 flex items-center gap-1 group-hover:translate-x-1 transition-transform"
               >
                 <span>Hackathon →</span>
               </button>
@@ -225,25 +225,25 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
 
         {/* CARD 3: Technical Textiles */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.45 }}
+          initial={{ opacity: 0, y: 45, filter: "blur(8px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.9, delay: 0.48, ease: [0.16, 1, 0.3, 1] }}
           className="relative z-30 hover:z-40 transition-all duration-300"
         >
           <MouseTiltCard
-            glowColor="rgba(236, 72, 153, 0.4)"
-            borderColor="rgba(236, 72, 153, 0.5)"
-            className="group h-full border-pink-500/30"
+            glowColor="rgba(0, 240, 255, 0.4)"
+            borderColor="rgba(0, 240, 255, 0.55)"
+            className="group h-full border-cyan-500/40"
           >
             <div>
               <div className="flex items-center justify-between mb-5">
-                <span className="text-[10px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-full bg-pink-500/20 text-pink-300 border border-pink-500/40 shadow-[0_0_12px_rgba(236,72,153,0.25)]">
+                <span className="text-[10px] font-mono font-bold tracking-wider px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/50 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
                   SMART COMPOSITES
                 </span>
-                <span className="text-[10px] font-mono text-pink-400">STAGE 03</span>
+                <span className="text-[10px] font-mono text-cyan-400">STAGE 03</span>
               </div>
 
-              <div className="w-12 h-12 rounded-2xl bg-pink-950/70 border border-pink-400/40 flex items-center justify-center text-pink-300 mb-5 shadow-[0_0_20px_rgba(236,72,153,0.3)]">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-950/70 border border-cyan-400/50 flex items-center justify-center text-cyan-300 mb-5 shadow-[0_0_20px_rgba(0,240,255,0.35)]">
                 <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polygon points="12 2 2 7 12 12 22 7 12 2" />
                   <polyline points="2 17 12 22 22 17" />
@@ -251,7 +251,7 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
                 </svg>
               </div>
 
-              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-pink-300 transition-colors">
+              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-cyan-300 transition-colors">
                 Technical Textiles
               </h3>
               <p className="text-xs text-slate-300 leading-relaxed mb-6 font-mono">
@@ -260,23 +260,23 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
 
               <div className="space-y-2 mb-6 font-mono text-xs text-slate-400">
                 <div className="flex items-center gap-2">
-                  <span className="text-pink-400">✦</span>
+                  <span className="text-cyan-400">✦</span>
                   <span>99.8% Sub-Micron HEPA Filtration</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-pink-400">✦</span>
+                  <span className="text-cyan-400">✦</span>
                   <span>3 Provisional Patents Under Review</span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/10 flex items-center justify-between font-mono">
-              <span className="text-[11px] text-pink-300 font-semibold">
+            <div className="pt-4 border-t border-cyan-500/20 flex items-center justify-between font-mono">
+              <span className="text-[11px] text-cyan-300 font-semibold">
                 Nanotech Research Facility
               </span>
               <button
                 onClick={() => onOpenRegister("TEX-CONCLAVE 2026")}
-                className="text-xs font-bold text-white hover:text-pink-300 flex items-center gap-1 group-hover:translate-x-1 transition-transform"
+                className="text-xs font-bold text-white hover:text-cyan-300 flex items-center gap-1 group-hover:translate-x-1 transition-transform"
               >
                 <span>Conclave &apos;26 →</span>
               </button>

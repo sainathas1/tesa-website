@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 
 interface FacultyMember {
   name: string;
@@ -264,15 +265,21 @@ export default function DepartmentOverviewSection() {
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+        <motion.div
+          initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center max-w-3xl mx-auto mb-12 sm:mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
             <span>ACADEMIC FOUNDATION • ESTABLISHED 1987</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
             DEPARTMENT OF{" "}
-            <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-sky-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,240,255,0.35)]">
               TEXTILE TECHNOLOGY
             </span>
           </h2>
@@ -296,14 +303,14 @@ export default function DepartmentOverviewSection() {
                 className={`px-3.5 py-2 rounded-lg border transition-all duration-200 ${
                   activeTab === tab.id
                     ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
-                    : "bg-white/[0.03] text-slate-300 border-white/10 hover:border-cyan-500/30 hover:text-white"
+                    : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
           </div>
-        </div>
+        </motion.div>
 
         {/* =========================================================================
             SUBSECTION 1: FACULTY MEMBERS
@@ -328,7 +335,7 @@ export default function DepartmentOverviewSection() {
               {facultyList.map((faculty, fIdx) => (
                 <div
                   key={fIdx}
-                  className="rounded-xl border border-white/10 bg-slate-950/60 p-5 sm:p-6 backdrop-blur-sm hover:border-cyan-500/40 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] transition-all flex flex-col justify-between"
+                  className="rounded-2xl border border-cyan-500/30 bg-slate-950/65 p-5 sm:p-6 backdrop-blur-2xl hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.3)] transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-3">
@@ -422,7 +429,7 @@ export default function DepartmentOverviewSection() {
               {staffList.map((staff, sIdx) => (
                 <div
                   key={sIdx}
-                  className="rounded-xl border border-white/10 bg-slate-950/60 p-5 sm:p-6 backdrop-blur-sm hover:border-teal-500/40 transition-all flex flex-col justify-between"
+                  className="rounded-2xl border border-cyan-500/30 bg-slate-950/65 p-5 sm:p-6 backdrop-blur-2xl hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.3)] transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-2">
@@ -648,7 +655,7 @@ export default function DepartmentOverviewSection() {
               {LAB_FACILITIES.map((lab) => (
                 <div
                   key={lab.id}
-                  className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] to-black/80 p-6 flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(6,182,212,0.15)] transition-all"
+                  className="rounded-2xl border border-cyan-500/30 bg-slate-950/65 backdrop-blur-2xl p-6 flex flex-col justify-between hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.3)] transition-all duration-300"
                 >
                   <div>
                     <div className="flex items-center justify-between mb-3">

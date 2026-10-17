@@ -18,8 +18,8 @@ interface MouseTiltCardProps {
 export default function MouseTiltCard({
   children,
   className = "",
-  glowColor = "rgba(0, 240, 255, 0.3)",
-  borderColor = "rgba(168, 85, 247, 0.4)",
+  glowColor = "rgba(0, 240, 255, 0.45)",
+  borderColor = "rgba(0, 240, 255, 0.6)",
 }: MouseTiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -70,14 +70,14 @@ export default function MouseTiltCard({
           transformStyle: "preserve-3d",
         }}
         whileHover={{
-          scale: 1.05,
-          y: -10,
+          scale: 1.04,
+          y: -8,
           transition: { duration: 0.3 },
         }}
-        className={`relative rounded-3xl p-7 sm:p-8 backdrop-blur-2xl bg-zinc-950/70 border transition-all duration-300 shadow-[0_25px_60px_rgba(0,0,0,0.85)] ${className}`}
+        className={`relative rounded-3xl p-7 sm:p-8 backdrop-blur-2xl bg-slate-950/65 border border-cyan-500/30 hover:border-cyan-400 transition-all duration-300 shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:shadow-[0_0_35px_rgba(0,240,255,0.35)] ${className}`}
       >
         {/* Subtle Woven Texture Overlay */}
-        <div className="pointer-events-none absolute inset-0 rounded-3xl bg-woven-texture opacity-30" />
+        <div className="pointer-events-none absolute inset-0 rounded-3xl bg-woven-texture opacity-25" />
 
         {/* Dynamic Specular Sheen / Spotlight tracking mouse */}
         <motion.div
@@ -87,12 +87,12 @@ export default function MouseTiltCard({
           }}
         />
 
-        {/* Glowing Neon Thread Border Accent */}
+        {/* Glowing Cyan Accent Border */}
         <div
-          className="pointer-events-none absolute -inset-px rounded-3xl opacity-60 group-hover:opacity-100 transition-opacity duration-300"
+          className="pointer-events-none absolute -inset-px rounded-3xl opacity-75 group-hover:opacity-100 transition-opacity duration-300"
           style={{
             border: `1px solid ${borderColor}`,
-            boxShadow: `inset 0 0 15px ${glowColor}, 0 0 20px ${glowColor}`,
+            boxShadow: `inset 0 0 16px ${glowColor}, 0 0 20px ${glowColor}`,
           }}
         />
 

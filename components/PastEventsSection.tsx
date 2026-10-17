@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 
 interface PastEvent {
   id: string;
@@ -257,15 +258,21 @@ export default function PastEventsSection() {
 
       <div className="relative z-10 max-w-7xl mx-auto">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+        <motion.div
+          initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
+          whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          viewport={{ once: true, margin: "-40px" }}
+          transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+          className="text-center max-w-3xl mx-auto mb-12 sm:mb-16"
+        >
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
             <span>ARCHIVES // 2022–2025 CLUB MILESTONES</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
             PAST EVENTS &amp;{" "}
-            <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-blue-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-sky-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,240,255,0.35)]">
               LEGACY ARCHIVES
             </span>
           </h2>
@@ -291,7 +298,7 @@ export default function PastEventsSection() {
                   className={`px-3.5 py-1.5 rounded-lg border transition-all duration-200 ${
                     selectedCategory === cat.id
                       ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
-                      : "bg-white/[0.03] text-slate-300 border-white/10 hover:border-cyan-500/30 hover:text-white"
+                      : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
                   }`}
                 >
                   {cat.label}
@@ -310,7 +317,7 @@ export default function PastEventsSection() {
                   onClick={() => setSelectedYear(yr)}
                   className={`px-2.5 py-1 rounded text-xs transition-colors ${
                     selectedYear === yr
-                      ? "bg-white/[0.12] text-cyan-300 font-bold border border-cyan-500/40"
+                      ? "bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/50 shadow-[0_0_10px_rgba(0,240,255,0.2)]"
                       : "hover:text-white"
                   }`}
                 >
@@ -319,14 +326,14 @@ export default function PastEventsSection() {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Event Cards Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
           {filteredEvents.map((event) => (
             <div
               key={event.id}
-              className="group relative flex flex-col justify-between rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.04] via-slate-950/60 to-black/80 backdrop-blur-md p-6 overflow-hidden hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(6,182,212,0.2)] transition-all duration-200"
+              className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/30 bg-slate-950/65 backdrop-blur-2xl p-6 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.3)] transition-all duration-300"
             >
               {/* Corner HUD accent */}
               <span className="pointer-events-none absolute top-3 right-3 font-mono text-xs text-cyan-500/40">
