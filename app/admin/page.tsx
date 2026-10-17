@@ -24,6 +24,7 @@ import {
 } from "firebase/firestore";
 import { auth, googleProvider, db, isFirebaseConfigured } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
+import ConductiveThreadDivider from "@/components/ConductiveThreadDivider";
 import * as XLSX from "xlsx";
 
 // ============================================================================
@@ -1191,8 +1192,20 @@ export default function AdminDashboardPage() {
         {renderConnectionBanner()}
 
         <div className="flex-1 flex flex-col items-center justify-center p-4 relative">
-          <div className="pointer-events-none absolute inset-0 bg-tech-grid opacity-30" />
-          <div className="relative z-10 w-full max-w-md p-8 rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl text-center shadow-2xl">
+          <div className="warp-weft-grid" />
+          <div className="relative z-10 w-full max-w-md p-8 rounded-2xl border border-cyan-500/30 bg-slate-950/80 backdrop-blur-xl text-center shadow-2xl selvedge-card relative overflow-hidden group">
+            {/* Industrial Serged Seam Top Edge */}
+            <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+
+            {/* Corner Selvedge Telemetry */}
+            <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-4 uppercase">
+              <span className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                SECURITY MATRIX ACTIVE
+              </span>
+              <span className="text-slate-500">DENIER: 900D</span>
+            </div>
+
             <div className="w-16 h-16 rounded-2xl bg-cyan-950/60 border border-cyan-500/40 flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(6,182,212,0.3)]">
               <svg className="w-8 h-8 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
@@ -1289,8 +1302,8 @@ export default function AdminDashboardPage() {
       {/* Top Connection Checker Banner */}
       {renderConnectionBanner()}
 
-      {/* Background Decor */}
-      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-30" />
+      {/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */}
+      <div className="warp-weft-grid" />
 
       {/* Top Header */}
       <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#06070a]/95 backdrop-blur-md">
@@ -1369,25 +1382,26 @@ export default function AdminDashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { id: "team", label: "MANAGE TESA TEAM", icon: "👥", count: teamList.length },
-              { id: "events", label: "MANAGE EVENTS", icon: "📅", count: eventsList.length },
-              { id: "registrations", label: "MANAGE REGISTRATIONS & VERIFY", icon: "📋", count: registrations.length },
-              { id: "all", label: "STACKED VIEW (ALL)", icon: "🌟", count: null },
+              { id: "team", label: "MANAGE TESA TEAM", icon: "👥", count: teamList.length, spec: "COUNCIL" },
+              { id: "events", label: "MANAGE EVENTS", icon: "📅", count: eventsList.length, spec: "LOOM" },
+              { id: "registrations", label: "MANAGE REGISTRATIONS & VERIFY", icon: "📋", count: registrations.length, spec: "VERIFICATION" },
+              { id: "all", label: "STACKED VIEW (ALL)", icon: "🌟", count: null, spec: "SYNC" },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-semibold tracking-wide border transition-all cursor-pointer ${
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-semibold tracking-wide border transition-all cursor-pointer care-label-badge ${
                   activeTab === tab.id
-                    ? "bg-cyan-500 text-black border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                    ? "bg-gradient-to-r from-cyan-500 to-teal-400 bg-twill-cyan text-black border-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.4)] font-bold"
                     : "bg-white/[0.03] text-slate-300 border-white/10 hover:border-cyan-500/40 hover:text-white"
                 }`}
               >
+                <span className="text-[10px] opacity-75">☷</span>
                 <span>{tab.icon}</span>
                 <span>{tab.label}</span>
                 {tab.count !== null && (
                   <span className={`px-2 py-0.5 rounded-full text-[10px] ${
-                    activeTab === tab.id ? "bg-black/30 text-black font-bold" : "bg-white/10 text-slate-400"
+                    activeTab === tab.id ? "bg-black/30 text-black font-extrabold" : "bg-white/10 text-cyan-300"
                   }`}>
                     {tab.count}
                   </span>
@@ -1399,17 +1413,17 @@ export default function AdminDashboardPage() {
           <div className="text-xs font-mono text-slate-400 flex items-center gap-2">
             <span>DATA ENGINE:</span>
             {firestoreStatus === "connected" ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-500/40 font-bold">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/70 text-emerald-400 border border-emerald-500/40 font-bold care-label-badge">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                FIRESTORE LIVE
+                FIRESTORE LIVE • WEFT SYNC
               </span>
             ) : firestoreStatus === "missing_env" ? (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-950/70 text-red-300 border border-red-500/40 font-bold">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-950/70 text-red-300 border border-red-500/40 font-bold care-label-badge">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400" />
                 DATABASE DISCONNECTED
               </span>
             ) : (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/70 text-amber-300 border border-amber-500/40 font-bold">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/70 text-amber-300 border border-amber-500/40 font-bold care-label-badge">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                 LOCAL STORE RESILIENT
               </span>
@@ -1460,39 +1474,52 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
-            {/* Category Filter */}
+            {/* Category Filter with Care/Spec Label Styling */}
             <div className="flex flex-wrap items-center gap-2">
               {[
-                { id: "all", label: "ALL MEMBERS" },
-                { id: "core", label: "CORE COUNCIL" },
-                { id: "technical", label: "TECHNICAL & RESEARCH" },
-                { id: "events", label: "EVENTS & OPERATIONS" },
-                { id: "outreach", label: "OUTREACH & ALUMNI" },
+                { id: "all", label: "ALL MEMBERS", spec: "100% FIBER" },
+                { id: "core", label: "CORE COUNCIL", spec: "EXECUTIVE" },
+                { id: "technical", label: "TECHNICAL & RESEARCH", spec: "LAB DEV" },
+                { id: "events", label: "EVENTS & OPERATIONS", spec: "LOGISTICS" },
+                { id: "outreach", label: "OUTREACH & ALUMNI", spec: "PR BUS" },
               ].map((c) => (
                 <button
                   key={c.id}
                   onClick={() => setTeamCategoryFilter(c.id)}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-mono transition-all cursor-pointer care-label-badge ${
                     teamCategoryFilter === c.id
-                      ? "bg-cyan-500 text-black font-bold border border-cyan-400 shadow-[0_0_12px_rgba(6,182,212,0.35)]"
+                      ? "bg-cyan-500 bg-twill-cyan text-black font-bold border border-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.4)]"
                       : "bg-slate-950/60 text-slate-400 border border-white/10 hover:text-white"
                   }`}
                 >
+                  <span className="text-[10px] opacity-75 mr-1">☷</span>
                   {c.label}
                 </button>
               ))}
             </div>
 
-            {/* Team Members Grid: Medium Rectangular Portraits (NEVER rounded-full) */}
+            {/* Team Members Grid: Medium Rectangular Portraits with Jacquard Selvedge Aesthetics */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {teamList
                 .filter((m) => teamCategoryFilter === "all" || m.category === teamCategoryFilter)
                 .map((member) => (
                   <div
                     key={member.id}
-                    className="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 sm:p-5 backdrop-blur-md flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(0,240,255,0.15)] transition-all font-mono"
+                    className="group rounded-2xl border border-white/10 bg-slate-950/70 p-4 sm:p-5 backdrop-blur-md flex flex-col justify-between hover:border-cyan-500/50 hover:shadow-[0_0_30px_rgba(0,240,255,0.15)] transition-all font-mono selvedge-card relative overflow-hidden"
                   >
+                    {/* Industrial Serged Seam Top Edge */}
+                    <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+
                     <div>
+                      {/* Corner Selvedge Telemetry */}
+                      <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-2.5 uppercase">
+                        <span className="flex items-center gap-1">
+                          <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                          WARP // WEFT SYNC
+                        </span>
+                        <span className="text-slate-500">DENIER: 900D</span>
+                      </div>
+
                       {/* Medium Rectangular Portrait Frame with Theme-Blending CSS Filters */}
                       <div className="relative w-full h-48 sm:h-52 mb-3.5 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                         {member.photoUrl ? (
@@ -1521,7 +1548,7 @@ export default function AdminDashboardPage() {
                         )}
 
                         {/* Category & Year Tag Overlays */}
-                        <span className="absolute top-2.5 left-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 backdrop-blur-md uppercase">
+                        <span className="absolute top-2.5 left-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 backdrop-blur-md uppercase care-label-badge">
                           {member.category}
                         </span>
                         <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 text-cyan-400 border border-cyan-500/30 backdrop-blur-md">
@@ -1551,7 +1578,7 @@ export default function AdminDashboardPage() {
                         {member.skills.slice(0, 3).map((s, idx) => (
                           <span
                             key={idx}
-                            className="px-2 py-0.5 rounded bg-white/[0.05] border border-white/5 text-[9px] text-slate-300"
+                            className="px-2 py-0.5 rounded bg-white/[0.05] border border-white/5 text-[9px] text-slate-300 care-label-badge"
                           >
                             {s}
                           </span>
@@ -1578,6 +1605,15 @@ export default function AdminDashboardPage() {
                 ))}
             </div>
           </section>
+        )}
+
+        {/* CONDUCTIVE THREAD SECTION DIVIDER: SECTION 1 (TEAM) -> SECTION 2 (EVENTS) */}
+        {(activeTab === "all" || activeTab === "team" || activeTab === "events") && (
+          <ConductiveThreadDivider
+            label="LOOM MATRIX CONTROL // BUS 01"
+            subLabel="COUNCIL ARCHIVE • 400nm WAVEGUIDE • EXECUTIVE SYNAPSE"
+            accent="cyan"
+          />
         )}
 
         {/* =====================================================================
@@ -1607,14 +1643,26 @@ export default function AdminDashboardPage() {
               </button>
             </div>
 
-            {/* Events Cards Grid */}
+            {/* Events Cards Grid with Jacquard Selvedge Borders */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {eventsList.map((ev) => (
                 <div
                   key={ev.id}
-                  className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden flex flex-col justify-between hover:border-cyan-500/40 transition-all backdrop-blur-md"
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden flex flex-col justify-between hover:border-cyan-500/40 transition-all backdrop-blur-md selvedge-card relative group"
                 >
+                  {/* Industrial Serged Seam Top Edge */}
+                  <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+
                   <div>
+                    {/* Corner Selvedge Telemetry */}
+                    <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider px-4 pt-3 pb-1 uppercase">
+                      <span className="flex items-center gap-1">
+                        <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                        LOOM MATRIX ACTIVE
+                      </span>
+                      <span className="text-slate-500">SPEC: {ev.eventStatus || "UPCOMING"}</span>
+                    </div>
+
                     {ev.mediaUrl ? (
                       <div className="h-44 w-full overflow-hidden relative">
                         <Image
@@ -1625,7 +1673,7 @@ export default function AdminDashboardPage() {
                           className="object-cover"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
-                        <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/80 text-[10px] font-mono text-cyan-300 border border-cyan-500/30 backdrop-blur-md">
+                        <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full bg-black/80 text-[10px] font-mono text-cyan-300 border border-cyan-500/30 backdrop-blur-md care-label-badge">
                           {ev.category}
                         </span>
                       </div>
@@ -1638,12 +1686,12 @@ export default function AdminDashboardPage() {
                     <div className="p-5 font-mono">
                       <div className="flex items-center justify-between mb-2">
                         <span
-                          className={`text-[10px] font-bold uppercase ${
+                          className={`text-[10px] font-bold uppercase care-label-badge px-2 py-0.5 rounded ${
                             ev.status === "open"
-                              ? "text-emerald-400"
+                              ? "text-emerald-400 bg-emerald-950/50 border border-emerald-500/30"
                               : ev.status === "upcoming"
-                              ? "text-amber-400"
-                              : "text-slate-500"
+                              ? "text-amber-400 bg-amber-950/50 border border-amber-500/30"
+                              : "text-slate-500 bg-slate-900 border border-white/10"
                           }`}
                         >
                           ● STATUS: {ev.status}
@@ -1691,6 +1739,15 @@ export default function AdminDashboardPage() {
           </section>
         )}
 
+        {/* CONDUCTIVE THREAD SECTION DIVIDER: SECTION 2 (EVENTS) -> SECTION 3 (REGISTRATIONS) */}
+        {(activeTab === "all" || activeTab === "events" || activeTab === "registrations") && (
+          <ConductiveThreadDivider
+            label="CONDUCTIVE THREAD REGISTRY // BUS 02"
+            subLabel="VERIFIED REGISTRATIONS & CLOUDINARY MEDIA VAULT • 280 GSM"
+            accent="violet"
+          />
+        )}
+
         {/* =====================================================================
             SECTION 3: MANAGE REGISTRATIONS & VERIFY
             ===================================================================== */}
@@ -1721,25 +1778,45 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Quick Metrics Bar */}
+            {/* Quick Metrics Bar with Jacquard Selvedge Aesthetics */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
-              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10 selvedge-card relative overflow-hidden group">
+                <div className="serged-seam absolute top-0 left-0 right-0 z-10 pointer-events-none" />
+                <div className="flex items-center justify-between text-[8px] text-cyan-400/60 uppercase mb-1">
+                  <span>METRIC // WEFT</span>
+                  <span>SYNC ACTIVE</span>
+                </div>
                 <span className="text-[10px] text-slate-400 block uppercase">Total Submissions</span>
                 <span className="text-xl font-bold text-white">{registrations.length}</span>
               </div>
-              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
+              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 selvedge-card relative overflow-hidden group">
+                <div className="serged-seam absolute top-0 left-0 right-0 z-10 pointer-events-none" />
+                <div className="flex items-center justify-between text-[8px] text-emerald-400/60 uppercase mb-1">
+                  <span>TENSILE VERIFIED</span>
+                  <span>✔ 100% PASS</span>
+                </div>
                 <span className="text-[10px] text-emerald-300 block uppercase">Verified Delegates</span>
                 <span className="text-xl font-bold text-emerald-400">
                   {registrations.filter((r) => r.status === "verified" || r.status === "approved").length}
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30">
+              <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30 selvedge-card relative overflow-hidden group">
+                <div className="serged-seam absolute top-0 left-0 right-0 z-10 pointer-events-none" />
+                <div className="flex items-center justify-between text-[8px] text-amber-400/60 uppercase mb-1">
+                  <span>LOOM QUEUE</span>
+                  <span>DENIER: 450D</span>
+                </div>
                 <span className="text-[10px] text-amber-300 block uppercase">Pending Verification</span>
                 <span className="text-xl font-bold text-amber-400">
                   {registrations.filter((r) => r.status === "pending").length}
                 </span>
               </div>
-              <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/30">
+              <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/30 selvedge-card relative overflow-hidden group">
+                <div className="serged-seam absolute top-0 left-0 right-0 z-10 pointer-events-none" />
+                <div className="flex items-center justify-between text-[8px] text-red-400/60 uppercase mb-1">
+                  <span>WARP DEFECT</span>
+                  <span>REJECTED</span>
+                </div>
                 <span className="text-[10px] text-red-300 block uppercase">Rejected</span>
                 <span className="text-xl font-bold text-red-400">
                   {registrations.filter((r) => r.status === "rejected").length}
@@ -1748,7 +1825,7 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Filter & Search Bar */}
-            <div className="p-4 rounded-xl border border-white/10 bg-slate-950/60 backdrop-blur-md flex flex-col md:flex-row items-center gap-3 font-mono text-xs">
+            <div className="p-4 rounded-xl border border-white/10 bg-slate-950/60 backdrop-blur-md flex flex-col md:flex-row items-center gap-3 font-mono text-xs care-label-badge">
               <div className="relative flex-1 w-full">
                 <input
                   type="text"
@@ -1787,8 +1864,16 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Registrations Data Table */}
-            <div className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden backdrop-blur-md font-mono text-xs shadow-2xl">
+            {/* Registrations Data Table with Selvedge & Serged Seam */}
+            <div className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden backdrop-blur-md font-mono text-xs shadow-2xl selvedge-card relative">
+              <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+              <div className="flex items-center justify-between px-4 py-2 bg-slate-950/90 border-b border-white/5 text-[9px] text-cyan-400/70 uppercase">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  JACQUARD REGISTRATION MATRIX // LIVE REGISTRY
+                </span>
+                <span className="text-slate-500">SPEC: SGGSIE&amp;T TEXTILE LOOM SUITE • 280 GSM</span>
+              </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -1894,22 +1979,22 @@ export default function AdminDashboardPage() {
                               )}
                             </td>
 
-                            {/* Status Badge */}
+                            {/* Status Badge with Care-Label Aesthetics */}
                             <td className="py-3.5 px-4">
                               {isVerified ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold shadow-[0_0_12px_rgba(16,185,129,0.3)] care-label-badge">
                                   <span>✔</span>
-                                  <span>VERIFIED</span>
+                                  <span>TENSILE VERIFIED</span>
                                 </span>
                               ) : isPending ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-bold care-label-badge">
                                   <span>⏳</span>
-                                  <span>PENDING</span>
+                                  <span>PENDING QUEUE</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-950/80 text-red-300 border border-red-500/40 text-[10px] font-bold">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-950/80 text-red-300 border border-red-500/40 text-[10px] font-bold care-label-badge">
                                   <span>✖</span>
-                                  <span>REJECTED</span>
+                                  <span>DEFECT REJECTED</span>
                                 </span>
                               )}
                             </td>

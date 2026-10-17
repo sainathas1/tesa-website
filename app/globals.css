@@ -35,6 +35,124 @@ body {
   background-size: 32px 32px, 16px 16px, 16px 16px, 16px 16px, 16px 16px;
 }
 
+/* ============================================================================
+   TEXTILE ENGINEERING & SMART FABRIC UI ENHANCEMENTS
+   ============================================================================ */
+
+/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */
+.warp-weft-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.15;
+  background-image:
+    /* Vertical Warp Threads (Cyan 400nm glow) */
+    linear-gradient(90deg, rgba(0, 240, 255, 0.22) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.06) 2px, transparent 2px),
+    /* Horizontal Weft Threads (Violet glow) */
+    linear-gradient(0deg, rgba(168, 85, 247, 0.22) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(168, 85, 247, 0.06) 2px, transparent 2px),
+    /* Crossover Interlacing Knots / Optical Micro-Sensors */
+    radial-gradient(circle at 16px 16px, rgba(0, 240, 255, 0.85) 1.2px, transparent 2px),
+    radial-gradient(circle at 32px 32px, rgba(192, 132, 252, 0.85) 1.2px, transparent 2px);
+  background-size: 16px 16px, 32px 32px, 16px 16px, 32px 32px, 32px 32px, 32px 32px;
+}
+
+/* 2. Kinetic Twill Weave Diagonal Pattern for Active Buttons & Tabs */
+.bg-twill-pattern {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(255, 255, 255, 0.12) 0px,
+    rgba(255, 255, 255, 0.12) 2px,
+    transparent 2px,
+    transparent 6px
+  );
+}
+
+.bg-twill-cyan {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(0, 240, 255, 0.25) 0px,
+    rgba(0, 240, 255, 0.25) 2px,
+    transparent 2px,
+    transparent 7px
+  );
+}
+
+.bg-twill-violet {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(168, 85, 247, 0.25) 0px,
+    rgba(168, 85, 247, 0.25) 2px,
+    transparent 2px,
+    transparent 7px
+  );
+}
+
+.bg-twill-emerald {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(16, 185, 129, 0.25) 0px,
+    rgba(16, 185, 129, 0.25) 2px,
+    transparent 2px,
+    transparent 7px
+  );
+}
+
+/* 3. Jacquard Industrial Precision Stitched / Selvedge Card Border */
+.selvedge-card {
+  position: relative;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.selvedge-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 1.5px dashed transparent;
+  transition: all 0.35s ease;
+  z-index: 25;
+}
+
+.selvedge-card:hover::after {
+  border-color: rgba(0, 240, 255, 0.7);
+  box-shadow: 
+    0 0 20px rgba(0, 240, 255, 0.25),
+    inset 0 0 20px rgba(0, 240, 255, 0.08);
+}
+
+/* Overlock Serged Seam Stitch Accent along Top of Cards */
+.serged-seam {
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(0, 240, 255, 0.5) 0px,
+    rgba(0, 240, 255, 0.5) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  height: 2px;
+  width: 100%;
+}
+
+/* 4. Fabric Care / Spec Label Badge */
+.care-label-badge {
+  position: relative;
+  border: 1px dashed rgba(0, 240, 255, 0.45);
+  font-family: var(--font-mono, monospace);
+  letter-spacing: 0.06em;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.care-label-badge:hover {
+  border-color: rgba(0, 240, 255, 0.95);
+  box-shadow: 0 0 14px rgba(0, 240, 255, 0.4);
+  transform: translateY(-1px);
+}
+
 /* Woven Glassmorphism */
 .woven-glass {
   background: rgba(15, 12, 28, 0.65);

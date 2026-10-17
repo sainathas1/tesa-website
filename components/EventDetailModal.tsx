@@ -510,11 +510,14 @@ export default function EventDetailModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-modal-title"
-            className="relative z-50 w-full max-w-2xl rounded-3xl border border-cyan-500/40 bg-slate-950/95 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_40px_rgba(0,240,255,0.2)] overflow-hidden my-8"
+            className="relative z-50 w-full max-w-2xl rounded-3xl border border-cyan-500/40 bg-slate-950/95 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_40px_rgba(0,240,255,0.2)] overflow-hidden my-8 selvedge-card group"
           >
-            {/* Subtle Tech Grid Background Decor */}
-            <div className="pointer-events-none absolute inset-0 bg-tech-grid opacity-15" />
+            {/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */}
+            <div className="warp-weft-grid" />
             <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-cyan-500/10 blur-3xl rounded-full" />
+
+            {/* Industrial Serged Seam Top Edge */}
+            <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
 
             {/* Corner Crosshair HUD Accents */}
             <span className="pointer-events-none absolute top-3 left-3 font-mono text-[10px] text-cyan-500/40">
@@ -545,6 +548,15 @@ export default function EventDetailModal({
               </svg>
             </button>
 
+            {/* Corner Selvedge Telemetry */}
+            <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-3 uppercase pr-14">
+              <span className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                LOOM MATRIX ACTIVE • CONCLAVE BUS
+              </span>
+              <span className="text-slate-500 hidden sm:inline">DENIER: 900D • TENSILE VERIFIED</span>
+            </div>
+
             {/* Content Switcher based on viewMode */}
             <AnimatePresence mode="wait">
               {viewMode === "detail" ? (
@@ -572,11 +584,11 @@ export default function EventDetailModal({
 
                       {/* Overlaid Badges */}
                       <div className="absolute top-3 left-3 flex items-center gap-2">
-                        <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 backdrop-blur-md uppercase tracking-wider font-semibold">
+                        <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 backdrop-blur-md uppercase tracking-wider font-semibold care-label-badge">
                           {event.category}
                         </span>
                         <span
-                          className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border backdrop-blur-md font-semibold ${
+                          className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border backdrop-blur-md font-semibold care-label-badge ${
                             isOpen
                               ? "bg-emerald-950/80 text-emerald-300 border-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
                               : isUpcoming

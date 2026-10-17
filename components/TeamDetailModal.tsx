@@ -67,11 +67,14 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
             role="dialog"
             aria-modal="true"
             aria-labelledby="team-modal-name"
-            className="relative z-50 w-full max-w-2xl rounded-3xl border border-cyan-500/40 bg-slate-950/95 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_40px_rgba(0,240,255,0.2)] overflow-hidden my-8"
+            className="relative z-50 w-full max-w-2xl rounded-3xl border border-cyan-500/40 bg-slate-950/95 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_40px_rgba(0,240,255,0.2)] overflow-hidden my-8 selvedge-card group"
           >
-            {/* Subtle Tech Grid Background Decor */}
-            <div className="pointer-events-none absolute inset-0 bg-tech-grid opacity-15" />
+            {/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */}
+            <div className="warp-weft-grid" />
             <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-cyan-500/10 blur-3xl rounded-full" />
+
+            {/* Industrial Serged Seam Top Edge */}
+            <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
 
             {/* Corner Crosshair HUD Accents */}
             <span className="pointer-events-none absolute top-3 left-3 font-mono text-[10px] text-cyan-500/40">
@@ -101,10 +104,20 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
               </svg>
             </button>
 
+            {/* Corner Selvedge Telemetry */}
+            <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-3 uppercase pr-14">
+              <span className="flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                WARP // WEFT SYNC • DOSSIER ACTIVE
+              </span>
+              <span className="text-slate-500 hidden sm:inline">DENIER: 900D • TENSILE: 4.8 GPa</span>
+            </div>
+
             {/* Modal Header Tag */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/40 bg-cyan-950/50 text-[10px] font-mono text-cyan-300 mb-5 shadow-[0_0_12px_rgba(0,240,255,0.2)]">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/40 bg-cyan-950/50 text-[10px] font-mono text-cyan-300 mb-5 shadow-[0_0_12px_rgba(0,240,255,0.2)] care-label-badge">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
               <span>TESA COUNCIL MEMBER DOSSIER • 2025–26</span>
+              <span className="text-[9px] text-cyan-400/60 hidden sm:inline">||| █ || SPEC: 100% SMART FIBER</span>
             </div>
 
             {/* Main Content Layout: Two-column on tablet/desktop */}
@@ -186,7 +199,7 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
                     {member.skills.map((skill, sIdx) => (
                       <span
                         key={sIdx}
-                        className="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,240,255,0.15)] hover:border-cyan-400 transition-colors"
+                        className="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 shadow-[0_0_10px_rgba(0,240,255,0.15)] hover:border-cyan-400 transition-colors care-label-badge"
                       >
                         {skill}
                       </span>

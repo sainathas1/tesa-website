@@ -11,6 +11,7 @@ import Navbar from "@/components/Navbar";
 import MouseTiltCard from "@/components/MouseTiltCard";
 import TeamDetailModal from "@/components/TeamDetailModal";
 import EventDetailModal, { CustomFormField } from "@/components/EventDetailModal";
+import ConductiveThreadDivider from "@/components/ConductiveThreadDivider";
 
 // Client-only dynamic WebGL Liquid Ether & Particle Background (ssr: false prevents hydration mismatches)
 const LiquidEtherBackground = dynamic(
@@ -455,10 +456,8 @@ export default function Home() {
   return (
     <main className="overflow-x-hidden max-w-full w-full bg-zinc-950 text-white min-h-screen relative selection:bg-cyan-500/30 selection:text-cyan-200">
       {/* 3D WebGL Liquid Ether Particle Background */}
-      <LiquidEtherBackground />
-
-      {/* Subtle Engineering Lattice Grid Overlay */}
-      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-20 z-0" />
+       {/* 1. Interlacing Warp & Weft Microscopic Carbon/Basalt Fiber Grid Overlay */}
+      <div className="warp-weft-grid" />
 
       {/* Minimalist Top Sticky Navigation Bar */}
       <Navbar
@@ -479,10 +478,11 @@ export default function Home() {
             initial={{ opacity: 0, y: -16, filter: "blur(6px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-6 backdrop-blur-md shadow-[0_0_20px_rgba(0,240,255,0.25)]"
+            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-6 backdrop-blur-md shadow-[0_0_20px_rgba(0,240,255,0.25)] care-label-badge"
           >
             <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
             <span>SGGSIE&amp;T • TEXTILE ENGINEERING STUDENTS ASSOCIATION</span>
+            <span className="text-[9px] text-cyan-400/60 font-mono hidden sm:inline">||| █ || 280 GSM</span>
           </motion.div>
 
           {/* Main Bold TESA Headline */}
@@ -544,6 +544,12 @@ export default function Home() {
         </div>
       </section>
 
+      {/* CONDUCTIVE THREAD SECTION DIVIDER 1: HERO -> EVENTS */}
+      <ConductiveThreadDivider
+        label="CONDUCTIVE WEFT FILAMENT // BUS 01"
+        subLabel="OPTICAL YARN WAVEGUIDE • 400nm • SMART FABRIC MATRIX"
+      />
+
       {/* =========================================================================
           SECTION 2: UPCOMING & PAST EVENTS (Minimalist Responsive Layout)
           ========================================================================= */}
@@ -576,22 +582,23 @@ export default function Home() {
               Explore national symposiums, hands-on fabrication sprints, and historical milestones organized by the Textile Engineering Students Association.
             </p>
 
-            {/* Distinct Tabs & Prominent Check Verified List Action */}
+            {/* Distinct Tabs & Prominent Check Verified List Action with Twill Weave & Care-Label Aesthetics */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <div className="inline-flex p-1.5 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-[0_0_25px_rgba(0,240,255,0.15)]">
+              <div className="inline-flex p-1.5 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-[0_0_25px_rgba(0,240,255,0.15)] care-label-badge">
                 <button
                   onClick={() => setEventTab("upcoming")}
                   className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
                     eventTab === "upcoming"
-                      ? "bg-gradient-to-r from-cyan-500 to-teal-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.5)]"
+                      ? "bg-gradient-to-r from-cyan-500 to-teal-400 bg-twill-cyan text-black shadow-[0_0_20px_rgba(0,240,255,0.5)] border border-cyan-300"
                       : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
+                  <span className="text-xs">☷</span>
                   <span>⚡ UPCOMING EVENTS</span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full ${
                       eventTab === "upcoming"
-                        ? "bg-black/25 text-black font-extrabold"
+                        ? "bg-black/30 text-black font-extrabold"
                         : "bg-white/10 text-cyan-300"
                     }`}
                   >
@@ -603,15 +610,16 @@ export default function Home() {
                   onClick={() => setEventTab("past")}
                   className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
                     eventTab === "past"
-                      ? "bg-gradient-to-r from-cyan-500 to-teal-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.5)]"
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 bg-twill-violet text-white shadow-[0_0_20px_rgba(168,85,247,0.5)] border border-purple-300"
                       : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
+                  <span className="text-xs">☷</span>
                   <span>📸 PAST EVENTS &amp; GALLERIES</span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full ${
                       eventTab === "past"
-                        ? "bg-black/25 text-black font-extrabold"
+                        ? "bg-black/30 text-white font-extrabold"
                         : "bg-white/10 text-cyan-300"
                     }`}
                   >
@@ -622,7 +630,7 @@ export default function Home() {
 
               <button
                 onClick={() => handleOpenVerifiedList()}
-                className="min-h-[48px] px-5 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
+                className="min-h-[48px] px-5 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 bg-emerald-950/80 hover:bg-emerald-900 bg-twill-emerald border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer care-label-badge"
               >
                 <span>✔ CHECK REGISTRATION &amp; VERIFIED LIST</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200">
@@ -631,24 +639,25 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Sub-filter for upcoming events */}
+            {/* Sub-filter for upcoming events with Care/Spec Label Styling */}
             {eventTab === "upcoming" && upcomingEvents.length > 0 && (
               <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
                 {[
-                  { id: "all", label: "ALL UPCOMING" },
-                  { id: "open", label: "REGISTRATION OPEN" },
-                  { id: "upcoming", label: "ANNOUNCED SOON" },
+                  { id: "all", label: "ALL UPCOMING", spec: "100% FIBER" },
+                  { id: "open", label: "REGISTRATION OPEN", spec: "SEATS ACTIVE" },
+                  { id: "upcoming", label: "ANNOUNCED SOON", spec: "LOOM PREP" },
                 ].map((sub) => (
                   <button
                     key={sub.id}
                     onClick={() => setUpcomingSubFilter(sub.id as any)}
-                    className={`min-h-[36px] px-3.5 py-1.5 rounded-lg border text-[11px] transition-all cursor-pointer ${
+                    className={`min-h-[36px] px-3.5 py-1.5 rounded-xl border text-[11px] transition-all cursor-pointer care-label-badge flex items-center gap-1.5 ${
                       upcomingSubFilter === sub.id
-                        ? "bg-cyan-950/80 text-cyan-300 border-cyan-400 font-semibold shadow-[0_0_10px_rgba(0,240,255,0.2)]"
-                        : "bg-black/40 text-slate-400 border-white/10 hover:text-slate-200"
+                        ? "bg-cyan-950/90 bg-twill-cyan text-cyan-300 border-cyan-400 font-semibold shadow-[0_0_12px_rgba(0,240,255,0.25)]"
+                        : "bg-black/50 text-slate-400 border-white/10 hover:text-slate-200"
                     }`}
                   >
-                    {sub.label}
+                    <span className="text-[9px] opacity-70">||| █</span>
+                    <span>{sub.label}</span>
                   </button>
                 ))}
               </div>
@@ -720,28 +729,41 @@ export default function Home() {
                           setSelectedEvent(event);
                           setModalInitialMode("detail");
                         }}
-                        className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
+                        className="selvedge-card group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/75 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
                       >
                         {/* Woven background texture */}
                         <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
 
+                        {/* Overlock Serged Seam Precision Stitch Accent along top edge */}
+                        <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+
+                        {/* Textile Engineering Telemetry Header */}
+                        <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/50 uppercase tracking-widest mb-3 pt-1 border-b border-white/[0.04]">
+                          <span className="flex items-center gap-1">
+                            <span className="w-1 h-1 rounded-full bg-cyan-400" />
+                            <span>WARP // WEFT SYNC</span>
+                          </span>
+                          <span>DENIER: 900D • LOOM MATRIX ACTIVE</span>
+                        </div>
+
                         {/* Corner Accent Decorator */}
-                        <span className="pointer-events-none absolute top-3 left-3 font-mono text-[9px] text-cyan-500/40">
+                        <span className="pointer-events-none absolute top-4 left-3 font-mono text-[9px] text-cyan-500/40">
                           +
                         </span>
-                        <span className="pointer-events-none absolute top-3 right-3 font-mono text-[9px] text-cyan-500/40">
+                        <span className="pointer-events-none absolute top-4 right-3 font-mono text-[9px] text-cyan-500/40">
                           +
                         </span>
 
                         <div className="relative z-10">
                           {/* Status & Category Row */}
                           <div className="flex items-center justify-between gap-2 mb-4">
-                            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider">
-                              {event.category}
+                            <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider care-label-badge flex items-center gap-1">
+                              <span className="text-[8px] opacity-75">☷</span>
+                              <span>{event.category}</span>
                             </span>
 
                             <span
-                              className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
+                              className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border care-label-badge ${
                                 isOpen
                                   ? "bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
                                   : isUpcoming
@@ -792,15 +814,15 @@ export default function Home() {
 
                           {/* Highlights Pill */}
                           {event.highlights && (
-                            <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-4 flex items-center gap-2">
+                            <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-4 flex items-center gap-2 care-label-badge">
                               <span className="text-cyan-400">✦</span>
                               <span className="leading-snug">{event.highlights}</span>
                             </div>
                           )}
 
-                          {/* Card click hint */}
+                          {/* Card click hint with Textile telemetry */}
                           <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors py-1.5 border-t border-white/[0.05] mb-2">
-                            <span>CLICK TO EXPAND EVENT DOSSIER</span>
+                            <span>TENSILE: 4.8 GPa // EXPAND DOSSIER</span>
                             <span>🔍</span>
                           </div>
                         </div>
@@ -884,10 +906,22 @@ export default function Home() {
                           setSelectedEvent(event);
                           setModalInitialMode("detail");
                         }}
-                        className="group relative rounded-3xl border border-cyan-500/30 bg-slate-950/75 backdrop-blur-2xl p-6 sm:p-8 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.9)] hover:border-cyan-400/80 hover:shadow-[0_0_40px_rgba(0,240,255,0.2)] transition-all duration-300 cursor-pointer"
+                        className="selvedge-card group relative rounded-3xl border border-cyan-500/30 bg-slate-950/75 backdrop-blur-2xl p-6 sm:p-8 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.9)] hover:border-cyan-400/80 hover:shadow-[0_0_40px_rgba(0,240,255,0.2)] transition-all duration-300 cursor-pointer"
                       >
                         {/* Woven background texture */}
                         <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-20" />
+
+                        {/* Overlock Serged Seam Precision Stitch Accent along top edge */}
+                        <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+
+                        {/* Textile Engineering Telemetry Header */}
+                        <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/50 uppercase tracking-widest mb-3 pt-1 border-b border-white/[0.04]">
+                          <span className="flex items-center gap-1">
+                            <span className="w-1 h-1 rounded-full bg-purple-400" />
+                            <span>WARP // WEFT ARCHIVE BUS</span>
+                          </span>
+                          <span>DENIER: 1200D • COMPOSITE SELVEDGE RECORD</span>
+                        </div>
 
                         {/* Corner Accents */}
                         <span className="pointer-events-none absolute top-4 left-4 font-mono text-[10px] text-cyan-500/40">
@@ -901,10 +935,11 @@ export default function Home() {
                           {/* Top Tag & Status Row (Notice: No Registration Button!) */}
                           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
                             <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider font-semibold">
-                                {event.category}
+                              <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider font-semibold care-label-badge flex items-center gap-1">
+                                <span className="text-[8px] opacity-75">☷</span>
+                                <span>{event.category}</span>
                               </span>
-                              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-slate-900/90 text-slate-300 border border-slate-700 font-semibold flex items-center gap-1.5">
+                              <span className="text-[9px] font-mono px-2.5 py-0.5 rounded-full bg-slate-900/90 text-slate-300 border border-slate-700 font-semibold flex items-center gap-1.5 care-label-badge">
                                 <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
                                 <span>CONCLUDED ARCHIVE</span>
                               </span>
@@ -1040,6 +1075,13 @@ export default function Home() {
         </div>
       </section>
 
+      {/* CONDUCTIVE THREAD SECTION DIVIDER 2: EVENTS -> TEAM */}
+      <ConductiveThreadDivider
+        label="JACQUARD LOOM MATRIX // PHASE 02"
+        subLabel="TENSILE STRENGTH 4.8 GPa • SGGSIE&T TEXTILE LABS"
+        accent="violet"
+      />
+
       {/* =========================================================================
           SECTION 3: TESA TEAM (3D Tilt Cards & Responsive 1/3-Column Grid)
           ========================================================================= */}
@@ -1056,9 +1098,10 @@ export default function Home() {
             transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
             className="text-center max-w-3xl mx-auto mb-14"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)] care-label-badge">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
               <span>TESA STUDENT COUNCIL • 2025–2026 TENURE</span>
+              <span className="text-[9px] text-cyan-400/60 font-mono hidden sm:inline">||| █ || CAM-04</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
@@ -1072,25 +1115,26 @@ export default function Home() {
               The visionary student leaders, researchers, and coordinators driving textile engineering excellence and technological innovation at SGGSIE&amp;T.
             </p>
 
-            {/* Interactive Category Filter */}
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
+            {/* Interactive Category Filter with Woven Care-Label & Twill Aesthetics */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2.5 text-xs font-mono">
               {[
-                { id: "all", label: "ALL MEMBERS" },
-                { id: "core", label: "CORE COUNCIL" },
-                { id: "technical", label: "TECHNICAL & RESEARCH" },
-                { id: "events", label: "EVENTS & HACKATHONS" },
-                { id: "outreach", label: "PUBLIC RELATIONS" },
+                { id: "all", label: "ALL MEMBERS", spec: "100% COUNCIL" },
+                { id: "core", label: "CORE COUNCIL", spec: "EXECUTIVE" },
+                { id: "technical", label: "TECHNICAL & RESEARCH", spec: "LAB DEV" },
+                { id: "events", label: "EVENTS & HACKATHONS", spec: "LOGISTICS" },
+                { id: "outreach", label: "PUBLIC RELATIONS", spec: "ALUMNI BUS" },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setTeamCategoryFilter(tab.id)}
-                  className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3.5 py-2 rounded-lg border transition-all duration-200 cursor-pointer ${
+                  className={`min-h-[44px] min-w-[44px] inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border transition-all duration-200 cursor-pointer care-label-badge ${
                     teamCategoryFilter === tab.id
-                      ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
-                      : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
+                      ? "bg-cyan-500 bg-twill-pattern text-black border-cyan-300 font-bold shadow-[0_0_15px_rgba(6,182,212,0.5)]"
+                      : "bg-slate-950/70 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
                   }`}
                 >
-                  {tab.label}
+                  <span className="text-[10px] opacity-75">☷</span>
+                  <span>{tab.label}</span>
                 </button>
               ))}
             </div>
@@ -1146,10 +1190,22 @@ export default function Home() {
                       glowColor="rgba(0, 240, 255, 0.4)"
                       borderColor="rgba(0, 240, 255, 0.55)"
                       onClick={() => setSelectedMember(member)}
-                      className="h-full border-cyan-500/30 cursor-pointer"
+                      className="h-full border-cyan-500/30 cursor-pointer selvedge-card relative overflow-hidden group"
                     >
+                      {/* Industrial Serged Seam Top Edge */}
+                      <div className="serged-seam absolute top-0 left-0 right-0 z-20 pointer-events-none" />
+
                       <div className="flex flex-col justify-between h-full">
                         <div>
+                          {/* Corner Selvedge Telemetry */}
+                          <div className="flex items-center justify-between text-[8px] font-mono text-cyan-400/60 tracking-wider mb-2.5 uppercase">
+                            <span className="flex items-center gap-1">
+                              <span className="w-1 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                              WARP // WEFT SYNC
+                            </span>
+                            <span className="text-slate-500">DENIER: 900D</span>
+                          </div>
+
                           {/* Upper: Member Medium Portrait Frame */}
                           <div className="relative w-full h-52 sm:h-56 mb-4 rounded-xl border border-cyan-500/30 bg-zinc-950 overflow-hidden group-hover:border-cyan-400/80 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                             {member.photoUrl ? (
@@ -1188,7 +1244,7 @@ export default function Home() {
 
                           {/* Name & Role Designation */}
                           <div className="mb-2.5">
-                            <div className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 uppercase tracking-wider mb-1">
+                            <div className="inline-block px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[9px] font-mono text-cyan-300 uppercase tracking-wider mb-1 care-label-badge">
                               {member.role}
                             </div>
                             <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
@@ -1207,14 +1263,15 @@ export default function Home() {
 
                         {/* Lower: Focus Area & Skills Badges */}
                         <div className="pt-2.5 border-t border-white/[0.08]">
-                          <div className="text-[9px] font-mono text-cyan-400/80 uppercase tracking-wider mb-1.5 truncate">
-                            FOCUS: {member.specialization}
+                          <div className="text-[9px] font-mono text-cyan-400/80 uppercase tracking-wider mb-1.5 truncate flex items-center justify-between">
+                            <span>FOCUS: {member.specialization}</span>
+                            <span className="text-[8px] text-slate-500">TENSILE: 4.8 GPa</span>
                           </div>
                           <div className="flex flex-wrap gap-1 mb-2">
                             {member.skills.slice(0, 3).map((skill, sIdx) => (
                               <span
                                 key={sIdx}
-                                className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-white/[0.04] text-slate-300 border border-white/[0.08]"
+                                className="text-[9px] font-mono px-2 py-0.5 rounded bg-white/[0.04] text-slate-300 border border-white/[0.08] care-label-badge"
                               >
                                 {skill}
                               </span>
@@ -1234,6 +1291,13 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* CONDUCTIVE THREAD SECTION DIVIDER 3: TEAM -> FOOTER */}
+      <ConductiveThreadDivider
+        label="SMART FABRIC ARCHIVE // BUS 03"
+        subLabel="CONTINUOUS CONDUCTIVE FILAMENT • TENSILE VERIFIED • SGGSIE&T"
+        accent="emerald"
+      />
 
 
       {/* =========================================================================
