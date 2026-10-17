@@ -75,26 +75,19 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
             href="#hero"
             className="hover:text-cyan-300 transition-colors relative py-1"
           >
-            Overview
+            Home
           </Link>
           <Link
-            href="#cards"
+            href="#events"
             className="hover:text-cyan-300 transition-colors relative py-1"
           >
-            Highlights
+            Events
           </Link>
           <Link
-            href="#grid"
+            href="#team"
             className="hover:text-cyan-300 transition-colors relative py-1"
           >
-            Faculty &amp; Events
-          </Link>
-          <Link
-            href="#centerpiece"
-            className="hover:text-cyan-300 transition-colors relative py-1 flex items-center gap-1 text-cyan-400"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-            <span>3D Mesh</span>
+            TESA Team
           </Link>
           {user && (
             <Link

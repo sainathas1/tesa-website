@@ -1,90 +1,745 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
-import ParallaxHero from "@/components/ParallaxHero";
-import TesaTeamSection from "@/components/TesaTeamSection";
-import DepartmentEventsGrid from "@/components/DepartmentEventsGrid";
-import Textile3DCenterpiece from "@/components/Textile3DCenterpiece";
-import DepartmentOverviewSection from "@/components/DepartmentOverviewSection";
-import PastEventsSection from "@/components/PastEventsSection";
+import MouseTiltCard from "@/components/MouseTiltCard";
 import EventRegistrationModal from "@/components/EventRegistrationModal";
 
-// Client-only dynamic WebGL Liquid Ether & Deep-Sea Creature Particle Flow Background
+// Client-only dynamic WebGL Liquid Ether & Particle Background (ssr: false prevents hydration mismatches)
 const LiquidEtherBackground = dynamic(
   () => import("@/components/LiquidEtherBackground"),
   { ssr: false }
 );
 
+// ============================================================================
+// DATA INTERFACES
+// ============================================================================
+
+interface EventItem {
+  id: string;
+  title: string;
+  category: string;
+  date: string;
+  venue: string;
+  deadline?: string;
+  capacity?: number;
+  status: "open" | "upcoming" | "closed";
+  mediaUrl?: string;
+  summary: string;
+  highlights?: string;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  role: string;
+  designation: string;
+  year: string;
+  category: "core" | "technical" | "events" | "outreach";
+  bio: string;
+  specialization: string;
+  skills: string[];
+  photoPlaceholder: string;
+  photoUrl?: string;
+  accentColor: string;
+}
+
+// ============================================================================
+// DEFAULT SEED / FALLBACK DATA (Grounded & Production Ready)
+// ============================================================================
+
+const DEFAULT_EVENTS: EventItem[] = [
+  {
+    id: "ev-conclave-2026",
+    title: "TEX-CONCLAVE 2026: National Smart Fibers Symposium",
+    category: "National Conclave",
+    date: "April 28–29, 2026",
+    venue: "SGGSIE&T Main Auditorium",
+    deadline: "April 15, 2026",
+    capacity: 250,
+    status: "open",
+    mediaUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60",
+    summary: "Flagship national convention uniting textile researchers, paper presentations, and live CAD weaving contests.",
+    highlights: "₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE Certification",
+  },
+  {
+    id: "ev-hackathon-2026",
+    title: "SMART WEAVES HACKATHON 2026",
+    category: "Technical Hackathon",
+    date: "May 10–11, 2026",
+    venue: "Textile CAD/CAM Studio & IoT Labs",
+    deadline: "May 1, 2026",
+    capacity: 100,
+    status: "upcoming",
+    mediaUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
+    summary: "36-hour sprint pairing textile engineers with electronics students to build wearable fabric sensors and smart looms.",
+    highlights: "Hardware Looms Access • Angel Mentors • Seed Incubation",
+  },
+  {
+    id: "ev-workshop-2026",
+    title: "NANOFIBER & ELECTROSPINNING WORKSHOP",
+    category: "Laboratory Workshop",
+    date: "June 5–6, 2026",
+    venue: "Advanced Technical Textiles Lab",
+    deadline: "May 25, 2026",
+    capacity: 60,
+    status: "open",
+    mediaUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=60",
+    summary: "Hands-on synthesis of polymeric nanofibers for high-efficiency air filters and biomedical wound dressings.",
+    highlights: "Live Electrospinner Demo • ASTM Characterization • Kit Provided",
+  },
+  {
+    id: "ev-conclave-2025",
+    title: "TEX-CONCLAVE 2025: Sustainable & High-Performance Textiles",
+    category: "National Conclave",
+    date: "March 15–16, 2025",
+    venue: "SGGSIE&T Main Auditorium",
+    status: "closed",
+    summary: "Over 480 delegates from 28 technical colleges participated in competitive research tracks and industrial roundtables.",
+    highlights: "480+ Delegates • 65 Peer-Reviewed Papers • Industry Roundtable",
+  },
+  {
+    id: "ev-hackathon-2024",
+    title: "SMART WEAVES HACKATHON 2024",
+    category: "Technical Hackathon",
+    date: "October 18–19, 2024",
+    venue: "CAD/CAM Studio & IoT Labs",
+    status: "closed",
+    summary: "36-hour sprint where 32 interdisciplinary teams engineered wearable garment sensors and automated defect scanners.",
+    highlights: "32 Teams • 3 Provisional Patents Filed • Industry Mentors",
+  },
+];
+
+const DEFAULT_TEAM: TeamMember[] = [
+  {
+    id: "lead-1",
+    name: "Aarav Deshmukh",
+    role: "President",
+    designation: "Executive Head, TESA Council",
+    year: "Final Year B.Tech",
+    category: "core",
+    bio: "Spearheading TESA 2025-26 initiatives with a research focus on conductive smart fibers, electronic textiles, and national collegiate partnerships.",
+    specialization: "Smart & Conductive Textiles",
+    skills: ["E-Textiles", "Project Leadership", "Research & Dev"],
+    photoPlaceholder: "AD",
+    photoUrl: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&auto=format&fit=crop&q=80",
+    accentColor: "from-cyan-500/20 to-blue-600/30",
+  },
+  {
+    id: "lead-2",
+    name: "Sneha Kulkarni",
+    role: "Vice President",
+    designation: "Council Operations & Academic Liaison",
+    year: "Final Year B.Tech",
+    category: "core",
+    bio: "Overseeing council operations, faculty coordination, and industrial internship drives for textile engineering undergraduates.",
+    specialization: "Nanofiber Synthesis & Filtration",
+    skills: ["Electrospinning", "Lab Coordination", "Strategy"],
+    photoPlaceholder: "SK",
+    photoUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80",
+    accentColor: "from-teal-500/20 to-emerald-600/30",
+  },
+  {
+    id: "lead-3",
+    name: "Rohan Patil",
+    role: "General Secretary",
+    designation: "Administrative Head & Event Secretary",
+    year: "Third Year B.Tech",
+    category: "core",
+    bio: "Managing inter-collegiate affairs, club documentation, and technical event scheduling for TEX-CONCLAVE 2026.",
+    specialization: "Automated Weaving Systems",
+    skills: ["Electronic Jacquard", "Event Management", "CAD"],
+    photoPlaceholder: "RP",
+    accentColor: "from-blue-500/20 to-indigo-600/30",
+  },
+  {
+    id: "lead-4",
+    name: "Pooja Sharma",
+    role: "Technical Head",
+    designation: "Research & Workshop Director",
+    year: "Third Year B.Tech",
+    category: "technical",
+    bio: "Directing technical symposium tracks, coordinating hands-on student lab workshops, and mentoring paper presentations.",
+    specialization: "Eco-Friendly Wet Processing",
+    skills: ["Bio-Dyeing", "Spectroscopy", "Material Testing"],
+    photoPlaceholder: "PS",
+    accentColor: "from-indigo-500/20 to-purple-600/30",
+  },
+  {
+    id: "lead-5",
+    name: "Tanmay Joshi",
+    role: "Chief Event Coordinator",
+    designation: "Lead Organizer, Conclave & Hackathon",
+    year: "Third Year B.Tech",
+    category: "events",
+    bio: "Leading logistics and participant onboarding for the Smart Weaves Hackathon and National Student Design Challenge.",
+    specialization: "Industrial Automation in Textiles",
+    skills: ["Hackathon Ops", "Public Relations", "Stage Logistics"],
+    photoPlaceholder: "TJ",
+    accentColor: "from-amber-500/20 to-orange-600/30",
+  },
+  {
+    id: "lead-6",
+    name: "Ananya Shinde",
+    role: "Treasurer & Finance Lead",
+    designation: "Budget & Sponsorship Head",
+    year: "Third Year B.Tech",
+    category: "core",
+    bio: "Managing association finances, corporate sponsorships, and budget allocations for lab competitions and annual fests.",
+    specialization: "Quality Assurance & Tensile Analytics",
+    skills: ["Financial Modeling", "Corporate Sponsor", "Auditing"],
+    photoPlaceholder: "AS",
+    accentColor: "from-emerald-500/20 to-cyan-600/30",
+  },
+  {
+    id: "lead-7",
+    name: "Varun Kadam",
+    role: "Design & Digital Media Lead",
+    designation: "Creative & Web Interface Director",
+    year: "Second Year B.Tech",
+    category: "technical",
+    bio: "Crafting digital assets, CAD jacquard mockups, web portals, and audiovisual campaigns for all TESA student exhibits.",
+    specialization: "Textile CAD/CAM & UI/UX Design",
+    skills: ["Textile CAD", "Creative Direction", "Web Tech"],
+    photoPlaceholder: "VK",
+    accentColor: "from-cyan-500/20 to-teal-600/30",
+  },
+  {
+    id: "lead-8",
+    name: "Meera Gaikwad",
+    role: "Public Relations & Alumni Lead",
+    designation: "Outreach & Industry Networker",
+    year: "Second Year B.Tech",
+    category: "outreach",
+    bio: "Connecting current students with our distinguished 35+ year SGGSIE&T textile alumni network and industrial partners.",
+    specialization: "Medical Textiles & Geotextiles",
+    skills: ["Alumni Relations", "Communications", "Media"],
+    photoPlaceholder: "MG",
+    accentColor: "from-purple-500/20 to-pink-600/30",
+  },
+];
+
+// ============================================================================
+// FRAMER MOTION STAGGER ANIMATION VARIANTS
+// ============================================================================
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const cardSlideUpVariants: Variants = {
+  hidden: { opacity: 0, y: 35, filter: "blur(6px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: 0.75,
+      ease: [0.16, 1, 0.3, 1] as const,
+    },
+  },
+};
+
 export default function Home() {
+  // State for events & team data
+  const [eventsList, setEventsList] = useState<EventItem[]>(DEFAULT_EVENTS);
+  const [teamList, setTeamList] = useState<TeamMember[]>(DEFAULT_TEAM);
+
+  // Filter states
+  const [eventCategoryFilter, setEventCategoryFilter] = useState<"all" | "open" | "upcoming" | "closed">("all");
+  const [teamCategoryFilter, setTeamCategoryFilter] = useState<string>("all");
+
+  // Registration modal state
   const [isRegModalOpen, setIsRegModalOpen] = useState(false);
   const [selectedEventTitle, setSelectedEventTitle] = useState("TEX-CONCLAVE 2026");
+
+  // Fetch data cleanly from Firebase with localStorage caching
+  useEffect(() => {
+    // 1. Initial cached population
+    try {
+      const cachedEvents = localStorage.getItem("tesa_events");
+      if (cachedEvents) {
+        const parsed = JSON.parse(cachedEvents);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setEventsList(parsed);
+        }
+      }
+
+      const cachedTeam = localStorage.getItem("tesa_team");
+      if (cachedTeam) {
+        const parsedTeam = JSON.parse(cachedTeam);
+        if (Array.isArray(parsedTeam) && parsedTeam.length > 0) {
+          setTeamList(parsedTeam);
+        }
+      }
+    } catch {
+      // Local storage fallback handled gracefully
+    }
+
+    // 2. Live sync from Firestore
+    async function syncFirestoreData() {
+      try {
+        const eventsQuery = query(collection(db, "events"), orderBy("createdAt", "desc"));
+        const evSnap = await getDocs(eventsQuery);
+        if (!evSnap.empty) {
+          const remoteEvents: EventItem[] = [];
+          evSnap.forEach((doc) => {
+            remoteEvents.push({ ...(doc.data() as EventItem), id: doc.id });
+          });
+          setEventsList(remoteEvents);
+          localStorage.setItem("tesa_events", JSON.stringify(remoteEvents));
+        }
+
+        const teamSnap = await getDocs(collection(db, "team"));
+        if (!teamSnap.empty) {
+          const remoteTeam: TeamMember[] = [];
+          teamSnap.forEach((doc) => {
+            remoteTeam.push({ ...(doc.data() as TeamMember), id: doc.id });
+          });
+          setTeamList(remoteTeam);
+          localStorage.setItem("tesa_team", JSON.stringify(remoteTeam));
+        }
+      } catch (err) {
+        console.warn("Firestore live sync offline, using local cached data:", err);
+      }
+    }
+
+    syncFirestoreData();
+  }, []);
 
   const handleOpenRegistration = (eventTitle: string = "TEX-CONCLAVE 2026") => {
     setSelectedEventTitle(eventTitle);
     setIsRegModalOpen(true);
   };
 
+  // Filtered collections
+  const filteredEvents =
+    eventCategoryFilter === "all"
+      ? eventsList
+      : eventsList.filter((e) => e.status === eventCategoryFilter);
+
+  const filteredTeam =
+    teamCategoryFilter === "all"
+      ? teamList
+      : teamList.filter((m) => m.category === teamCategoryFilter);
+
   return (
-    <div className="relative min-h-screen w-full bg-[#030712] text-slate-100 flex flex-col justify-between selection:bg-cyan-500/30 selection:text-cyan-200 overflow-x-hidden">
-      {/* 3D Interactive Liquid Ether / Deep-Sea Creature Particle Flow Background (pointer-events: none) */}
+    <main className="overflow-x-hidden bg-zinc-950 text-white min-h-screen relative selection:bg-cyan-500/30 selection:text-cyan-200">
+      {/* 3D WebGL Liquid Ether Particle Background */}
       <LiquidEtherBackground />
 
-      {/* Engineering Grid & Subtle Ambient Glow Overlay */}
-      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-25 z-0" />
+      {/* Subtle Engineering Lattice Grid Overlay */}
+      <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-20 z-0" />
 
-      {/* =========================================================================
-          NAVIGATION: Minimalist Pill-Shaped Sticky Navbar at Top Center
-          ========================================================================= */}
+      {/* Minimalist Top Sticky Navigation Bar */}
       <Navbar onOpenRegister={() => handleOpenRegistration("TEX-CONCLAVE 2026")} />
 
       {/* =========================================================================
-          SECTION 1: The Parallax Hero
-          - Massive bold background text "WEAVE THE FUTURE"
-          - Row of translucent glassmorphic cards with 3D tilt effect on mouse move
-          - TESA Topics: Upcoming Events, Our Team, Textile Innovations
+          SECTION 1: ULTRA-CLEAN HERO SECTION
           ========================================================================= */}
-      <ParallaxHero onOpenRegister={handleOpenRegistration} />
+      <section
+        id="hero"
+        className="relative min-h-[90vh] sm:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 pt-32 pb-24 z-10"
+      >
+        <div className="max-w-4xl mx-auto flex flex-col items-center">
+          {/* Subtle Glow Pill Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -16, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-6 backdrop-blur-md shadow-[0_0_20px_rgba(0,240,255,0.25)]"
+          >
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
+            <span>SGGSIE&amp;T • TEXTILE ENGINEERING STUDENTS ASSOCIATION</span>
+          </motion.div>
+
+          {/* Main Bold TESA Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 24, filter: "blur(10px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.85, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight text-white mb-6 leading-[1.08]"
+          >
+            WEAVE THE{" "}
+            <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_40px_rgba(0,240,255,0.4)]">
+              FUTURE
+            </span>
+          </motion.h1>
+
+          {/* Short Crisp Tagline */}
+          <motion.p
+            initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.85, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-base sm:text-lg md:text-xl text-slate-300 font-normal max-w-2xl mx-auto leading-relaxed mb-9"
+          >
+            Pioneering smart conductive fibers, electrospun nanofiltration membranes, and autonomous electronic rapier looms at SGGSIE&amp;T Nanded.
+          </motion.p>
+
+          {/* Clean Action Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.85, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-wrap items-center justify-center gap-4 text-xs font-mono"
+          >
+            <a
+              href="#events"
+              className="px-6 py-3 rounded-full bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_25px_rgba(0,240,255,0.4)] hover:shadow-[0_0_35px_rgba(0,240,255,0.6)]"
+            >
+              Explore Events →
+            </a>
+            <a
+              href="#team"
+              className="px-6 py-3 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-cyan-500/40 text-slate-200 hover:text-white transition-all backdrop-blur-md"
+            >
+              Meet the Team
+            </a>
+            <button
+              onClick={() => handleOpenRegistration("TEX-CONCLAVE 2026")}
+              className="px-6 py-3 rounded-full bg-purple-950/70 hover:bg-purple-900 border border-purple-500/40 text-purple-300 hover:text-white transition-all backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.25)]"
+            >
+              Register for Conclave &apos;26
+            </button>
+          </motion.div>
+        </div>
+      </section>
 
       {/* =========================================================================
-          SECTION 2: TESA Team Section
-          - 3D parallax scrolling team cards with category filters
-          - Executive Council, Technical Leads, Event Coordinators, Public Relations
+          SECTION 2: UPCOMING & PAST EVENTS (Minimalist Responsive Layout)
           ========================================================================= */}
-      <TesaTeamSection />
+      <section
+        id="events"
+        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 border-t border-white/[0.08] z-10"
+      >
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+            className="text-center max-w-3xl mx-auto mb-14"
+          >
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
+              <span>EXPERIENCE &amp; INNOVATE</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
+              TESA{" "}
+              <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-sky-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,240,255,0.35)]">
+                EVENTS &amp; CONCLAVES
+              </span>
+            </h2>
+
+            <p className="mt-3 text-sm sm:text-base text-slate-300 font-normal leading-relaxed">
+              Explore national symposiums, hands-on fabrication sprints, and historical milestones organized by the Textile Engineering Students Association.
+            </p>
+
+            {/* Event Status Filter Tabs */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
+              {[
+                { id: "all", label: "ALL EVENTS" },
+                { id: "open", label: "REGISTRATION OPEN" },
+                { id: "upcoming", label: "UPCOMING" },
+                { id: "closed", label: "COMPLETED ARCHIVE" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setEventCategoryFilter(tab.id as any)}
+                  className={`px-3.5 py-1.5 rounded-lg border transition-all duration-200 ${
+                    eventCategoryFilter === tab.id
+                      ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                      : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Clean Glassmorphic Events Flex/Grid Layout */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-30px" }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7"
+          >
+            <AnimatePresence mode="popLayout">
+              {filteredEvents.map((event) => {
+                const isOpen = event.status === "open";
+                const isUpcoming = event.status === "upcoming";
+
+                return (
+                  <motion.div
+                    key={event.id}
+                    variants={cardSlideUpVariants}
+                    layout
+                    whileHover={{ y: -6, transition: { duration: 0.25 } }}
+                    className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300"
+                  >
+                    {/* Woven background texture */}
+                    <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
+
+                    {/* Corner Accent Decorator */}
+                    <span className="pointer-events-none absolute top-3 left-3 font-mono text-[9px] text-cyan-500/40">
+                      +
+                    </span>
+                    <span className="pointer-events-none absolute top-3 right-3 font-mono text-[9px] text-cyan-500/40">
+                      +
+                    </span>
+
+                    <div className="relative z-10">
+                      {/* Status & Category Row */}
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider">
+                          {event.category}
+                        </span>
+
+                        <span
+                          className={`text-[9px] font-mono px-2 py-0.5 rounded-full border ${
+                            isOpen
+                              ? "bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-[0_0_10px_rgba(16,185,129,0.25)]"
+                              : isUpcoming
+                              ? "bg-amber-950/70 text-amber-300 border-amber-500/40"
+                              : "bg-slate-900/80 text-slate-400 border-slate-700/50"
+                          }`}
+                        >
+                          {isOpen ? "● OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
+                        </span>
+                      </div>
+
+                      {/* Event Title */}
+                      <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight mb-2">
+                        {event.title}
+                      </h3>
+
+                      {/* Date & Venue Badges */}
+                      <div className="flex flex-col gap-1.5 text-xs font-mono text-slate-400 mb-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-cyan-400">📅</span>
+                          <span>{event.date}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-cyan-400">📍</span>
+                          <span className="truncate">{event.venue}</span>
+                        </div>
+                      </div>
+
+                      {/* Event Summary */}
+                      <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5 font-normal">
+                        {event.summary}
+                      </p>
+
+                      {/* Highlights Pill */}
+                      {event.highlights && (
+                        <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-6 flex items-center gap-2">
+                          <span className="text-cyan-400">✦</span>
+                          <span className="leading-snug">{event.highlights}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom CTA & Registration Action */}
+                    <div className="relative z-10 pt-4 border-t border-white/[0.08] flex items-center justify-between font-mono text-xs">
+                      {isOpen ? (
+                        <button
+                          onClick={() => handleOpenRegistration(event.title)}
+                          className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5"
+                        >
+                          <span>Register Online</span>
+                          <span>→</span>
+                        </button>
+                      ) : isUpcoming ? (
+                        <button
+                          onClick={() => handleOpenRegistration(event.title)}
+                          className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <span>Pre-Register / Notify Me</span>
+                          <span>→</span>
+                        </button>
+                      ) : (
+                        <div className="w-full py-2 text-center text-slate-500 text-[11px] font-mono">
+                          Archive Recorded • Event Concluded
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+      </section>
 
       {/* =========================================================================
-          SECTION 3: The Grid (Department & Past Events)
-          - Masonry-style grid of dark, rounded cards
-          - 1px solid white/10 inner border & glowing hover effect
-          - Faculty, Staff, and Past Events with sequential scroll animations
+          SECTION 3: TESA TEAM (3D Tilt Cards & Responsive 1/3-Column Grid)
           ========================================================================= */}
-      <DepartmentEventsGrid />
+      <section
+        id="team"
+        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 border-t border-white/[0.08] z-10"
+      >
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+            className="text-center max-w-3xl mx-auto mb-14"
+          >
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
+              <span>TESA STUDENT COUNCIL • 2025–2026 TENURE</span>
+            </div>
 
-      {/* =========================================================================
-          SECTION 4: The 3D Textile Centerpiece
-          - Large purple gradient background
-          - React Three Fiber canvas rendering a highly reflective metallic 3D fabric mesh
-            undulating and rotating slowly mimicking silk / composite fibers
-          - Bold text to the left: "Build beyond every limit"
-          ========================================================================= */}
-      <Textile3DCenterpiece onOpenRegister={handleOpenRegistration} />
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
+              MEET THE{" "}
+              <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-sky-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(0,240,255,0.35)]">
+                TESA TEAM
+              </span>
+            </h2>
 
-      {/* =========================================================================
-          SECTION 5: Department Overview
-          - Faculty, Staff, Curriculum, and 6 Laboratory Facilities
-          - Tabbed interface with detailed cards
-          ========================================================================= */}
-      <DepartmentOverviewSection />
+            <p className="mt-3 text-sm sm:text-base text-slate-300 font-normal leading-relaxed">
+              The visionary student leaders, researchers, and coordinators driving textile engineering excellence and technological innovation at SGGSIE&amp;T.
+            </p>
 
-      {/* =========================================================================
-          SECTION 6: Past Events History
-          - Filterable event archives with detail modals
-          - Category and Year filters
-          ========================================================================= */}
-      <PastEventsSection />
+            {/* Interactive Category Filter */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-xs font-mono">
+              {[
+                { id: "all", label: "ALL MEMBERS" },
+                { id: "core", label: "CORE COUNCIL" },
+                { id: "technical", label: "TECHNICAL & RESEARCH" },
+                { id: "events", label: "EVENTS & HACKATHONS" },
+                { id: "outreach", label: "PUBLIC RELATIONS" },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setTeamCategoryFilter(tab.id)}
+                  className={`px-3 py-1.5 rounded-lg border transition-all duration-200 ${
+                    teamCategoryFilter === tab.id
+                      ? "bg-cyan-500 text-black border-cyan-400 font-semibold shadow-[0_0_15px_rgba(6,182,212,0.4)]"
+                      : "bg-slate-950/60 text-slate-300 border-cyan-500/20 hover:border-cyan-400/60 hover:text-white"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Staggered 3D Tilt Card Grid: 1 Col on Mobile, 2 on Tablet, 3 on Desktop */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-30px" }}
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8"
+          >
+            <AnimatePresence mode="popLayout">
+              {filteredTeam.map((member) => (
+                <motion.div
+                  key={member.id}
+                  variants={cardSlideUpVariants}
+                  layout
+                  className="h-full"
+                >
+                  <MouseTiltCard
+                    glowColor="rgba(0, 240, 255, 0.4)"
+                    borderColor="rgba(0, 240, 255, 0.55)"
+                    className="h-full border-cyan-500/30"
+                  >
+                    <div className="flex flex-col justify-between h-full">
+                      <div>
+                        {/* Upper: Member Photo Frame */}
+                        <div className="relative w-full aspect-square mb-4 rounded-xl border border-dashed border-cyan-500/30 bg-gradient-to-br from-slate-950 via-[#0a0f18] to-slate-900/80 p-2 flex flex-col items-center justify-center overflow-hidden group-hover:border-cyan-400/70 transition-colors">
+                          <div
+                            className={`absolute inset-0 bg-gradient-to-tr ${member.accentColor} opacity-40 group-hover:opacity-80 transition-opacity blur-xl`}
+                          />
+
+                          {member.photoUrl ? (
+                            <div className="relative z-10 w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 border-cyan-400/70 overflow-hidden shadow-[0_0_20px_rgba(6,182,212,0.3)] group-hover:scale-105 transition-transform">
+                              <img
+                                src={member.photoUrl}
+                                alt={member.name}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                          ) : (
+                            <div className="relative z-10 w-24 h-24 sm:w-28 sm:h-28 rounded-full border border-cyan-500/40 bg-black/70 flex flex-col items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
+                              <span className="font-mono text-2xl font-black text-cyan-300">
+                                {member.photoPlaceholder}
+                              </span>
+                              <span className="text-[8px] font-mono tracking-widest text-slate-400 uppercase mt-0.5">
+                                MEMBER
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Member Year Badge */}
+                          <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded bg-black/80 text-cyan-400 border border-cyan-500/30">
+                            {member.year}
+                          </span>
+                        </div>
+
+                        {/* Name & Role Designation */}
+                        <div className="mb-3">
+                          <div className="inline-block px-2.5 py-0.5 rounded bg-cyan-950/60 border border-cyan-500/30 text-[10px] font-mono text-cyan-300 uppercase tracking-wider mb-1.5">
+                            {member.role}
+                          </div>
+                          <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors tracking-tight">
+                            {member.name}
+                          </h3>
+                          <p className="text-xs font-mono text-slate-400 mt-0.5">
+                            {member.designation}
+                          </p>
+                        </div>
+
+                        {/* Bio Description */}
+                        <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-4">
+                          {member.bio}
+                        </p>
+                      </div>
+
+                      {/* Lower: Focus Area & Skills Badges */}
+                      <div className="pt-3 border-t border-white/[0.08]">
+                        <div className="text-[10px] font-mono text-cyan-400/80 uppercase tracking-wider mb-2">
+                          FOCUS: {member.specialization}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {member.skills.map((skill, sIdx) => (
+                            <span
+                              key={sIdx}
+                              className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.04] text-slate-300 border border-white/[0.08]"
+                            >
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </MouseTiltCard>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
+        </div>
+      </section>
 
       {/* =========================================================================
           INTERACTIVE REGISTRATION MODAL
@@ -102,7 +757,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-slate-400">
           <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-center sm:text-left">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
               <span className="text-white font-bold text-sm tracking-wide">
                 TESA • SGGSIE&amp;T NANDED
               </span>
@@ -114,21 +769,18 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-5 text-slate-300">
-            <a href="#hero" className="hover:text-purple-300 transition-colors">
-              Hero Top
+            <a href="#hero" className="hover:text-cyan-300 transition-colors">
+              Home
             </a>
-            <a href="#cards" className="hover:text-purple-300 transition-colors">
-              3D Cards
+            <a href="#events" className="hover:text-cyan-300 transition-colors">
+              Events
             </a>
-            <a href="#grid" className="hover:text-purple-300 transition-colors">
-              Faculty &amp; Events
-            </a>
-            <a href="#centerpiece" className="hover:text-purple-300 transition-colors">
-              3D Fiber Mesh
+            <a href="#team" className="hover:text-cyan-300 transition-colors">
+              TESA Team
             </a>
             <Link
               href="/admin"
-              className="px-3 py-1 rounded-full bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-300 hover:text-white transition-all flex items-center gap-1.5"
+              className="px-3 py-1 rounded-full bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 hover:text-white transition-all flex items-center gap-1.5"
             >
               <span>🔒</span>
               <span>Admin Console</span>
@@ -140,6 +792,6 @@ export default function Home() {
           © 2026 Textile Engineering Students Association, SGGSIE&amp;T. All rights reserved.
         </div>
       </footer>
-    </div>
+    </main>
   );
 }
