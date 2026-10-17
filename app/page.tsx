@@ -10,7 +10,7 @@ import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import MouseTiltCard from "@/components/MouseTiltCard";
 import TeamDetailModal from "@/components/TeamDetailModal";
-import EventDetailModal from "@/components/EventDetailModal";
+import EventDetailModal, { CustomFormField } from "@/components/EventDetailModal";
 
 // Client-only dynamic WebGL Liquid Ether & Particle Background (ssr: false prevents hydration mismatches)
 const LiquidEtherBackground = dynamic(
@@ -36,6 +36,7 @@ interface EventItem {
   summary: string;
   highlights?: string;
   galleryUrls?: string[];
+  customFormFields?: CustomFormField[];
   createdAt?: any;
 }
 
@@ -72,6 +73,33 @@ const DEFAULT_EVENTS: EventItem[] = [
     mediaUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60",
     summary: "Flagship national convention uniting textile researchers, paper presentations, and live CAD weaving contests.",
     highlights: "₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE Certification",
+    customFormFields: [
+      {
+        id: "cf-team-name",
+        questionTitle: "Team / Project Name",
+        fieldType: "Short Text",
+        required: true,
+      },
+      {
+        id: "cf-track",
+        questionTitle: "Conclave Innovation Track",
+        fieldType: "Dropdown Options",
+        options: "Smart Fibers & Wearables, Electrospinning & Nanofiltration, Sustainable Textile Processing, Automated Weaving & IoT Looms",
+        required: true,
+      },
+      {
+        id: "cf-abstract",
+        questionTitle: "Abstract & Technical Methodology",
+        fieldType: "Paragraph",
+        required: true,
+      },
+      {
+        id: "cf-deck",
+        questionTitle: "Upload Research Deck / Presentation (PPT / PDF)",
+        fieldType: "File Upload (PPT/PDF/Image)",
+        required: false,
+      },
+    ],
   },
   {
     id: "ev-hackathon-2026",
@@ -86,6 +114,26 @@ const DEFAULT_EVENTS: EventItem[] = [
     mediaUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
     summary: "36-hour sprint pairing textile engineers with electronics students to build wearable fabric sensors and smart looms.",
     highlights: "Hardware Looms Access • Angel Mentors • Seed Incubation",
+    customFormFields: [
+      {
+        id: "cf-team-hack",
+        questionTitle: "Hackathon Squad Name",
+        fieldType: "Short Text",
+        required: true,
+      },
+      {
+        id: "cf-tech-stack",
+        questionTitle: "Hardware / Software Stack Proposed",
+        fieldType: "Paragraph",
+        required: true,
+      },
+      {
+        id: "cf-pitch-deck",
+        questionTitle: "Pitch Deck / Concept Schema (PPT/PDF/Image)",
+        fieldType: "File Upload (PPT/PDF/Image)",
+        required: true,
+      },
+    ],
   },
   {
     id: "ev-workshop-2026",
@@ -287,7 +335,7 @@ export default function Home() {
   const [teamCategoryFilter, setTeamCategoryFilter] = useState<string>("all");
 
   // Registration & Event Modal interactive states
-  const [modalInitialMode, setModalInitialMode] = useState<"detail" | "register">("detail");
+  const [modalInitialMode, setModalInitialMode] = useState<"detail" | "register" | "verifiedList">("detail");
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
@@ -367,6 +415,19 @@ export default function Home() {
     setModalInitialMode("register");
   };
 
+  const handleOpenVerifiedList = (eventTitle: string = "TEX-CONCLAVE 2026") => {
+    const matched =
+      eventsList.find(
+        (e) =>
+          e.title.toLowerCase().includes(eventTitle.toLowerCase()) ||
+          e.id === "ev-conclave-2026"
+      ) ||
+      upcomingEvents[0] ||
+      eventsList[0];
+    setSelectedEvent(matched);
+    setModalInitialMode("verifiedList");
+  };
+
   // Distinct Upcoming and Concluded / Past Events categorization
   const isEventUpcoming = (e: EventItem) => {
     if (e.eventStatus) return e.eventStatus === "Upcoming";
@@ -400,7 +461,10 @@ export default function Home() {
       <div className="pointer-events-none fixed inset-0 bg-tech-grid opacity-20 z-0" />
 
       {/* Minimalist Top Sticky Navigation Bar */}
-      <Navbar onOpenRegister={() => handleOpenRegistration("TEX-CONCLAVE 2026")} />
+      <Navbar
+        onOpenRegister={() => handleOpenRegistration("TEX-CONCLAVE 2026")}
+        onOpenVerifiedList={() => handleOpenVerifiedList("TEX-CONCLAVE 2026")}
+      />
 
       {/* =========================================================================
           SECTION 1: ULTRA-CLEAN HERO SECTION
@@ -469,6 +533,13 @@ export default function Home() {
             >
               Register for Conclave &apos;26
             </button>
+            <button
+              onClick={() => handleOpenVerifiedList("TEX-CONCLAVE 2026")}
+              className="min-h-[44px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 hover:text-white transition-all backdrop-blur-md shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer gap-2"
+            >
+              <span>✔</span>
+              <span>Check Registration &amp; Verified List</span>
+            </button>
           </motion.div>
         </div>
       </section>
@@ -505,45 +576,57 @@ export default function Home() {
               Explore national symposiums, hands-on fabrication sprints, and historical milestones organized by the Textile Engineering Students Association.
             </p>
 
-            {/* Two Distinct Tabs: Upcoming Events vs Past Events */}
-            <div className="mt-8 inline-flex p-1.5 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-[0_0_25px_rgba(0,240,255,0.15)]">
-              <button
-                onClick={() => setEventTab("upcoming")}
-                className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-                  eventTab === "upcoming"
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.5)]"
-                    : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
-                }`}
-              >
-                <span>⚡ UPCOMING EVENTS</span>
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full ${
+            {/* Distinct Tabs & Prominent Check Verified List Action */}
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <div className="inline-flex p-1.5 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-[0_0_25px_rgba(0,240,255,0.15)]">
+                <button
+                  onClick={() => setEventTab("upcoming")}
+                  className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
                     eventTab === "upcoming"
-                      ? "bg-black/25 text-black font-extrabold"
-                      : "bg-white/10 text-cyan-300"
+                      ? "bg-gradient-to-r from-cyan-500 to-teal-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.5)]"
+                      : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
-                  {upcomingEvents.length}
-                </span>
-              </button>
+                  <span>⚡ UPCOMING EVENTS</span>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full ${
+                      eventTab === "upcoming"
+                        ? "bg-black/25 text-black font-extrabold"
+                        : "bg-white/10 text-cyan-300"
+                    }`}
+                  >
+                    {upcomingEvents.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setEventTab("past")}
+                  className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                    eventTab === "past"
+                      ? "bg-gradient-to-r from-cyan-500 to-teal-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.5)]"
+                      : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
+                  }`}
+                >
+                  <span>📸 PAST EVENTS &amp; GALLERIES</span>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full ${
+                      eventTab === "past"
+                        ? "bg-black/25 text-black font-extrabold"
+                        : "bg-white/10 text-cyan-300"
+                    }`}
+                  >
+                    {pastEvents.length}
+                  </span>
+                </button>
+              </div>
 
               <button
-                onClick={() => setEventTab("past")}
-                className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
-                  eventTab === "past"
-                    ? "bg-gradient-to-r from-cyan-500 to-teal-400 text-black shadow-[0_0_20px_rgba(0,240,255,0.5)]"
-                    : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
-                }`}
+                onClick={() => handleOpenVerifiedList()}
+                className="min-h-[48px] px-5 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 hover:border-emerald-400 text-emerald-300 hover:text-white shadow-[0_0_20px_rgba(16,185,129,0.3)] cursor-pointer"
               >
-                <span>📸 PAST EVENTS &amp; GALLERIES</span>
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full ${
-                    eventTab === "past"
-                      ? "bg-black/25 text-black font-extrabold"
-                      : "bg-white/10 text-cyan-300"
-                  }`}
-                >
-                  {pastEvents.length}
+                <span>✔ CHECK REGISTRATION &amp; VERIFIED LIST</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200">
+                  LIVE STATUS
                 </span>
               </button>
             </div>
@@ -723,16 +806,16 @@ export default function Home() {
                         </div>
 
                         {/* Bottom CTA & Registration Action */}
-                        <div className="relative z-10 pt-3 border-t border-white/[0.08] flex items-center justify-between font-mono text-xs">
+                        <div className="relative z-10 pt-3 border-t border-white/[0.08] flex items-center gap-2 font-mono text-xs">
                           {isOpen ? (
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenRegistration(event.title);
                               }}
-                              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5 cursor-pointer"
+                              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5 cursor-pointer"
                             >
-                              <span>Register Online</span>
+                              <span>Register</span>
                               <span>→</span>
                             </button>
                           ) : (
@@ -741,12 +824,24 @@ export default function Home() {
                                 e.stopPropagation();
                                 handleOpenRegistration(event.title);
                               }}
-                              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
-                              <span>Pre-Register / Notify Me</span>
+                              <span>Pre-Register</span>
                               <span>→</span>
                             </button>
                           )}
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedEvent(event);
+                              setModalInitialMode("verifiedList");
+                            }}
+                            className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white font-mono text-[11px] font-semibold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                            title="Check Verified Registration List"
+                          >
+                            <span>✔ Status</span>
+                          </button>
                         </div>
                       </motion.div>
                     );
@@ -909,17 +1004,30 @@ export default function Home() {
                               <span>Event successfully concluded • All proceedings documented in SGGSIE&amp;T records</span>
                             </span>
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedEvent(event);
-                                setModalInitialMode("detail");
-                              }}
-                              className="min-h-[44px] px-5 py-2 rounded-xl bg-white/[0.05] hover:bg-cyan-500/10 border border-white/15 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
-                            >
-                              <span>View Full Conclave Dossier</span>
-                              <span>🔍</span>
-                            </button>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(event);
+                                  setModalInitialMode("verifiedList");
+                                }}
+                                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer text-[11px]"
+                              >
+                                <span>✔ Attendee Registry</span>
+                              </button>
+
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedEvent(event);
+                                  setModalInitialMode("detail");
+                                }}
+                                className="min-h-[44px] px-4 sm:px-5 py-2 rounded-xl bg-white/[0.05] hover:bg-cyan-500/10 border border-white/15 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer text-xs"
+                              >
+                                <span>View Full Conclave Dossier</span>
+                                <span>🔍</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </motion.div>

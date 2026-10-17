@@ -45,6 +45,20 @@ export interface TeamMember {
   accentColor: string;
 }
 
+export type CustomFieldType =
+  | "Short Text"
+  | "Paragraph"
+  | "Dropdown Options"
+  | "File Upload (PPT/PDF/Image)";
+
+export interface CustomFormField {
+  id: string;
+  questionTitle: string;
+  fieldType: CustomFieldType;
+  options?: string;
+  required: boolean;
+}
+
 export interface EventItem {
   id: string;
   title: string;
@@ -59,6 +73,7 @@ export interface EventItem {
   summary: string;
   highlights?: string;
   galleryUrls?: string[];
+  customFormFields?: CustomFormField[];
   createdAt?: any;
 }
 
@@ -70,9 +85,12 @@ export interface Registration {
   department: string;
   year: string;
   eventTitle: string;
+  eventId?: string;
   registeredAt: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "verified" | "rejected";
   paymentScreenshotUrl?: string;
+  submissionFileUrl?: string;
+  customAnswers?: Record<string, any>;
 }
 
 // ============================================================================
@@ -372,6 +390,7 @@ export default function AdminDashboardPage() {
     summary: "",
     highlights: "",
     galleryUrls: [],
+    customFormFields: [],
   });
   const eventFileInputRef = useRef<HTMLInputElement>(null);
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
@@ -383,6 +402,7 @@ export default function AdminDashboardPage() {
   const [registrationSearch, setRegistrationSearch] = useState<string>("");
   const [filterEvent, setFilterEvent] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [selectedRegForAnswers, setSelectedRegForAnswers] = useState<Registration | null>(null);
 
   // --------------------------------------------------------------------------
   // TOP CONNECTION CHECKER BANNER
@@ -607,9 +627,12 @@ export default function AdminDashboardPage() {
               department: "Textile Technology",
               year: data.year || "B.Tech",
               eventTitle: data.eventTitle || "Conclave",
+              eventId: data.eventId,
               registeredAt: data.registeredAt ? data.registeredAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
               status: data.status || "pending",
               paymentScreenshotUrl: data.paymentScreenshotUrl,
+              submissionFileUrl: data.submissionFileUrl,
+              customAnswers: data.customAnswers || {},
             });
           });
         }
@@ -830,6 +853,7 @@ export default function AdminDashboardPage() {
       summary: "",
       highlights: "",
       galleryUrls: [],
+      customFormFields: [],
     });
     setIsEventModalOpen(true);
   };
@@ -843,8 +867,44 @@ export default function AdminDashboardPage() {
       ...ev,
       eventStatus: resolvedStatus,
       galleryUrls: ev.galleryUrls || [],
+      customFormFields: ev.customFormFields ? JSON.parse(JSON.stringify(ev.customFormFields)) : [],
     });
     setIsEventModalOpen(true);
+  };
+
+  const handleAddCustomQuestion = () => {
+    const newField: CustomFormField = {
+      id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      questionTitle: "",
+      fieldType: "Short Text",
+      options: "",
+      required: false,
+    };
+    setEventForm((prev) => ({
+      ...prev,
+      customFormFields: [...(prev.customFormFields || []), newField],
+    }));
+  };
+
+  const handleUpdateCustomQuestion = (
+    fieldId: string,
+    updates: Partial<CustomFormField>
+  ) => {
+    setEventForm((prev) => ({
+      ...prev,
+      customFormFields: (prev.customFormFields || []).map((field) =>
+        field.id === fieldId ? { ...field, ...updates } : field
+      ),
+    }));
+  };
+
+  const handleRemoveCustomQuestion = (fieldId: string) => {
+    setEventForm((prev) => ({
+      ...prev,
+      customFormFields: (prev.customFormFields || []).filter(
+        (field) => field.id !== fieldId
+      ),
+    }));
   };
 
   const handleGalleryFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -935,6 +995,7 @@ export default function AdminDashboardPage() {
         eventStatus: eventForm.eventStatus || (isConcluded ? "Concluded" : "Upcoming"),
         status: mappedStatus,
         galleryUrls: finalGalleryUrls,
+        customFormFields: eventForm.customFormFields || [],
       };
 
       if (editingEventId) {
@@ -1009,7 +1070,7 @@ export default function AdminDashboardPage() {
 
   const handleUpdateRegStatus = async (
     regId: string,
-    newStatus: "approved" | "rejected" | "pending"
+    newStatus: "verified" | "approved" | "rejected" | "pending"
   ) => {
     const updated = registrations.map((r) =>
       r.id === regId ? { ...r, status: newStatus } : r
@@ -1060,7 +1121,8 @@ export default function AdminDashboardPage() {
       "Academic Year": r.year,
       "Registered Event": r.eventTitle,
       "Registration Date": r.registeredAt,
-      Status: r.status.toUpperCase(),
+      Status: (r.status === "verified" || r.status === "approved" ? "VERIFIED" : r.status.toUpperCase()),
+      "Presentation Media / PPT / PDF URL": r.submissionFileUrl || "N/A",
       "Payment Proof URL": r.paymentScreenshotUrl || "N/A",
     }));
 
@@ -1077,7 +1139,8 @@ export default function AdminDashboardPage() {
       { wch: 18 },
       { wch: 45 },
       { wch: 16 },
-      { wch: 12 },
+      { wch: 14 },
+      { wch: 45 },
       { wch: 45 },
     ];
 
@@ -1096,8 +1159,12 @@ export default function AdminDashboardPage() {
       filterEvent === "all" ||
       r.eventTitle.toLowerCase().includes(filterEvent.toLowerCase());
 
+    const isVerified = r.status === "verified" || r.status === "approved";
     const matchesStatus =
-      filterStatus === "all" || r.status === filterStatus;
+      filterStatus === "all" ||
+      (filterStatus === "verified" && isVerified) ||
+      (filterStatus === "pending" && r.status === "pending") ||
+      (filterStatus === "rejected" && r.status === "rejected");
 
     return matchesSearch && matchesEvent && matchesStatus;
   });
@@ -1304,7 +1371,7 @@ export default function AdminDashboardPage() {
             {[
               { id: "team", label: "MANAGE TESA TEAM", icon: "👥", count: teamList.length },
               { id: "events", label: "MANAGE EVENTS", icon: "📅", count: eventsList.length },
-              { id: "registrations", label: "STUDENT REGISTRATIONS", icon: "📋", count: registrations.length },
+              { id: "registrations", label: "MANAGE REGISTRATIONS & VERIFY", icon: "📋", count: registrations.length },
               { id: "all", label: "STACKED VIEW (ALL)", icon: "🌟", count: null },
             ].map((tab) => (
               <button
@@ -1625,20 +1692,21 @@ export default function AdminDashboardPage() {
         )}
 
         {/* =====================================================================
-            SECTION 3: STUDENT REGISTRATIONS & EXCEL EXPORT
+            SECTION 3: MANAGE REGISTRATIONS & VERIFY
             ===================================================================== */}
         {(activeTab === "registrations" || activeTab === "all") && (
           <section id="section-registrations" className="space-y-6 pt-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-2xl border border-white/10 bg-slate-950/80 backdrop-blur-xl shadow-xl">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-2xl border border-cyan-500/30 bg-slate-950/80 backdrop-blur-xl shadow-xl">
               <div>
-                <span className="text-xs font-mono text-cyan-400 uppercase tracking-widest block mb-1">
-                  ATTENDEE RECORDS &amp; REPORTING
-                </span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/40 bg-cyan-950/50 text-[11px] font-mono text-cyan-300 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>DELEGATE VERIFICATION &amp; EXPORT</span>
+                </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                  Student Registrations &amp; Export
+                  Manage Registrations &amp; Verify
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-400 mt-1 max-w-2xl leading-relaxed">
-                  Review student attendee applications, verify collegiate credentials, and download complete rosters in Microsoft Excel format.
+                  Inspect student submissions, open uploaded presentations (PPT/PDF/Image) &amp; payment receipts via Cloudinary, review custom Google Forms-style answers, and verify registrations.
                 </p>
               </div>
 
@@ -1653,12 +1721,38 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs">
+              <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/10">
+                <span className="text-[10px] text-slate-400 block uppercase">Total Submissions</span>
+                <span className="text-xl font-bold text-white">{registrations.length}</span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
+                <span className="text-[10px] text-emerald-300 block uppercase">Verified Delegates</span>
+                <span className="text-xl font-bold text-emerald-400">
+                  {registrations.filter((r) => r.status === "verified" || r.status === "approved").length}
+                </span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30">
+                <span className="text-[10px] text-amber-300 block uppercase">Pending Verification</span>
+                <span className="text-xl font-bold text-amber-400">
+                  {registrations.filter((r) => r.status === "pending").length}
+                </span>
+              </div>
+              <div className="p-3.5 rounded-xl bg-red-950/30 border border-red-500/30">
+                <span className="text-[10px] text-red-300 block uppercase">Rejected</span>
+                <span className="text-xl font-bold text-red-400">
+                  {registrations.filter((r) => r.status === "rejected").length}
+                </span>
+              </div>
+            </div>
+
             {/* Filter & Search Bar */}
             <div className="p-4 rounded-xl border border-white/10 bg-slate-950/60 backdrop-blur-md flex flex-col md:flex-row items-center gap-3 font-mono text-xs">
               <div className="relative flex-1 w-full">
                 <input
                   type="text"
-                  placeholder="Search by student name, PRN, or email..."
+                  placeholder="Search by student name, PRN, or contact number..."
                   value={registrationSearch}
                   onChange={(e) => setRegistrationSearch(e.target.value)}
                   className="w-full pl-9 pr-4 py-2 rounded-lg bg-black/60 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-colors"
@@ -1686,106 +1780,193 @@ export default function AdminDashboardPage() {
                   className="px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-slate-300 focus:outline-none focus:border-cyan-400 cursor-pointer"
                 >
                   <option value="all">All Statuses</option>
-                  <option value="approved">Approved</option>
-                  <option value="pending">Pending</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="verified">Verified (✔)</option>
+                  <option value="pending">Pending (⏳)</option>
+                  <option value="rejected">Rejected (✖)</option>
                 </select>
               </div>
             </div>
 
             {/* Registrations Data Table */}
-            <div className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden backdrop-blur-md font-mono text-xs">
+            <div className="rounded-2xl border border-white/10 bg-slate-950/70 overflow-hidden backdrop-blur-md font-mono text-xs shadow-2xl">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 bg-white/[0.02] text-slate-400 text-[11px] uppercase tracking-wider">
-                      <th className="py-3 px-4">#</th>
-                      <th className="py-3 px-4">Student Name</th>
-                      <th className="py-3 px-4">PRN / Roll</th>
-                      <th className="py-3 px-4">Event Name</th>
-                      <th className="py-3 px-4">Year</th>
-                      <th className="py-3 px-4">Date</th>
-                      <th className="py-3 px-4">Proof</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                      <th className="py-3.5 px-4">#</th>
+                      <th className="py-3.5 px-4">Student &amp; PRN</th>
+                      <th className="py-3.5 px-4">Event Title</th>
+                      <th className="py-3.5 px-4">Year &amp; Contact</th>
+                      <th className="py-3.5 px-4">Presentation / Media</th>
+                      <th className="py-3.5 px-4">Payment Proof</th>
+                      <th className="py-3.5 px-4">Form Answers</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-4 text-right">Verification Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {filteredRegistrations.length > 0 ? (
-                      filteredRegistrations.map((reg, idx) => (
-                        <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
-                          <td className="py-3.5 px-4 text-slate-500">{idx + 1}</td>
-                          <td className="py-3.5 px-4">
-                            <span className="font-bold text-white block">{reg.studentName}</span>
-                            <span className="text-[10px] text-slate-400">{reg.email}</span>
-                          </td>
-                          <td className="py-3.5 px-4 text-cyan-300">{reg.prn}</td>
-                          <td className="py-3.5 px-4 text-slate-200 max-w-xs truncate">{reg.eventTitle}</td>
-                          <td className="py-3.5 px-4 text-slate-400">{reg.year}</td>
-                          <td className="py-3.5 px-4 text-slate-400">{reg.registeredAt}</td>
-                          <td className="py-3.5 px-4">
-                            {reg.paymentScreenshotUrl ? (
-                              <a
-                                href={reg.paymentScreenshotUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/70 hover:bg-emerald-900/90 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold transition-all hover:scale-105"
-                                title="Open payment screenshot on Cloudinary"
-                              >
-                                <span>🧾</span>
-                                <span>Receipt</span>
-                                <span className="text-[9px] opacity-70">↗</span>
-                              </a>
-                            ) : (
-                              <span className="text-[10px] text-slate-500 italic">None</span>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
-                                reg.status === "approved"
-                                    ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30"
-                                    : reg.status === "pending"
-                                    ? "bg-amber-950/80 text-amber-300 border border-amber-500/30"
-                                    : "bg-red-950/80 text-red-300 border border-red-500/30"
-                              }`}
-                            >
-                              {reg.status}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 text-right space-x-1.5">
-                            {reg.status !== "approved" && (
-                              <button
-                                onClick={() => handleUpdateRegStatus(reg.id, "approved")}
-                                className="px-2 py-1 rounded bg-emerald-950/60 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/30 text-[10px] transition-colors cursor-pointer"
-                                title="Approve"
-                              >
-                                ✔
-                              </button>
-                            )}
-                            {reg.status !== "rejected" && (
-                              <button
-                                onClick={() => handleUpdateRegStatus(reg.id, "rejected")}
-                                className="px-2 py-1 rounded bg-amber-950/60 hover:bg-amber-900 text-amber-300 border border-amber-500/30 text-[10px] transition-colors cursor-pointer"
-                                title="Reject"
-                              >
-                                ✖
-                              </button>
-                            )}
-                            <button
-                              onClick={() => handleDeleteRegistration(reg.id)}
-                              className="px-2 py-1 rounded bg-red-950/40 hover:bg-red-900 text-red-300 border border-red-500/30 text-[10px] transition-colors cursor-pointer"
-                              title="Delete record"
-                            >
-                              🗑
-                            </button>
-                          </td>
-                        </tr>
-                      ))
+                      filteredRegistrations.map((reg, idx) => {
+                        const isVerified = reg.status === "verified" || reg.status === "approved";
+                        const isPending = reg.status === "pending";
+                        const isRejected = reg.status === "rejected";
+                        const answerCount = reg.customAnswers ? Object.keys(reg.customAnswers).length : 0;
+
+                        return (
+                          <tr key={reg.id} className="hover:bg-white/[0.02] transition-colors">
+                            <td className="py-3.5 px-4 text-slate-500">{idx + 1}</td>
+                            
+                            {/* Student & PRN */}
+                            <td className="py-3.5 px-4">
+                              <span className="font-bold text-white block">{reg.studentName}</span>
+                              <span className="text-[11px] text-cyan-300 font-semibold">{reg.prn}</span>
+                            </td>
+
+                            {/* Event Title */}
+                            <td className="py-3.5 px-4 text-slate-200 max-w-xs">
+                              <span className="line-clamp-2">{reg.eventTitle}</span>
+                              <span className="text-[10px] text-slate-500 block mt-0.5">{reg.registeredAt}</span>
+                            </td>
+
+                            {/* Year & Contact */}
+                            <td className="py-3.5 px-4 text-slate-400">
+                              <span className="block text-slate-300">{reg.year}</span>
+                              <span className="text-[10px] text-slate-500">{reg.email}</span>
+                            </td>
+
+                            {/* Uploaded Presentation / Media (PPT/PDF/Image) */}
+                            <td className="py-3.5 px-4">
+                              {reg.submissionFileUrl ? (
+                                <a
+                                  href={reg.submissionFileUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 text-[10px] font-semibold transition-all hover:scale-105 shadow-[0_0_10px_rgba(0,240,255,0.15)]"
+                                  title="Open presentation/media uploaded to Cloudinary"
+                                >
+                                  <span>📄</span>
+                                  <span>View Media</span>
+                                  <span className="text-[9px] opacity-70">↗</span>
+                                </a>
+                              ) : (
+                                <span className="text-[10px] text-slate-500 italic">None attached</span>
+                              )}
+                            </td>
+
+                            {/* Payment Proof Screenshot */}
+                            <td className="py-3.5 px-4">
+                              {reg.paymentScreenshotUrl ? (
+                                <a
+                                  href={reg.paymentScreenshotUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold transition-all hover:scale-105 shadow-[0_0_10px_rgba(16,185,129,0.15)]"
+                                  title="Open payment screenshot on Cloudinary"
+                                >
+                                  <span>🧾</span>
+                                  <span>Screenshot</span>
+                                  <span className="text-[9px] opacity-70">↗</span>
+                                </a>
+                              ) : (
+                                <span className="text-[10px] text-slate-500 italic">None</span>
+                              )}
+                            </td>
+
+                            {/* Custom Form Answers */}
+                            <td className="py-3.5 px-4">
+                              {answerCount > 0 ? (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedRegForAnswers(reg)}
+                                  className="px-2.5 py-1 rounded-lg bg-purple-950/60 hover:bg-purple-900 text-purple-300 border border-purple-500/30 text-[10px] transition-colors cursor-pointer flex items-center gap-1"
+                                >
+                                  <span>📋</span>
+                                  <span>Answers ({answerCount})</span>
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedRegForAnswers(reg)}
+                                  className="text-[10px] text-slate-400 hover:text-white transition-colors cursor-pointer underline"
+                                >
+                                  Details
+                                </button>
+                              )}
+                            </td>
+
+                            {/* Status Badge */}
+                            <td className="py-3.5 px-4">
+                              {isVerified ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 text-[10px] font-bold shadow-[0_0_12px_rgba(16,185,129,0.3)]">
+                                  <span>✔</span>
+                                  <span>VERIFIED</span>
+                                </span>
+                              ) : isPending ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-950/80 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
+                                  <span>⏳</span>
+                                  <span>PENDING</span>
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-950/80 text-red-300 border border-red-500/40 text-[10px] font-bold">
+                                  <span>✖</span>
+                                  <span>REJECTED</span>
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Action Buttons: Verify Registration */}
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {!isVerified ? (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateRegStatus(reg.id, "verified")}
+                                    className="px-3 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-[10px] uppercase tracking-wider transition-all flex items-center gap-1 shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer"
+                                    title="Click to Verify Registration (updates status to verified in Firestore)"
+                                  >
+                                    <span>✔</span>
+                                    <span>Verify Registration</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateRegStatus(reg.id, "pending")}
+                                    className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-[10px] border border-white/10 transition-colors cursor-pointer"
+                                    title="Revert to pending"
+                                  >
+                                    Revert
+                                  </button>
+                                )}
+
+                                {!isRejected && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateRegStatus(reg.id, "rejected")}
+                                    className="px-2 py-1 rounded-lg bg-amber-950/50 hover:bg-amber-900/80 text-amber-300 border border-amber-500/30 text-[10px] transition-colors cursor-pointer"
+                                    title="Reject registration"
+                                  >
+                                    ✖
+                                  </button>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteRegistration(reg.id)}
+                                  className="px-2 py-1 rounded-lg bg-red-950/40 hover:bg-red-900 text-red-300 border border-red-500/30 text-[10px] transition-colors cursor-pointer"
+                                  title="Delete registration record"
+                                >
+                                  🗑
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
-                        <td colSpan={9} className="py-8 text-center text-slate-500">
-                          No student registrations matching your filters.
+                        <td colSpan={9} className="py-12 text-center text-slate-500">
+                          <p className="text-sm text-slate-400 font-semibold mb-1">No registration submissions matching filters.</p>
+                          <p className="text-xs text-slate-600">Students registering on the public portal will appear here in real-time.</p>
                         </td>
                       </tr>
                     )}
@@ -1793,6 +1974,180 @@ export default function AdminDashboardPage() {
                 </table>
               </div>
             </div>
+
+            {/* =============================================================
+                MODAL: STUDENT FORM RESPONSES & VERIFICATION INSPECTOR
+                ============================================================= */}
+            {selectedRegForAnswers && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+                <div className="relative w-full max-w-2xl bg-[#090b10] border border-cyan-500/50 rounded-2xl p-6 sm:p-7 shadow-[0_20px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(0,240,255,0.25)] font-mono text-xs my-8">
+                  {/* Top Modal Header */}
+                  <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-5">
+                    <div>
+                      <span className="text-[10px] text-cyan-400 uppercase tracking-widest block font-bold">
+                        REGISTRATION DOSSIER • SUBMISSION DETAILS
+                      </span>
+                      <h3 className="text-xl font-bold text-white mt-0.5">
+                        {selectedRegForAnswers.studentName}
+                      </h3>
+                      <span className="text-[11px] text-slate-400 font-sans">
+                        PRN: <span className="text-cyan-300 font-mono font-bold">{selectedRegForAnswers.prn}</span> • {selectedRegForAnswers.eventTitle}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedRegForAnswers(null)}
+                      className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  {/* Delegate Summary Box */}
+                  <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+                    <div>
+                      <span className="text-[10px] text-slate-500 block uppercase">Year of Study:</span>
+                      <span className="text-white font-semibold">{selectedRegForAnswers.year}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 block uppercase">Contact / WhatsApp:</span>
+                      <span className="text-white font-semibold">{selectedRegForAnswers.email}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 block uppercase">Registration Date:</span>
+                      <span className="text-slate-300">{selectedRegForAnswers.registeredAt}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-500 block uppercase">Current Status:</span>
+                      <span className={`font-bold ${
+                        selectedRegForAnswers.status === "verified" || selectedRegForAnswers.status === "approved"
+                          ? "text-emerald-400"
+                          : selectedRegForAnswers.status === "pending"
+                          ? "text-amber-400"
+                          : "text-red-400"
+                      }`}>
+                        {selectedRegForAnswers.status.toUpperCase()}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Uploaded Files Section */}
+                  <div className="p-4 rounded-xl bg-slate-950 border border-cyan-500/30 space-y-3 mb-5">
+                    <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
+                      Uploaded Files &amp; Media Attachments
+                    </span>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Presentation / Media File */}
+                      <div className="p-3 rounded-lg bg-black/60 border border-white/10 flex flex-col justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block mb-1">PROJECT MEDIA / PRESENTATION:</span>
+                          {selectedRegForAnswers.submissionFileUrl ? (
+                            <a
+                              href={selectedRegForAnswers.submissionFileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 font-bold text-xs mt-1 transition-all"
+                            >
+                              <span>📄 Open Presentation (PPT/PDF/Image) ↗</span>
+                            </a>
+                          ) : (
+                            <span className="text-slate-500 text-xs italic">No presentation file attached</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Payment Screenshot */}
+                      <div className="p-3 rounded-lg bg-black/60 border border-white/10 flex flex-col justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block mb-1">PAYMENT SCREENSHOT PROOF:</span>
+                          {selectedRegForAnswers.paymentScreenshotUrl ? (
+                            <a
+                              href={selectedRegForAnswers.paymentScreenshotUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 font-bold text-xs mt-1 transition-all"
+                            >
+                              <span>🧾 View Receipt Proof ↗</span>
+                            </a>
+                          ) : (
+                            <span className="text-slate-500 text-xs italic">No screenshot attached</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Custom Form Answers */}
+                  <div className="space-y-2 mb-6">
+                    <span className="text-[11px] font-bold text-white uppercase tracking-wide block">
+                      Custom Form Field Responses
+                    </span>
+
+                    {selectedRegForAnswers.customAnswers && Object.keys(selectedRegForAnswers.customAnswers).length > 0 ? (
+                      <div className="rounded-xl border border-white/10 bg-black/40 overflow-hidden divide-y divide-white/5">
+                        {Object.entries(selectedRegForAnswers.customAnswers).map(([qTitle, answer], aIdx) => (
+                          <div key={aIdx} className="p-3 flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                            <span className="text-slate-400 text-xs sm:w-1/3 shrink-0 font-medium">
+                              {qTitle}:
+                            </span>
+                            <div className="sm:w-2/3 text-white text-xs break-words">
+                              {typeof answer === "string" && (answer.startsWith("http://") || answer.startsWith("https://")) ? (
+                                <a
+                                  href={answer}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-cyan-300 hover:text-cyan-200 underline inline-flex items-center gap-1"
+                                >
+                                  <span>Open Uploaded File ↗</span>
+                                </a>
+                              ) : (
+                                <span>{String(answer || "N/A")}</span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-xl border border-dashed border-white/10 text-center text-slate-500 text-xs">
+                        No additional custom fields were required for this event.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Modal Action Buttons */}
+                  <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedRegForAnswers(null)}
+                      className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+                    >
+                      Close Window
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                      {selectedRegForAnswers.status !== "verified" && selectedRegForAnswers.status !== "approved" ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleUpdateRegStatus(selectedRegForAnswers.id, "verified");
+                            setSelectedRegForAnswers(null);
+                          }}
+                          className="px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer flex items-center gap-1.5"
+                        >
+                          <span>✔</span>
+                          <span>Verify Registration Now</span>
+                        </button>
+                      ) : (
+                        <span className="text-emerald-400 text-xs font-bold flex items-center gap-1">
+                          <span>✔ Already Verified</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </section>
         )}
       </main>
@@ -2309,6 +2664,152 @@ export default function AdminDashboardPage() {
                   onChange={(e) => setEventForm({ ...eventForm, summary: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/10 text-white focus:outline-none focus:border-cyan-400 font-sans text-xs"
                 />
+              </div>
+
+              {/* =============================================================
+                  GOOGLE FORMS-STYLE CUSTOM REGISTRATION FORM BUILDER
+                  ============================================================= */}
+              <div className="p-4 sm:p-5 rounded-2xl border border-cyan-500/30 bg-slate-950/90 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 uppercase">
+                        DYNAMIC QUESTIONS BUILDER
+                      </span>
+                      <span className="text-[11px] font-bold text-white uppercase tracking-wide">
+                        Google Forms-Style Custom Fields
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Configure custom questions for students registering for this event (Team Name, Abstract, PPT/PDF Upload, etc.).
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleAddCustomQuestion}
+                    className="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/50 text-cyan-300 hover:text-white font-mono text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-[0_0_12px_rgba(0,240,255,0.2)]"
+                  >
+                    <span>+</span>
+                    <span>Add Custom Question</span>
+                  </button>
+                </div>
+
+                {/* Question List */}
+                {(!eventForm.customFormFields || eventForm.customFormFields.length === 0) ? (
+                  <div className="py-6 px-4 rounded-xl border border-dashed border-white/10 text-center text-slate-500 text-xs font-mono">
+                    <p className="mb-1 text-slate-400">No custom questions added for this event yet.</p>
+                    <p className="text-[10px] text-slate-500">
+                      Standard collegiate fields (Full Name, PRN, Year, Contact Number, Project Media &amp; Payment Screenshot) are always included.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3.5">
+                    {eventForm.customFormFields.map((field, index) => (
+                      <div
+                        key={field.id}
+                        className="p-3.5 rounded-xl border border-white/15 bg-black/60 space-y-3 relative group"
+                      >
+                        <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/5">
+                          <span className="text-[10px] font-mono font-bold text-cyan-400">
+                            QUESTION #{index + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveCustomQuestion(field.id)}
+                            className="text-[10px] font-mono text-red-400 hover:text-red-300 px-2 py-0.5 rounded bg-red-950/40 hover:bg-red-950/80 border border-red-500/30 transition-colors cursor-pointer"
+                          >
+                            ✕ Remove Question
+                          </button>
+                        </div>
+
+                        {/* Title and Field Type Row */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="sm:col-span-2">
+                            <label className="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">
+                              Question Title <span className="text-cyan-400">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="e.g. Team Name, Abstract Title, PPT Upload..."
+                              value={field.questionTitle}
+                              onChange={(e) =>
+                                handleUpdateCustomQuestion(field.id, { questionTitle: e.target.value })
+                              }
+                              className="w-full px-3 py-1.5 rounded-lg bg-black/70 border border-white/10 text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400 text-xs"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[10px] text-slate-400 block mb-1 uppercase font-semibold">
+                              Field Type <span className="text-cyan-400">*</span>
+                            </label>
+                            <select
+                              value={field.fieldType}
+                              onChange={(e) =>
+                                handleUpdateCustomQuestion(field.id, {
+                                  fieldType: e.target.value as CustomFieldType,
+                                })
+                              }
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-white/15 text-white focus:outline-none focus:border-cyan-400 text-xs cursor-pointer font-mono"
+                            >
+                              <option value="Short Text">Short Text</option>
+                              <option value="Paragraph">Paragraph</option>
+                              <option value="Dropdown Options">Dropdown Options</option>
+                              <option value="File Upload (PPT/PDF/Image)">File Upload (PPT/PDF/Image)</option>
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Dropdown Options Input if selected */}
+                        {field.fieldType === "Dropdown Options" && (
+                          <div className="pt-1">
+                            <label className="text-[10px] text-amber-300 block mb-1 font-semibold">
+                              Dropdown Options (Comma-separated) <span className="text-amber-400">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Option 1, Option 2, Option 3..."
+                              value={field.options || ""}
+                              onChange={(e) =>
+                                handleUpdateCustomQuestion(field.id, { options: e.target.value })
+                              }
+                              className="w-full px-3 py-1.5 rounded-lg bg-amber-950/20 border border-amber-500/30 text-white placeholder-slate-500 focus:outline-none focus:border-amber-400 text-xs"
+                            />
+                            <span className="text-[9px] text-slate-400 mt-0.5 block">
+                              Enter values separated by commas. Students will select one from this dropdown.
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Required Checkbox Toggle */}
+                        <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={field.required}
+                              onChange={(e) =>
+                                handleUpdateCustomQuestion(field.id, { required: e.target.checked })
+                              }
+                              className="w-3.5 h-3.5 rounded border-white/20 bg-black text-cyan-500 focus:ring-0 focus:outline-none cursor-pointer"
+                            />
+                            <span className="text-[11px] text-slate-300 font-mono">
+                              Required Question
+                            </span>
+                          </label>
+
+                          <span className="text-[10px] font-mono text-cyan-400/80">
+                            {field.fieldType === "File Upload (PPT/PDF/Image)"
+                              ? "Cloudinary /auto/upload"
+                              : field.fieldType}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">

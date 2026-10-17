@@ -10,9 +10,10 @@ import LoginButton from "./LoginButton";
 
 interface NavbarProps {
   onOpenRegister: () => void;
+  onOpenVerifiedList?: () => void;
 }
 
-export default function Navbar({ onOpenRegister }: NavbarProps) {
+export default function Navbar({ onOpenRegister, onOpenVerifiedList }: NavbarProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -121,6 +122,17 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
           <div className="flex items-center gap-2 sm:gap-3">
             <LoginButton />
 
+            {onOpenVerifiedList && (
+              <button
+                type="button"
+                onClick={onOpenVerifiedList}
+                className="hidden lg:inline-flex items-center gap-1.5 px-3.5 min-h-[44px] rounded-full text-xs font-mono font-semibold text-emerald-300 hover:text-white bg-emerald-950/60 hover:bg-emerald-900 border border-emerald-500/40 hover:border-emerald-400 transition-all shadow-[0_0_12px_rgba(16,185,129,0.25)] cursor-pointer shrink-0"
+              >
+                <span>✔</span>
+                <span>Verified List</span>
+              </button>
+            )}
+
             <button
               onClick={onOpenRegister}
               className="relative group overflow-hidden px-4 sm:px-5 min-h-[44px] rounded-full text-xs font-semibold text-white tracking-wide transition-all duration-300 shadow-[0_0_15px_rgba(0,240,255,0.35)] hover:shadow-[0_0_25px_rgba(0,240,255,0.55)] border border-cyan-400/40 cursor-pointer shrink-0 inline-flex items-center justify-center"
@@ -220,8 +232,8 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
                   </button>
                 ))}
 
-                {/* Mobile Conclave Registration Action */}
-                <div className="pt-4 mt-2 border-t border-white/[0.08]">
+                {/* Mobile Conclave Registration & Verified List Actions */}
+                <div className="pt-4 mt-2 border-t border-white/[0.08] space-y-2.5">
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
@@ -232,6 +244,18 @@ export default function Navbar({ onOpenRegister }: NavbarProps) {
                     <span>Register for Conclave &amp; Events</span>
                     <span>→</span>
                   </button>
+
+                  {onOpenVerifiedList && (
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        onOpenVerifiedList();
+                      }}
+                      className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-emerald-950/70 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <span>✔ Check Registration &amp; Verified List</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Council tenure footnote */}
