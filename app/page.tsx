@@ -9,7 +9,6 @@ import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import MouseTiltCard from "@/components/MouseTiltCard";
-import EventRegistrationModal from "@/components/EventRegistrationModal";
 import TeamDetailModal from "@/components/TeamDetailModal";
 import EventDetailModal from "@/components/EventDetailModal";
 
@@ -287,11 +286,8 @@ export default function Home() {
   const [upcomingSubFilter, setUpcomingSubFilter] = useState<"all" | "open" | "upcoming">("all");
   const [teamCategoryFilter, setTeamCategoryFilter] = useState<string>("all");
 
-  // Registration modal state
-  const [isRegModalOpen, setIsRegModalOpen] = useState(false);
-  const [selectedEventTitle, setSelectedEventTitle] = useState("TEX-CONCLAVE 2026");
-
-  // Detail modals interactive state
+  // Registration & Event Modal interactive states
+  const [modalInitialMode, setModalInitialMode] = useState<"detail" | "register">("detail");
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
@@ -359,8 +355,16 @@ export default function Home() {
   }, []);
 
   const handleOpenRegistration = (eventTitle: string = "TEX-CONCLAVE 2026") => {
-    setSelectedEventTitle(eventTitle);
-    setIsRegModalOpen(true);
+    const matched =
+      eventsList.find(
+        (e) =>
+          e.title.toLowerCase().includes(eventTitle.toLowerCase()) ||
+          e.id === "ev-conclave-2026"
+      ) ||
+      upcomingEvents[0] ||
+      eventsList[0];
+    setSelectedEvent(matched);
+    setModalInitialMode("register");
   };
 
   // Distinct Upcoming and Concluded / Past Events categorization
@@ -629,7 +633,10 @@ export default function Home() {
                         variants={cardSlideUpVariants}
                         layout
                         whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                        onClick={() => setSelectedEvent(event)}
+                        onClick={() => {
+                          setSelectedEvent(event);
+                          setModalInitialMode("detail");
+                        }}
                         className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
                       >
                         {/* Woven background texture */}
@@ -778,7 +785,10 @@ export default function Home() {
                         key={event.id}
                         variants={cardSlideUpVariants}
                         layout
-                        onClick={() => setSelectedEvent(event)}
+                        onClick={() => {
+                          setSelectedEvent(event);
+                          setModalInitialMode("detail");
+                        }}
                         className="group relative rounded-3xl border border-cyan-500/30 bg-slate-950/75 backdrop-blur-2xl p-6 sm:p-8 overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.9)] hover:border-cyan-400/80 hover:shadow-[0_0_40px_rgba(0,240,255,0.2)] transition-all duration-300 cursor-pointer"
                       >
                         {/* Woven background texture */}
@@ -903,6 +913,7 @@ export default function Home() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedEvent(event);
+                                setModalInitialMode("detail");
                               }}
                               className="min-h-[44px] px-5 py-2 rounded-xl bg-white/[0.05] hover:bg-cyan-500/10 border border-white/15 hover:border-cyan-400 text-cyan-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer"
                             >
@@ -1116,14 +1127,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* =========================================================================
-          INTERACTIVE REGISTRATION MODAL
-          ========================================================================= */}
-      <EventRegistrationModal
-        isOpen={isRegModalOpen}
-        onClose={() => setIsRegModalOpen(false)}
-        defaultEventTitle={selectedEventTitle}
-      />
 
       {/* =========================================================================
           INTERACTIVE TEAM MEMBER DETAIL MODAL
@@ -1138,8 +1141,8 @@ export default function Home() {
           ========================================================================= */}
       <EventDetailModal
         event={selectedEvent}
+        initialMode={modalInitialMode}
         onClose={() => setSelectedEvent(null)}
-        onRegister={(title) => handleOpenRegistration(title)}
       />
 
       {/* =========================================================================

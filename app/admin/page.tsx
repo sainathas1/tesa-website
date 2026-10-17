@@ -71,6 +71,7 @@ export interface Registration {
   eventTitle: string;
   registeredAt: string;
   status: "pending" | "approved" | "rejected";
+  paymentScreenshotUrl?: string;
 }
 
 // ============================================================================
@@ -446,11 +447,42 @@ export default function AdminDashboardPage() {
         localStorage.setItem("tesa_events", JSON.stringify(items));
       }
 
-      // 3. Registrations sync
-      const regSnap = await getDocs(collection(db, "registrations"));
-      if (!regSnap.empty) {
-        const items: Registration[] = [];
-        regSnap.forEach((d) => items.push({ ...(d.data() as Registration), id: d.id }));
+      // 3. Registrations sync (both event_registrations and registrations collections)
+      const items: Registration[] = [];
+
+      try {
+        const evRegSnap = await getDocs(collection(db, "event_registrations"));
+        if (!evRegSnap.empty) {
+          evRegSnap.forEach((d) => {
+            const data = d.data();
+            items.push({
+              id: d.id,
+              studentName: data.fullName || data.studentName || "Student",
+              prn: data.prn || "N/A",
+              email: data.contactNumber || data.email || "",
+              department: "Textile Technology",
+              year: data.year || "B.Tech",
+              eventTitle: data.eventTitle || "Conclave",
+              registeredAt: data.registeredAt ? data.registeredAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+              status: data.status || "pending",
+              paymentScreenshotUrl: data.paymentScreenshotUrl,
+            });
+          });
+        }
+      } catch (e) {
+        console.warn("event_registrations sync fallback:", e);
+      }
+
+      try {
+        const regSnap = await getDocs(collection(db, "registrations"));
+        if (!regSnap.empty) {
+          regSnap.forEach((d) => items.push({ ...(d.data() as Registration), id: d.id }));
+        }
+      } catch (e) {
+        console.warn("registrations sync fallback:", e);
+      }
+
+      if (items.length > 0) {
         setRegistrations(items);
         localStorage.setItem("tesa_registrations", JSON.stringify(items));
       }
@@ -864,8 +896,12 @@ export default function AdminDashboardPage() {
     localStorage.setItem("tesa_registrations", JSON.stringify(updated));
 
     try {
-      await updateDoc(doc(db, "registrations", regId), { status: newStatus });
-    } catch (err) {}
+      await updateDoc(doc(db, "event_registrations", regId), { status: newStatus });
+    } catch {
+      try {
+        await updateDoc(doc(db, "registrations", regId), { status: newStatus });
+      } catch (err) {}
+    }
 
     showToast(`Registration marked as ${newStatus.toUpperCase()}`);
   };
@@ -877,8 +913,12 @@ export default function AdminDashboardPage() {
     localStorage.setItem("tesa_registrations", JSON.stringify(updated));
 
     try {
-      await deleteDoc(doc(db, "registrations", regId));
-    } catch (err) {}
+      await deleteDoc(doc(db, "event_registrations", regId));
+    } catch {
+      try {
+        await deleteDoc(doc(db, "registrations", regId));
+      } catch (err) {}
+    }
 
     showToast("Registration record deleted.");
   };
@@ -893,12 +933,13 @@ export default function AdminDashboardPage() {
       "Sr No": idx + 1,
       "Student Name": r.studentName,
       "PRN / Roll No": r.prn,
-      "Official Email": r.email,
+      "Contact / Email": r.email,
       Department: r.department,
       "Academic Year": r.year,
       "Registered Event": r.eventTitle,
       "Registration Date": r.registeredAt,
       Status: r.status.toUpperCase(),
+      "Payment Proof URL": r.paymentScreenshotUrl || "N/A",
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
@@ -915,6 +956,7 @@ export default function AdminDashboardPage() {
       { wch: 45 },
       { wch: 16 },
       { wch: 12 },
+      { wch: 45 },
     ];
 
     const fileName = `TESA_Event_Registrations_${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -1471,6 +1513,7 @@ export default function AdminDashboardPage() {
                       <th className="py-3 px-4">Event Name</th>
                       <th className="py-3 px-4">Year</th>
                       <th className="py-3 px-4">Date</th>
+                      <th className="py-3 px-4">Proof</th>
                       <th className="py-3 px-4">Status</th>
                       <th className="py-3 px-4 text-right">Actions</th>
                     </tr>
@@ -1489,13 +1532,30 @@ export default function AdminDashboardPage() {
                           <td className="py-3.5 px-4 text-slate-400">{reg.year}</td>
                           <td className="py-3.5 px-4 text-slate-400">{reg.registeredAt}</td>
                           <td className="py-3.5 px-4">
+                            {reg.paymentScreenshotUrl ? (
+                              <a
+                                href={reg.paymentScreenshotUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/70 hover:bg-emerald-900/90 text-emerald-300 border border-emerald-500/40 text-[10px] font-semibold transition-all hover:scale-105"
+                                title="Open payment screenshot on Cloudinary"
+                              >
+                                <span>🧾</span>
+                                <span>Receipt</span>
+                                <span className="text-[9px] opacity-70">↗</span>
+                              </a>
+                            ) : (
+                              <span className="text-[10px] text-slate-500 italic">None</span>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4">
                             <span
                               className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold ${
                                 reg.status === "approved"
-                                  ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30"
-                                  : reg.status === "pending"
-                                  ? "bg-amber-950/80 text-amber-300 border border-amber-500/30"
-                                  : "bg-red-950/80 text-red-300 border border-red-500/30"
+                                    ? "bg-emerald-950/80 text-emerald-300 border border-emerald-500/30"
+                                    : reg.status === "pending"
+                                    ? "bg-amber-950/80 text-amber-300 border border-amber-500/30"
+                                    : "bg-red-950/80 text-red-300 border border-red-500/30"
                               }`}
                             >
                               {reg.status}
@@ -1532,7 +1592,7 @@ export default function AdminDashboardPage() {
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={8} className="py-8 text-center text-slate-500">
+                        <td colSpan={9} className="py-8 text-center text-slate-500">
                           No student registrations matching your filters.
                         </td>
                       </tr>
