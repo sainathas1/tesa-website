@@ -13,6 +13,7 @@ interface MouseTiltCardProps {
   className?: string;
   glowColor?: string; // Electric blue or neon purple
   borderColor?: string;
+  onClick?: () => void;
 }
 
 export default function MouseTiltCard({
@@ -20,6 +21,7 @@ export default function MouseTiltCard({
   className = "",
   glowColor = "rgba(0, 240, 255, 0.45)",
   borderColor = "rgba(0, 240, 255, 0.6)",
+  onClick,
 }: MouseTiltCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -62,6 +64,7 @@ export default function MouseTiltCard({
     <div className="perspective-1200 w-full h-full">
       <motion.div
         ref={cardRef}
+        onClick={onClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
         style={{

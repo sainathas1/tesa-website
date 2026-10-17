@@ -9,6 +9,8 @@ import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import MouseTiltCard from "@/components/MouseTiltCard";
 import EventRegistrationModal from "@/components/EventRegistrationModal";
+import TeamDetailModal from "@/components/TeamDetailModal";
+import EventDetailModal from "@/components/EventDetailModal";
 
 // Client-only dynamic WebGL Liquid Ether & Particle Background (ssr: false prevents hydration mismatches)
 const LiquidEtherBackground = dynamic(
@@ -265,6 +267,10 @@ export default function Home() {
   const [isRegModalOpen, setIsRegModalOpen] = useState(false);
   const [selectedEventTitle, setSelectedEventTitle] = useState("TEX-CONCLAVE 2026");
 
+  // Detail modals interactive state
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
+
   // Fetch data cleanly from Firebase with localStorage caching
   useEffect(() => {
     // 1. Initial cached population
@@ -491,7 +497,8 @@ export default function Home() {
                     variants={cardSlideUpVariants}
                     layout
                     whileHover={{ y: -6, transition: { duration: 0.25 } }}
-                    className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300"
+                    onClick={() => setSelectedEvent(event)}
+                    className="group relative flex flex-col justify-between rounded-2xl border border-cyan-500/25 bg-slate-950/65 backdrop-blur-2xl p-6 sm:p-7 overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.85)] hover:border-cyan-400 hover:shadow-[0_0_35px_rgba(0,240,255,0.25)] transition-all duration-300 cursor-pointer"
                   >
                     {/* Woven background texture */}
                     <div className="pointer-events-none absolute inset-0 bg-woven-texture opacity-25" />
@@ -548,27 +555,39 @@ export default function Home() {
 
                       {/* Highlights Pill */}
                       {event.highlights && (
-                        <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-6 flex items-center gap-2">
+                        <div className="p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono text-slate-300 mb-4 flex items-center gap-2">
                           <span className="text-cyan-400">✦</span>
                           <span className="leading-snug">{event.highlights}</span>
                         </div>
                       )}
+
+                      {/* Card click hint */}
+                      <div className="flex items-center justify-between text-[10px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors py-1.5 border-t border-white/[0.05] mb-2">
+                        <span>CLICK TO EXPAND EVENT DOSSIER</span>
+                        <span>🔍</span>
+                      </div>
                     </div>
 
                     {/* Bottom CTA & Registration Action */}
-                    <div className="relative z-10 pt-4 border-t border-white/[0.08] flex items-center justify-between font-mono text-xs">
+                    <div className="relative z-10 pt-3 border-t border-white/[0.08] flex items-center justify-between font-mono text-xs">
                       {isOpen ? (
                         <button
-                          onClick={() => handleOpenRegistration(event.title)}
-                          className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenRegistration(event.title);
+                          }}
+                          className="w-full py-2.5 px-4 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold tracking-wide transition-all shadow-[0_0_15px_rgba(0,240,255,0.3)] hover:shadow-[0_0_25px_rgba(0,240,255,0.5)] flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <span>Register Online</span>
                           <span>→</span>
                         </button>
                       ) : isUpcoming ? (
                         <button
-                          onClick={() => handleOpenRegistration(event.title)}
-                          className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenRegistration(event.title);
+                          }}
+                          className="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 hover:border-cyan-400 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <span>Pre-Register / Notify Me</span>
                           <span>→</span>
@@ -662,7 +681,8 @@ export default function Home() {
                   <MouseTiltCard
                     glowColor="rgba(0, 240, 255, 0.4)"
                     borderColor="rgba(0, 240, 255, 0.55)"
-                    className="h-full border-cyan-500/30"
+                    onClick={() => setSelectedMember(member)}
+                    className="h-full border-cyan-500/30 cursor-pointer"
                   >
                     <div className="flex flex-col justify-between h-full">
                       <div>
@@ -724,7 +744,7 @@ export default function Home() {
                         <div className="text-[9px] font-mono text-cyan-400/80 uppercase tracking-wider mb-1.5 truncate">
                           FOCUS: {member.specialization}
                         </div>
-                        <div className="flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-1 mb-2">
                           {member.skills.slice(0, 3).map((skill, sIdx) => (
                             <span
                               key={sIdx}
@@ -733,6 +753,10 @@ export default function Home() {
                               {skill}
                             </span>
                           ))}
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] font-mono text-cyan-400/70 group-hover:text-cyan-300 transition-colors pt-1.5 border-t border-white/[0.04]">
+                          <span>VIEW MEMBER DOSSIER</span>
+                          <span>→</span>
                         </div>
                       </div>
                     </div>
@@ -751,6 +775,23 @@ export default function Home() {
         isOpen={isRegModalOpen}
         onClose={() => setIsRegModalOpen(false)}
         defaultEventTitle={selectedEventTitle}
+      />
+
+      {/* =========================================================================
+          INTERACTIVE TEAM MEMBER DETAIL MODAL
+          ========================================================================= */}
+      <TeamDetailModal
+        member={selectedMember}
+        onClose={() => setSelectedMember(null)}
+      />
+
+      {/* =========================================================================
+          INTERACTIVE EVENT DETAIL MODAL
+          ========================================================================= */}
+      <EventDetailModal
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        onRegister={(title) => handleOpenRegistration(title)}
       />
 
       {/* =========================================================================
