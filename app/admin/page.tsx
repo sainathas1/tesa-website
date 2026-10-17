@@ -21,8 +21,8 @@ import {
   query,
   orderBy,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { auth, googleProvider, db, storage } from "@/lib/firebase";
+import { auth, googleProvider, db } from "@/lib/firebase";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import * as XLSX from "xlsx";
 
 // ============================================================================
@@ -507,56 +507,7 @@ export default function AdminDashboardPage() {
     }
   };
 
-  // --------------------------------------------------------------------------
-  // FIREBASE STORAGE UPLOAD HELPER (With DataURL fallback)
-  // --------------------------------------------------------------------------
-  const uploadImageToStorage = async (file: File, folderPath: string): Promise<string> => {
-    try {
-      const fileExt = file.name.split(".").pop() || "jpg";
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-      const storageRef = ref(storage, `${folderPath}/${fileName}`);
-      const uploadRes = await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(uploadRes.ref);
-      return downloadUrl;
-    } catch (storageError) {
-      console.warn("Storage bucket upload skipped, encoding locally as base64 DataURL:", storageError);
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(file);
-      });
-    }
-  };
-
-  // --------------------------------------------------------------------------
-  // CLOUDINARY UNSIGNED UPLOAD HELPER
-  // --------------------------------------------------------------------------
-  const uploadToCloudinary = async (file: File): Promise<string> => {
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "cc0vold0";
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "tesasggs";
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", uploadPreset);
-
-    try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData?.error?.message || `Cloudinary upload returned status ${res.status}`);
-      }
-
-      const data = await res.json();
-      return data.secure_url || data.url;
-    } catch (cloudinaryError: any) {
-      console.warn("Cloudinary direct upload failed, using storage fallback:", cloudinaryError);
-      return uploadImageToStorage(file, "event_gallery");
-    }
-  };
+  // Cloudinary media uploads handled universally via uploadToCloudinary (@/lib/cloudinary)
 
   // --------------------------------------------------------------------------
   // TEAM ACTIONS (Photo Upload & Firestore Save)
@@ -597,19 +548,20 @@ export default function AdminDashboardPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("Photo exceeds 5MB limit. Please upload a smaller image.", "error");
+    if (file.size > 8 * 1024 * 1024) {
+      showToast("Photo exceeds 8MB limit. Please upload a smaller image.", "error");
       return;
     }
 
     try {
       setIsUploadingPhoto(true);
-      showToast("Uploading member portrait photo...", "info");
-      const url = await uploadImageToStorage(file, "team");
+      showToast("Uploading Media... Sending portrait photo to Cloudinary...", "info");
+      const url = await uploadToCloudinary(file);
       setTeamForm((prev) => ({ ...prev, photoUrl: url }));
-      showToast("Portrait photo ready! Form updated.");
-    } catch {
-      showToast("Could not load photo. Try choosing another file.", "error");
+      showToast("Portrait photo uploaded to Cloudinary successfully!");
+    } catch (err: any) {
+      console.error("Cloudinary portrait upload error:", err);
+      showToast(err?.message || "Could not upload photo to Cloudinary. Try choosing another file.", "error");
     } finally {
       setIsUploadingPhoto(false);
     }
@@ -753,19 +705,20 @@ export default function AdminDashboardPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      showToast("Banner image exceeds 5MB. Please choose a smaller image.", "error");
+    if (file.size > 8 * 1024 * 1024) {
+      showToast("Banner image exceeds 8MB. Please choose a smaller image.", "error");
       return;
     }
 
     try {
       setIsUploadingBanner(true);
-      showToast("Uploading event banner...", "info");
-      const url = await uploadImageToStorage(file, "events");
+      showToast("Uploading Media... Sending event banner to Cloudinary...", "info");
+      const url = await uploadToCloudinary(file);
       setEventForm((prev) => ({ ...prev, mediaUrl: url }));
-      showToast("Event banner loaded successfully!");
-    } catch {
-      showToast("Failed to upload banner.", "error");
+      showToast("Event banner uploaded to Cloudinary successfully!");
+    } catch (err: any) {
+      console.error("Cloudinary event banner upload error:", err);
+      showToast(err?.message || "Failed to upload banner to Cloudinary.", "error");
     } finally {
       setIsUploadingBanner(false);
     }
@@ -1669,16 +1622,24 @@ export default function AdminDashboardPage() {
                   <div className="flex-1 w-full space-y-3">
                     <div>
                       <label className="text-[10px] text-slate-400 block mb-1.5 uppercase">
-                        Upload Image File to Firebase Storage:
+                        Upload Portrait Photo to Cloudinary (Unsigned):
                       </label>
                       <input
                         ref={teamFileInputRef}
                         type="file"
                         accept="image/png, image/jpeg, image/webp"
                         onChange={handleTeamPhotoFileChange}
-                        className="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer"
+                        disabled={isUploadingPhoto}
+                        className="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer disabled:opacity-50"
                       />
                     </div>
+
+                    {isUploadingPhoto && (
+                      <div className="flex items-center gap-2 p-2.5 rounded-lg bg-cyan-950/60 border border-cyan-400/40 text-cyan-300 text-xs animate-pulse">
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin shrink-0" />
+                        <span>Uploading Media... Sending portrait photo to Cloudinary...</span>
+                      </div>
+                    )}
 
                     <div>
                       <label className="text-[10px] text-slate-400 block mb-1 uppercase">
@@ -1826,9 +1787,18 @@ export default function AdminDashboardPage() {
                 <button
                   type="submit"
                   disabled={isUploadingPhoto}
-                  className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50"
+                  className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
                 >
-                  {editingTeamMember ? "Save Changes" : "Create Member"}
+                  {isUploadingPhoto ? (
+                    <>
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
+                      <span>Uploading Media...</span>
+                    </>
+                  ) : editingTeamMember ? (
+                    "Save Changes"
+                  ) : (
+                    "Create Member"
+                  )}
                 </button>
               </div>
             </form>
@@ -1863,7 +1833,7 @@ export default function AdminDashboardPage() {
               {/* Event Banner Section */}
               <div className="p-4 rounded-xl border border-white/10 bg-slate-950/80 space-y-3">
                 <span className="text-[11px] font-bold text-cyan-300 uppercase tracking-wide block">
-                  Event Banner Image (Storage Upload / URL)
+                  Event Banner Image (Cloudinary Unsigned Upload / URL)
                 </span>
 
                 <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -1882,8 +1852,9 @@ export default function AdminDashboardPage() {
                       </div>
                     )}
                     {isUploadingBanner && (
-                      <div className="absolute inset-0 bg-black/80 flex items-center justify-center text-cyan-300 text-[10px]">
-                        Uploading...
+                      <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-cyan-300 text-[10px] animate-pulse">
+                        <div className="w-4 h-4 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-1" />
+                        <span>Uploading Media...</span>
                       </div>
                     )}
                   </div>
@@ -1893,8 +1864,9 @@ export default function AdminDashboardPage() {
                       ref={eventFileInputRef}
                       type="file"
                       accept="image/*"
+                      disabled={isUploadingBanner}
                       onChange={handleEventBannerFileChange}
-                      className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer"
+                      className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-cyan-500 file:text-black hover:file:bg-cyan-400 file:cursor-pointer cursor-pointer disabled:opacity-50"
                     />
                     <input
                       type="url"
@@ -2061,9 +2033,9 @@ export default function AdminDashboardPage() {
                   )}
 
                   {isUploadingGallery && (
-                    <div className="flex items-center gap-2 text-cyan-300 text-xs font-mono py-1 animate-pulse">
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin" />
-                      <span>Uploading event gallery photos to Cloudinary...</span>
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg bg-cyan-950/60 border border-cyan-400/40 text-cyan-300 text-xs font-mono animate-pulse">
+                      <div className="w-3.5 h-3.5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin shrink-0" />
+                      <span>Uploading Media... Uploading event gallery photos to Cloudinary...</span>
                     </div>
                   )}
                 </div>
@@ -2095,7 +2067,8 @@ export default function AdminDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setIsEventModalOpen(false)}
-                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+                  disabled={isSubmittingEvent || isUploadingBanner || isUploadingGallery}
+                  className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer disabled:opacity-40"
                 >
                   Cancel
                 </button>
@@ -2104,12 +2077,14 @@ export default function AdminDashboardPage() {
                   disabled={isSubmittingEvent || isUploadingBanner || isUploadingGallery}
                   className="px-5 py-2.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(6,182,212,0.4)] cursor-pointer disabled:opacity-50 flex items-center gap-2"
                 >
-                  {isUploadingGallery && (
+                  {(isUploadingGallery || isUploadingBanner || isSubmittingEvent) && (
                     <div className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
                   )}
                   <span>
-                    {isUploadingGallery
-                      ? "Uploading to Cloudinary..."
+                    {isUploadingGallery || isUploadingBanner
+                      ? "Uploading Media..."
+                      : isSubmittingEvent
+                      ? "Saving Event..."
                       : editingEventId
                       ? "Save Changes"
                       : "Publish Event"}

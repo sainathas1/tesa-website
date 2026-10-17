@@ -5,6 +5,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 export interface EventItem {
   id: string;
@@ -156,33 +157,8 @@ export default function EventDetailModal({
     setIsSubmitting(true);
 
     try {
-      // Step 1: Upload directly to Cloudinary using unsigned preset (Explicit requirement: Do NOT use Firebase Storage)
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "cc0vold0";
-      const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "tesasggs";
-
-      const formData = new FormData();
-      formData.append("file", paymentFile);
-      formData.append("upload_preset", uploadPreset);
-
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(
-          errorData?.error?.message ||
-            `Cloudinary upload failed (Status: ${res.status}). Please check your connection.`
-        );
-      }
-
-      const uploadResult = await res.json();
-      const secureUrl = uploadResult.secure_url || uploadResult.url;
-
-      if (!secureUrl) {
-        throw new Error("Cloudinary did not return a secure URL for the uploaded screenshot.");
-      }
+      // Step 1: Upload directly to Cloudinary using universal unsigned preset (Explicit requirement: Do NOT use Firebase Storage)
+      const secureUrl = await uploadToCloudinary(paymentFile);
 
       // Step 2: Save to Firestore collection "event_registrations"
       const regId = `REG-${Date.now().toString().slice(-6)}`;
@@ -690,7 +666,7 @@ export default function EventDetailModal({
                       <div className="p-3 rounded-xl bg-cyan-950/40 border border-cyan-500/40 flex items-center gap-3 text-cyan-300 animate-pulse">
                         <span className="w-4 h-4 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin shrink-0" />
                         <span className="text-xs">
-                          Uploading payment screenshot directly to Cloudinary &amp; recording registration...
+                          Uploading Media... Uploading payment screenshot to Cloudinary &amp; saving registration...
                         </span>
                       </div>
                     )}
@@ -714,7 +690,7 @@ export default function EventDetailModal({
                         {isSubmitting ? (
                           <>
                             <span className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />
-                            <span>Verifying...</span>
+                            <span>Uploading Media...</span>
                           </>
                         ) : (
                           <>
