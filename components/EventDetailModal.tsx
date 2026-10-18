@@ -46,6 +46,22 @@ export interface EventItem {
   galleryUrls?: string[];
   gallery?: string[];
   customFormFields?: CustomFormField[];
+  isPastSection?: boolean;
+  _isPast?: boolean;
+}
+
+export function isConcludedEvent(event: any): boolean {
+  if (!event) return false;
+  if (event._isPast || event.isPastSection) return true;
+  const evStatus = String(event.eventStatus || event.status || "").trim().toLowerCase();
+  if (evStatus === "concluded" || evStatus === "past" || evStatus === "closed") {
+    return true;
+  }
+  const deadline = String(event.deadline || "").trim();
+  if (deadline === "0") {
+    return true;
+  }
+  return false;
 }
 
 export interface RegistrationRecord {
@@ -81,8 +97,11 @@ export default function EventDetailModal({
   initialMode = "detail",
 }: EventDetailModalProps) {
   // Modal View Modes:
-  // "detail" (Event Briefing) | "register" (Registration Form) | "success" (Submitted) | "verifiedList" (Public Verified Participants List)
-  const [viewMode, setViewMode] = useState<"detail" | "register" | "success" | "verifiedList">("detail");
+  // "detail" (Event Briefing) | "gallery" (Event Gallery) | "register" (Registration Form) | "success" (Submitted) | "verifiedList" (Public Verified Participants List)
+  const [viewMode, setViewMode] = useState<"detail" | "gallery" | "register" | "success" | "verifiedList">(
+    initialMode === "verifiedList" ? "verifiedList" : "detail"
+  );
+  const [selectedLightboxImg, setSelectedLightboxImg] = useState<string | null>(null);
 
   // Registration Form State
   const [fullName, setFullName] = useState("");
@@ -315,9 +334,34 @@ export default function EventDetailModal({
     onClose();
   };
 
-  const isConcluded = event?.eventStatus === "Concluded" || event?.status === "closed";
+  const isConcluded = isConcludedEvent(event);
   const isOpen = !isConcluded && event?.status === "open";
   const isUpcoming = !isConcluded && event?.status === "upcoming";
+
+  const eventGallery =
+    event?.galleryUrls && event.galleryUrls.length > 0
+      ? event.galleryUrls
+      : event?.gallery && event.gallery.length > 0
+      ? event.gallery
+      : eventMediaCover
+      ? [eventMediaCover]
+      : [];
+
+  useEffect(() => {
+    if (!event) return;
+    const concluded = isConcludedEvent(event);
+    if (concluded) {
+      if (initialMode === "verifiedList") {
+        setViewMode("verifiedList");
+      } else {
+        setViewMode("detail");
+      }
+    } else {
+      setViewMode(initialMode || "detail");
+    }
+  }, [event, initialMode]);
+
+  const effectiveViewMode = isConcluded && viewMode === "register" ? "detail" : viewMode;
 
 
   // Dedicated Presentation File Change (accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,.webp")
@@ -576,11 +620,11 @@ export default function EventDetailModal({
             <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-gradient-to-tr from-indigo-600/15 via-purple-600/10 to-transparent blur-3xl rounded-full" />
 
             {/* =================================================================
-                STICKY TOP BAR (NEVER SCROLLS OFF SCREEN)
+                STICKY TOP BAR (CLEAN MOBILE-SAFE HEADER, NO OVERLAPPING TEXT)
                 ================================================================= */}
-            <div className="shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016] gap-3">
-              {/* Left: Modal Title + Status Badge */}
-              <div className="flex items-center gap-2.5 min-w-0">
+            <div className="shrink-0 px-4 sm:px-5 py-3 border-b border-white/10 flex items-center justify-between bg-[#0f1016] gap-2">
+              {/* Left: TESA Logo (+ desktop-only title & status) */}
+              <div className="flex items-center gap-2.5 shrink-0">
                 <div className="relative w-8 h-8 rounded-full border border-white/30 p-[1.5px] overflow-hidden bg-white shrink-0 shadow-[0_0_15px_rgba(124,58,237,0.35)]">
                   <Image
                     src="/tesa-logo.png"
@@ -590,53 +634,75 @@ export default function EventDetailModal({
                     className="w-full h-full object-cover rounded-full"
                   />
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 id="event-modal-title" className="text-sm sm:text-base font-bold text-white truncate max-w-[130px] sm:max-w-[260px]">
-                      {viewMode === "register" ? "Event Registration" : event.title}
-                    </h3>
-                    <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 uppercase tracking-wider shrink-0">
-                      {isOpen ? "● Open" : isUpcoming ? "▲ Upcoming" : "■ Concluded"}
-                    </span>
-                  </div>
+                <div className="hidden lg:flex items-center gap-2 max-w-[220px]">
+                  <h3 id="event-modal-title" className="text-xs font-bold text-white truncate">
+                    {effectiveViewMode === "register" ? "Event Registration" : event.title}
+                  </h3>
+                  <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider shrink-0 ${
+                    isConcluded
+                      ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                      : isOpen
+                      ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                      : "bg-purple-500/10 text-purple-300 border-purple-500/30"
+                  }`}>
+                    {isConcluded ? "• Concluded" : isOpen ? "● Open" : "▲ Upcoming"}
+                  </span>
                 </div>
               </div>
 
-              {/* Center: Mode Tabs */}
+              {/* Center: Mode Tabs (Info | Gallery | Verified for Past, Info | Register | Verified for Upcoming) */}
               <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/10 shrink-0">
                 <button
                   type="button"
                   onClick={() => setViewMode("detail")}
                   className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
-                    viewMode === "detail"
+                    effectiveViewMode === "detail"
                       ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.4)]"
                       : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
                   }`}
                 >
-                  <span className="sm:hidden">Info</span>
-                  <span className="hidden sm:inline">Overview</span>
+                  <span>Info</span>
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setViewMode("register")}
-                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                    viewMode === "register"
-                      ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.4)]"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <span>Register</span>
-                  {(isOpen || isUpcoming) && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  )}
-                </button>
+                {isConcluded ? (
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("gallery")}
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      effectiveViewMode === "gallery"
+                        ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.4)]"
+                        : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <span>Gallery</span>
+                    {eventGallery.length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px]">
+                        {eventGallery.length}
+                      </span>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("register")}
+                    className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      effectiveViewMode === "register"
+                        ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.4)]"
+                        : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                    }`}
+                  >
+                    <span>Register</span>
+                    {(isOpen || isUpcoming) && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    )}
+                  </button>
+                )}
 
                 <button
                   type="button"
                   onClick={() => setViewMode("verifiedList")}
                   className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1 ${
-                    viewMode === "verifiedList"
+                    effectiveViewMode === "verifiedList"
                       ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]"
                       : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
                   }`}
@@ -655,7 +721,7 @@ export default function EventDetailModal({
                 onClick={handleModalClose}
                 disabled={isSubmitting}
                 aria-label="Close modal"
-                className="shrink-0 w-8 h-8 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer disabled:opacity-40"
+                className="shrink-0 w-8 h-8 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer disabled:opacity-40 text-xs"
               >
                 ✕
               </button>
@@ -664,7 +730,7 @@ export default function EventDetailModal({
             {/* =================================================================
                 MAIN MODAL CONTENT SWITCHER (BASED ON VIEW MODE)
                 ================================================================= */}
-            {viewMode === "register" ? (
+            {!isConcluded && effectiveViewMode === "register" ? (
               /* ===============================================================
                  REGISTER VIEW: 2-COLUMN VIEWPORT-FIT STUDENT REGISTRATION
                  =============================================================== */
@@ -688,8 +754,9 @@ export default function EventDetailModal({
                           <span className="px-2 py-0.5 rounded bg-black/70 text-purple-300 border border-purple-500/30 truncate max-w-[70%]">
                             {event.category}
                           </span>
-                          <span className="text-emerald-400 bg-black/70 px-2 py-0.5 rounded border border-emerald-500/30 font-semibold">
-                            ● Open
+                          <span className="text-emerald-400 bg-black/70 px-2 py-0.5 rounded border border-emerald-500/30 font-semibold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>● Open</span>
                           </span>
                         </div>
                       </div>
@@ -1138,7 +1205,77 @@ export default function EventDetailModal({
                   </div>
                 </div>
               </form>
-            ) : viewMode === "detail" ? (
+            ) : effectiveViewMode === "gallery" ? (
+              /* ===============================================================
+                 GALLERY VIEW: RESPONSIVE PHOTO GRID & LIGHTBOX OF CONCLUDED EVENT
+                 =============================================================== */
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden font-mono text-xs">
+                <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+                  <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                    <div>
+                      <h4 className="text-sm font-bold text-white font-sans">
+                        {event.title} — Photo Archives
+                      </h4>
+                      <span className="text-[11px] text-zinc-400 font-mono">
+                        {eventGallery.length} Photographic Records
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-semibold flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                      <span>• Concluded Conclave</span>
+                    </span>
+                  </div>
+
+                  {eventGallery.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+                      {eventGallery.map((imgUrl, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => setSelectedLightboxImg(imgUrl)}
+                          className="relative aspect-video sm:aspect-square rounded-xl overflow-hidden border border-white/10 hover:border-purple-500/60 group cursor-pointer bg-black/50 shadow-md transition-all"
+                        >
+                          <Image
+                            src={imgUrl}
+                            alt={`${event.title} photograph ${idx + 1}`}
+                            fill
+                            unoptimized
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-2">
+                            <span className="text-[10px] text-white font-mono flex items-center gap-1">
+                              <span>🔍</span>
+                              <span>View Photo</span>
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-16 px-6 rounded-2xl border border-white/10 bg-white/[0.02]">
+                      <span className="text-3xl mb-2 block">📷</span>
+                      <h5 className="text-white font-bold text-sm mb-1 font-sans">No Gallery Photos Cataloged</h5>
+                      <p className="text-zinc-400 text-xs font-sans max-w-sm mx-auto">
+                        Historical symposium photographs are currently being cataloged by the TESA Media Council.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Sticky Bottom Footer for Gallery */}
+                <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-between gap-3">
+                  <span className="text-zinc-400 text-xs font-mono hidden sm:inline">
+                    TESA Archives • SGGSIE&amp;T National Conclaves
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleModalClose}
+                    className="w-full sm:w-auto px-6 py-2 rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/15 text-white font-mono font-semibold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    Close Window
+                  </button>
+                </div>
+              </div>
+            ) : effectiveViewMode === "detail" ? (
               /* ===============================================================
                  DETAIL VIEW: 2-COLUMN VIEWPORT-FIT EVENT DOSSIER
                  =============================================================== */
@@ -1160,8 +1297,29 @@ export default function EventDetailModal({
                           <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-purple-300 border border-purple-500/30 uppercase tracking-wider font-semibold">
                             {event.category}
                           </span>
-                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-emerald-400 border border-emerald-500/30 font-semibold">
-                            {isOpen ? "● Open" : isUpcoming ? "▲ Upcoming" : "■ Concluded"}
+                          <span className={`text-[10px] font-mono px-2.5 py-0.5 rounded-full border font-semibold flex items-center gap-1.5 ${
+                            isConcluded
+                              ? "bg-zinc-900/90 text-amber-400 border-amber-500/30"
+                              : isOpen
+                              ? "bg-black/70 text-emerald-400 border-emerald-500/30"
+                              : "bg-black/70 text-purple-300 border-purple-500/30"
+                          }`}>
+                            {isConcluded ? (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                <span>• Concluded</span>
+                              </>
+                            ) : isOpen ? (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                <span>● Open</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                                <span>▲ Upcoming</span>
+                              </>
+                            )}
                           </span>
                         </div>
                       </div>
@@ -1203,14 +1361,24 @@ export default function EventDetailModal({
                       )}
                     </div>
 
-                    {/* Fee Details Card */}
-                    <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 text-xs font-mono flex items-center justify-between">
-                      <span className="text-zinc-400">Registration Fee:</span>
-                      <span className="font-bold text-emerald-400">{activeFee}</span>
-                    </div>
+                    {/* Fee / Concluded Status Details Card (No Fee Card if Concluded) */}
+                    {isConcluded ? (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs font-mono flex items-center justify-between text-amber-300">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                          <span>Event Status:</span>
+                        </span>
+                        <span className="font-bold uppercase tracking-wider">Concluded Event</span>
+                      </div>
+                    ) : (
+                      <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 text-xs font-mono flex items-center justify-between">
+                        <span className="text-zinc-400">Registration Fee:</span>
+                        <span className="font-bold text-emerald-400">{activeFee}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Right Column: Title, Synopsis, Highlights, Gallery */}
+                  {/* Right Column: Title, Synopsis, Highlights, Gallery Photos */}
                   <div className="lg:col-span-7 space-y-4">
                     <div>
                       <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
@@ -1233,20 +1401,29 @@ export default function EventDetailModal({
                       </p>
                     </div>
 
-                    {/* Gallery Photos (If Concluded) */}
-                    {event.galleryUrls && event.galleryUrls.length > 0 && (
+                    {/* Gallery Photos Preview */}
+                    {eventGallery.length > 0 && (
                       <div className="space-y-2 pt-2 border-t border-white/10">
-                        <span className="text-[10px] font-mono uppercase text-purple-400 tracking-wider block">
-                          Event Photo Archive ({event.galleryUrls.length} Photographs):
-                        </span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-mono uppercase text-purple-400 tracking-wider block">
+                            Event Photo Archive ({eventGallery.length} Photographs):
+                          </span>
+                          {isConcluded && (
+                            <button
+                              type="button"
+                              onClick={() => setViewMode("gallery")}
+                              className="text-[10px] text-purple-300 hover:text-white underline font-mono cursor-pointer"
+                            >
+                              View Full Gallery →
+                            </button>
+                          )}
+                        </div>
                         <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                          {event.galleryUrls.map((imgUrl, idx) => (
-                            <a
+                          {eventGallery.slice(0, 8).map((imgUrl, idx) => (
+                            <div
                               key={idx}
-                              href={imgUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="relative aspect-video rounded-lg overflow-hidden border border-white/10 hover:border-purple-500/50 group block"
+                              onClick={() => setSelectedLightboxImg(imgUrl)}
+                              className="relative aspect-video rounded-lg overflow-hidden border border-white/10 hover:border-purple-500/50 group block cursor-pointer bg-black/40"
                             >
                               <Image
                                 src={imgUrl}
@@ -1255,7 +1432,7 @@ export default function EventDetailModal({
                                 unoptimized
                                 className="object-cover group-hover:scale-105 transition-transform"
                               />
-                            </a>
+                            </div>
                           ))}
                         </div>
                       </div>
@@ -1265,41 +1442,58 @@ export default function EventDetailModal({
 
                 {/* Sticky Bottom Action Bar */}
                 <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-between gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("verifiedList")}
-                    className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <span>📋 Verified Delegates</span>
-                    {registeredParticipants.length > 0 && (
-                      <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-[10px]">
-                        {registeredParticipants.length}
+                  {isConcluded ? (
+                    <>
+                      <span className="text-zinc-400 text-xs font-mono hidden sm:inline">
+                        Archived Symposium Dossier • TESA SGGSIE&amp;T
                       </span>
-                    )}
-                  </button>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleModalClose}
-                      className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 text-xs font-mono transition-colors cursor-pointer"
-                    >
-                      Close
-                    </button>
-                    {(isOpen || isUpcoming) && (
                       <button
                         type="button"
-                        onClick={() => setViewMode("register")}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer"
+                        onClick={handleModalClose}
+                        className="w-full sm:w-auto px-6 py-2 rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/15 text-white font-mono font-semibold text-xs transition-colors cursor-pointer text-center"
                       >
-                        <span>{isOpen ? "Register Now" : "Pre-Register"}</span>
-                        <span>→</span>
+                        Close Window
                       </button>
-                    )}
-                  </div>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("verifiedList")}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <span>📋 Verified Delegates</span>
+                        {registeredParticipants.length > 0 && (
+                          <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-[10px]">
+                            {registeredParticipants.length}
+                          </span>
+                        )}
+                      </button>
+
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={handleModalClose}
+                          className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 text-xs font-mono transition-colors cursor-pointer"
+                        >
+                          Close
+                        </button>
+                        {(isOpen || isUpcoming) && (
+                          <button
+                            type="button"
+                            onClick={() => setViewMode("register")}
+                            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer"
+                          >
+                            <span>{isOpen ? "Register Now" : "Pre-Register"}</span>
+                            <span>→</span>
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
-            ) : viewMode === "verifiedList" ? (
+            ) : effectiveViewMode === "verifiedList" ? (
               /* ===============================================================
                  VERIFIED LIST VIEW: SEARCH AND VERIFIED ATTENDEES
                  =============================================================== */
@@ -1330,7 +1524,7 @@ export default function EventDetailModal({
                     {isFetchingParticipants ? (
                       <div className="p-8 text-center text-zinc-400">
                         <div className="w-5 h-5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mx-auto mb-2" />
-                        <span>Querying Firestore live verification records...</span>
+                        <span>Querying live verification records...</span>
                       </div>
                     ) : filteredParticipants.length > 0 ? (
                       filteredParticipants.map((p, idx) => {
@@ -1370,18 +1564,21 @@ export default function EventDetailModal({
 
                 {/* Sticky Bottom Action Bar */}
                 <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-between gap-3">
-                  <span className="text-zinc-400 text-xs">
-                    Total Registered: <span className="text-white font-bold">{registeredParticipants.length}</span>
+                  <span className="text-zinc-400 text-xs font-mono">
+                    {isConcluded ? "Past Attendees: " : "Total Registered: "}
+                    <span className="text-white font-bold">{registeredParticipants.length}</span>
                   </span>
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={handleModalClose}
-                      className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 text-xs font-mono transition-colors cursor-pointer"
+                      className={`${
+                        isConcluded ? "w-full sm:w-auto" : ""
+                      } px-5 py-2 rounded-xl bg-white/[0.08] hover:bg-white/15 border border-white/15 text-white text-xs font-mono transition-colors cursor-pointer text-center font-semibold`}
                     >
-                      Close
+                      Close Window
                     </button>
-                    {(isOpen || isUpcoming) && (
+                    {!isConcluded && (isOpen || isUpcoming) && (
                       <button
                         type="button"
                         onClick={() => setViewMode("register")}
@@ -1440,6 +1637,36 @@ export default function EventDetailModal({
                     className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg"
                   >
                     Done &amp; Close
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Photo Lightbox Modal */}
+            {selectedLightboxImg && (
+              <div
+                className="fixed inset-0 z-[120] bg-black/95 backdrop-blur-md flex items-center justify-center p-4"
+                onClick={() => setSelectedLightboxImg(null)}
+              >
+                <div
+                  className="relative max-w-4xl max-h-[85vh] w-full flex flex-col items-center justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="relative w-full h-[65vh] sm:h-[75vh]">
+                    <Image
+                      src={selectedLightboxImg}
+                      alt="Enlarged Archive Photograph"
+                      fill
+                      unoptimized
+                      className="object-contain rounded-xl"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedLightboxImg(null)}
+                    className="mt-3 px-5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-mono text-xs border border-white/20 cursor-pointer"
+                  >
+                    ✕ Close Preview
                   </button>
                 </div>
               </div>

@@ -9,7 +9,7 @@ import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import AuroraBackground from "@/components/AuroraBackground";
 import TeamDetailModal from "@/components/TeamDetailModal";
-import EventDetailModal, { CustomFormField } from "@/components/EventDetailModal";
+import EventDetailModal, { CustomFormField, isConcludedEvent } from "@/components/EventDetailModal";
 import TextilePortalHero from "@/components/TextilePortalHero";
 import ContactModal, {
   GmailLogoIcon,
@@ -61,6 +61,8 @@ interface EventItem {
   gallery?: string[];
   customFormFields?: CustomFormField[];
   createdAt?: any;
+  isPastSection?: boolean;
+  _isPast?: boolean;
 }
 
 interface TeamMember {
@@ -588,8 +590,13 @@ export default function Home() {
       upcomingEvents[0] ||
       eventsList[0];
     if (matched) {
-      setSelectedEvent(matched);
-      setModalInitialMode("register");
+      if (isConcludedEvent(matched)) {
+        setSelectedEvent({ ...matched, isPastSection: true, _isPast: true });
+        setModalInitialMode("detail");
+      } else {
+        setSelectedEvent(matched);
+        setModalInitialMode("register");
+      }
     }
   };
 
@@ -609,10 +616,7 @@ export default function Home() {
   };
 
   // Distinct Upcoming and Concluded / Past Events categorization (Case-Insensitive normalization)
-  const isPast = (ev: EventItem) => {
-    const status = (ev.eventStatus || ev.status || "Upcoming").toLowerCase();
-    return status === "concluded" || status === "past" || status === "closed";
-  };
+  const isPast = (ev: EventItem) => isConcludedEvent(ev);
 
   const upcomingEvents = eventsList.filter((ev) => !isPast(ev));
   const pastEvents = eventsList.filter((ev) => isPast(ev));
@@ -1152,7 +1156,7 @@ export default function Home() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedEvent(event);
+                                  setSelectedEvent({ ...event, isPastSection: true, _isPast: true });
                                   setModalInitialMode("verifiedList");
                                 }}
                                 className="min-h-[42px] px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-[11px] w-full sm:w-auto"
@@ -1163,7 +1167,7 @@ export default function Home() {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setSelectedEvent(event);
+                                  setSelectedEvent({ ...event, isPastSection: true, _isPast: true });
                                   setModalInitialMode("detail");
                                 }}
                                 className="min-h-[42px] px-4 sm:px-5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-purple-400 text-purple-300 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer text-xs w-full sm:w-auto"
