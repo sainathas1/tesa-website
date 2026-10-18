@@ -1403,7 +1403,13 @@ export default function AdminDashboardPage() {
       setIsUploadingBanner(true);
       showToast("Uploading Media... Sending event banner to Cloudinary...", "info");
       const url = await uploadToCloudinary(file);
-      setEventForm((prev) => ({ ...prev, mediaUrl: url }));
+      setEventForm((prev) => ({
+        ...prev,
+        mediaUrl: url,
+        bannerUrl: url,
+        imageUrl: url,
+        image: url,
+      }));
       showToast("Event banner uploaded to Cloudinary successfully!");
     } catch (err: any) {
       console.error("Cloudinary event banner upload error:", err);
@@ -1562,6 +1568,12 @@ export default function AdminDashboardPage() {
       }
 
       const finalCover = eventForm.bannerUrl || eventForm.imageUrl || eventForm.image || eventForm.mediaUrl || "";
+      if (!finalCover) {
+        showToast("Event Banner is required (*). Please upload a banner image or provide an image URL.", "error");
+        setIsSubmittingEvent(false);
+        return;
+      }
+
       const isConcluded = (eventForm.eventStatus || "").toLowerCase() === "concluded" || (eventForm.status || "").toLowerCase() === "closed";
       const resolvedEventStatus: "Upcoming" | "Concluded" = isConcluded ? "Concluded" : "Upcoming";
       const mappedStatus: "open" | "upcoming" | "closed" = isConcluded
@@ -1569,6 +1581,13 @@ export default function AdminDashboardPage() {
         : eventForm.status === "closed"
         ? "upcoming"
         : eventForm.status || "upcoming";
+
+      const resolvedQr = eventForm.paymentQrUrl || eventForm.qrCodeUrl || registrationQrUrl || "";
+      if (resolvedEventStatus === "Upcoming" && !resolvedQr) {
+        showToast("Payment QR Code is required for Upcoming events (*). Please upload or provide a QR code.", "error");
+        setIsSubmittingEvent(false);
+        return;
+      }
 
       const eventPayload: EventItem = {
         ...eventForm,
@@ -1578,6 +1597,8 @@ export default function AdminDashboardPage() {
         bannerUrl: finalCover,
         imageUrl: finalCover,
         image: finalCover,
+        paymentQrUrl: resolvedQr,
+        qrCodeUrl: resolvedQr,
         galleryUrls: finalGalleryUrls,
         gallery: finalGalleryUrls,
         customFormFields: eventForm.customFormFields || [],
@@ -3434,555 +3455,544 @@ export default function AdminDashboardPage() {
       )}
 
       {/* =======================================================================
-          MODAL: ADD / EDIT EVENT (With Google Forms Builder & Gallery)
+          MODAL: ADD / EDIT EVENT (Compact 1-Screen Viewport Fit Layout)
           ======================================================================= */}
       {isEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl overflow-y-auto overscroll-contain">
-          <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-5 sm:p-7 text-xs my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
-              <div>
-                <span className="text-[10px] text-purple-400 uppercase tracking-widest block font-mono">
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-hidden">
+          <div className="relative w-full max-w-5xl max-h-[86vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden">
+            {/* Sticky Top Bar (shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016]) */}
+            <div className="shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016]">
+              <div className="flex items-center gap-2.5">
+                <span className="text-[10px] text-purple-400 uppercase tracking-widest font-mono font-bold px-2 py-0.5 rounded bg-purple-500/10 border border-purple-500/20">
                   EVENT OPERATIONS
                 </span>
-                <h3 className="text-xl font-bold text-white">
-                  {editingEventId ? "Edit Event Details & Banner" : "Publish New Event"}
+                <h3 className="text-base sm:text-lg font-bold text-white">
+                  {editingEventId ? "Edit Event Details & Media" : "Publish New Event"}
                 </h3>
+                <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 uppercase">
+                  {eventForm.eventStatus || "Upcoming"}
+                </span>
               </div>
               <button
+                type="button"
                 onClick={() => setIsEventModalOpen(false)}
-                className="w-9 h-9 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveEvent} className="space-y-4">
-              {/* Event Banner Section */}
-              <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-3">
-                <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
-                  Event Banner Image (Cloudinary Unsigned Upload / URL)
-                </span>
-
-                <div className="flex flex-col sm:flex-row gap-4 items-center">
-                  <div className="w-40 h-24 rounded-2xl border border-white/10 bg-black overflow-hidden shrink-0 relative">
-                    {eventForm.mediaUrl ? (
-                      <Image
-                        src={eventForm.mediaUrl}
-                        alt="Banner"
-                        fill
-                        unoptimized
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-500 text-center p-2">
-                        No Banner
+            <form onSubmit={handleSaveEvent} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              {/* Compact 2-Column Scrollable Body (flex-1 overflow-y-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5) */}
+              <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 custom-scrollbar text-xs">
+                {/* Left Column (lg:col-span-5 space-y-4) */}
+                <div className="lg:col-span-5 space-y-4">
+                  {/* Compact Upload Boxes for Event Banner (h-24) & Payment QR (h-24 w-24) */}
+                  <div className="p-3.5 rounded-xl border border-white/[0.08] bg-white/[0.02] space-y-3">
+                    {/* Event Banner (h-24) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-purple-300 uppercase tracking-wide">
+                          Event Banner <span className="text-purple-400">*</span>
+                        </label>
+                        <span className="text-[10px] text-zinc-400 font-mono">Cloudinary Upload</span>
                       </div>
-                    )}
-                    {isUploadingBanner && (
-                      <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-purple-300 text-[10px] animate-pulse">
-                        <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mb-1" />
-                        <span>Uploading Media...</span>
-                      </div>
-                    )}
-                  </div>
 
-                  <div className="flex-1 w-full space-y-2">
-                    <input
-                      ref={eventFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      disabled={isUploadingBanner}
-                      onChange={handleEventBannerFileChange}
-                      className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer disabled:opacity-50"
-                    />
-                    <input
-                      type="url"
-                      placeholder="Or paste banner image URL..."
-                      value={eventForm.mediaUrl || ""}
-                      onChange={(e) => setEventForm({ ...eventForm, mediaUrl: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Event Payment QR Code Section */}
-              <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
-                    Event Payment QR Code (For UPI / GPay / PhonePe Registration Fee)
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-400">
-                    Displayed during student registration
-                  </span>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 items-center">
-                  <div className="w-24 h-24 rounded-2xl border border-purple-500/30 bg-white p-1.5 overflow-hidden shrink-0 relative flex items-center justify-center shadow-lg">
-                    {eventForm.paymentQrUrl || eventForm.qrCodeUrl ? (
-                      <Image
-                        src={eventForm.paymentQrUrl || eventForm.qrCodeUrl || ""}
-                        alt="Event Payment QR Code"
-                        fill
-                        unoptimized
-                        className="object-contain p-1"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-[9px] text-zinc-500 text-center font-mono">
-                        <span className="text-xl mb-0.5">📱</span>
-                        <span>No QR Code</span>
-                      </div>
-                    )}
-                    {isUploadingQr && (
-                      <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-purple-300 text-[10px] animate-pulse">
-                        <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mb-1" />
-                        <span>Uploading...</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex-1 w-full space-y-2">
-                    <input
-                      ref={eventQrFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      disabled={isUploadingQr}
-                      onChange={handleEventQrFileChange}
-                      className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer disabled:opacity-50"
-                    />
-                    <div className="flex gap-2">
-                      <input
-                        type="url"
-                        placeholder="Or paste QR Code image URL..."
-                        value={eventForm.paymentQrUrl || eventForm.qrCodeUrl || ""}
-                        onChange={(e) => setEventForm({ ...eventForm, paymentQrUrl: e.target.value, qrCodeUrl: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                      />
-                      {(eventForm.paymentQrUrl || eventForm.qrCodeUrl) && (
-                        <button
-                          type="button"
-                          onClick={() => setEventForm({ ...eventForm, paymentQrUrl: "", qrCodeUrl: "" })}
-                          className="px-3 py-2 rounded-xl bg-red-950/50 hover:bg-red-900/60 border border-red-500/30 text-red-300 text-xs shrink-0 cursor-pointer"
-                          title="Clear QR Code"
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Event UPI ID, Fee & Payment Instructions Customization */}
-                <div className="pt-3 border-t border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="text-xs font-medium text-zinc-300 block mb-1">
-                      Event UPI ID (e.g. tesa@sggs)
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. tesa@sggs or your-event@upi"
-                      value={eventForm.upiId || ""}
-                      onChange={(e) => setEventForm({ ...eventForm, upiId: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                    />
-                    <span className="text-[10px] text-zinc-400 block mt-1">
-                      Auto-encodes into dynamic QR if no custom QR image is uploaded
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-zinc-300 block mb-1">
-                      Registration Fee Text
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. ₹150 / ₹250 or ₹100 per team or Free"
-                      value={eventForm.registrationFee || ""}
-                      onChange={(e) => setEventForm({ ...eventForm, registrationFee: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                    />
-                    <span className="text-[10px] text-zinc-400 block mt-1">
-                      Displayed on the registration form to students
-                    </span>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-zinc-300 block mb-1">
-                      Accepted Payment Apps
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. GPay • PhonePe • Paytm • BHIM"
-                      value={eventForm.acceptedPaymentApps || ""}
-                      onChange={(e) => setEventForm({ ...eventForm, acceptedPaymentApps: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-medium text-zinc-300 block mb-1">
-                      Payment Instructions Note
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder="Instructions displayed below the QR code..."
-                      value={eventForm.paymentInstructions || ""}
-                      onChange={(e) => setEventForm({ ...eventForm, paymentInstructions: e.target.value })}
-                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-zinc-400 block mb-1 font-medium">Event Title *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. TEX-CONCLAVE 2026: National Smart Fibers Symposium"
-                  value={eventForm.title}
-                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-zinc-400 block mb-1 font-medium">Category</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. National Conclave / Hackathon"
-                    value={eventForm.category}
-                    onChange={(e) => setEventForm({ ...eventForm, category: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-zinc-400 block mb-1 font-medium">Event Status (eventStatus) *</label>
-                  <select
-                    value={eventForm.eventStatus || (eventForm.status === "closed" ? "Concluded" : "Upcoming")}
-                    onChange={(e) => {
-                      const val = e.target.value as "Upcoming" | "Concluded";
-                      setEventForm({
-                        ...eventForm,
-                        eventStatus: val,
-                        status: val === "Concluded" ? "closed" : "upcoming",
-                      });
-                    }}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 cursor-pointer font-mono"
-                  >
-                    <option value="Upcoming">Upcoming</option>
-                    <option value="Concluded">Concluded</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-zinc-400 block mb-1 font-medium">Date &amp; Schedule *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. April 28–29, 2026"
-                    value={eventForm.date}
-                    onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-zinc-400 block mb-1 font-medium">Venue / Complex</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. SGGSIE&amp;T Main Auditorium"
-                    value={eventForm.venue}
-                    onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-zinc-400 block mb-1 font-medium">Registration Capacity</label>
-                  <input
-                    type="number"
-                    value={eventForm.capacity || 100}
-                    onChange={(e) => setEventForm({ ...eventForm, capacity: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-zinc-400 block mb-1 font-medium">Registration Deadline</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. April 15, 2026"
-                    value={eventForm.deadline || ""}
-                    onChange={(e) => setEventForm({ ...eventForm, deadline: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                  />
-                </div>
-              </div>
-
-              {/* Event Gallery Photos Section (Visible for Concluded events) */}
-              {(eventForm.eventStatus === "Concluded" || eventForm.status === "closed") && (
-                <div className="p-4 rounded-2xl border border-purple-500/30 bg-purple-950/10 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
-                        Event Gallery Photos
-                      </span>
-                      <p className="text-[10px] text-zinc-400 mt-0.5">
-                        Choose multiple photos. Upon submitting this Concluded event, they will upload to Cloudinary (unsigned preset) and save to Firestore as galleryUrls.
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/30">
-                      {(eventForm.galleryUrls?.length || 0) + galleryFiles.length} Photos Attached
-                    </span>
-                  </div>
-
-                  <input
-                    ref={galleryFileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleGalleryFilesChange}
-                    className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer"
-                  />
-
-                  {/* Previews of newly selected files & existing gallery URLs */}
-                  {((eventForm.galleryUrls && eventForm.galleryUrls.length > 0) || galleryFiles.length > 0) && (
-                    <div className="pt-2 border-t border-white/[0.08] space-y-2">
-                      <span className="text-[10px] text-zinc-400 block font-medium">
-                        Gallery Photographs Preview:
-                      </span>
-                      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 max-h-40 overflow-y-auto p-1">
-                        {eventForm.galleryUrls?.map((url, uIdx) => (
-                          <div key={`existing-${uIdx}`} className="relative aspect-square rounded-xl border border-white/10 overflow-hidden group bg-black">
-                            <Image src={url} alt={`Gallery ${uIdx}`} fill unoptimized className="object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveExistingGalleryUrl(url)}
-                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-950/90 text-red-300 border border-red-500/40 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                              title="Delete from gallery"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-
-                        {galleryFiles.map((file, fIdx) => (
-                          <div key={`file-${fIdx}`} className="relative aspect-square rounded-xl border border-amber-500/40 overflow-hidden group bg-zinc-900 flex flex-col items-center justify-center p-1 text-center">
-                            <span className="text-base">📷</span>
-                            <span className="text-[8px] text-amber-300 truncate w-full px-1">{file.name}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveGalleryFile(fIdx)}
-                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-950/90 text-red-300 border border-red-500/40 text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                              title="Remove file"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {isUploadingGallery && (
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-300 text-xs animate-pulse">
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin shrink-0" />
-                      <span>Uploading Media... Uploading event gallery photos to Cloudinary...</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div>
-                <label className="text-zinc-400 block mb-1 font-medium">Key Highlights Pill</label>
-                <input
-                  type="text"
-                  placeholder="e.g. ₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE"
-                  value={eventForm.highlights || ""}
-                  onChange={(e) => setEventForm({ ...eventForm, highlights: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
-                />
-              </div>
-
-              <div>
-                <label className="text-zinc-400 block mb-1 font-medium">Event Summary</label>
-                <textarea
-                  rows={3}
-                  placeholder="Detailed synopsis of symposium tracks, competitions..."
-                  value={eventForm.summary}
-                  onChange={(e) => setEventForm({ ...eventForm, summary: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 font-sans text-xs"
-                />
-              </div>
-
-              {/* =============================================================
-                  GOOGLE FORMS-STYLE CUSTOM REGISTRATION FORM BUILDER
-                  ============================================================= */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/30 uppercase">
-                        DYNAMIC QUESTIONS BUILDER
-                      </span>
-                      <span className="text-xs font-bold text-white uppercase tracking-wide">
-                        Google Forms-Style Custom Fields
-                      </span>
-                    </div>
-                    <p className="text-[10px] text-zinc-400 mt-1">
-                      Configure custom questions for students registering for this event (Team Name, Abstract, PPT/PDF Upload, etc.).
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleAddCustomQuestion}
-                    className="glass-button-secondary text-purple-300 hover:text-white border-purple-500/30 hover:border-purple-500/60 rounded-xl px-3.5 py-2 text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
-                  >
-                    <span>+</span>
-                    <span>Add Custom Question</span>
-                  </button>
-                </div>
-
-                {/* Question List */}
-                {(!eventForm.customFormFields || eventForm.customFormFields.length === 0) ? (
-                  <div className="py-6 px-4 rounded-xl border border-dashed border-white/10 text-center text-zinc-500 text-xs">
-                    <p className="mb-1 text-zinc-400">No custom questions added for this event yet.</p>
-                    <p className="text-[10px] text-zinc-500">
-                      Standard collegiate fields (Full Name, PRN, Year, Contact Number, Project Media &amp; Payment Screenshot) are always included.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3.5">
-                    {eventForm.customFormFields.map((field, index) => (
-                      <div
-                        key={field.id}
-                        className="p-4 rounded-2xl border border-white/[0.08] bg-black/40 space-y-3 relative group"
-                      >
-                        <div className="flex items-center justify-between gap-2 pb-2 border-b border-white/[0.06]">
-                          <span className="text-[10px] font-mono font-bold text-purple-400">
-                            QUESTION #{index + 1}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveCustomQuestion(field.id)}
-                            className="text-[10px] font-mono text-red-400 hover:text-red-300 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 transition-colors cursor-pointer"
-                          >
-                            ✕ Remove Question
-                          </button>
+                      <div className="flex gap-3 items-center">
+                        <div className="w-36 h-24 rounded-xl border border-white/10 bg-black overflow-hidden shrink-0 relative flex items-center justify-center shadow-md">
+                          {eventForm.mediaUrl || eventForm.bannerUrl ? (
+                            <Image
+                              src={eventForm.bannerUrl || eventForm.mediaUrl || ""}
+                              alt="Banner"
+                              fill
+                              unoptimized
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="text-[10px] text-zinc-500 text-center p-2">
+                              No Banner
+                            </div>
+                          )}
+                          {isUploadingBanner && (
+                            <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-purple-300 text-[10px] animate-pulse">
+                              <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mb-1" />
+                              <span>Uploading Media...</span>
+                            </div>
+                          )}
                         </div>
 
-                        {/* Title and Field Type Row */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                          <div className="sm:col-span-2">
-                            <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-semibold">
-                              Question Title <span className="text-purple-400">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="e.g. Team Name, Abstract Title, PPT Upload..."
-                              value={field.questionTitle}
-                              onChange={(e) =>
-                                handleUpdateCustomQuestion(field.id, { questionTitle: e.target.value })
-                              }
-                              className="w-full px-3 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-xs"
-                            />
-                          </div>
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <input
+                            ref={eventFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingBanner}
+                            onChange={handleEventBannerFileChange}
+                            className="w-full text-[11px] text-zinc-300 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                          />
+                          <input
+                            type="url"
+                            placeholder="Or paste banner image URL..."
+                            value={eventForm.bannerUrl || eventForm.mediaUrl || ""}
+                            onChange={(e) =>
+                              setEventForm({
+                                ...eventForm,
+                                mediaUrl: e.target.value,
+                                bannerUrl: e.target.value,
+                              })
+                            }
+                            className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-xs"
+                          />
+                        </div>
+                      </div>
+                    </div>
 
-                          <div>
-                            <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-semibold">
-                              Field Type <span className="text-purple-400">*</span>
-                            </label>
-                            <select
-                              value={field.fieldType}
+                    {/* Payment QR Code (h-24 w-24) */}
+                    <div className="pt-2 border-t border-white/[0.08] space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-purple-300 uppercase tracking-wide">
+                          Payment QR Code <span className="text-purple-400">*</span>
+                        </label>
+                        <span className="text-[10px] text-zinc-400 font-mono">For Student UPI Fee</span>
+                      </div>
+
+                      <div className="flex gap-3 items-center">
+                        <div className="w-24 h-24 rounded-xl border border-purple-500/30 bg-white p-1 overflow-hidden shrink-0 relative flex items-center justify-center shadow-md">
+                          {eventForm.paymentQrUrl || eventForm.qrCodeUrl ? (
+                            <Image
+                              src={eventForm.paymentQrUrl || eventForm.qrCodeUrl || ""}
+                              alt="Payment QR"
+                              fill
+                              unoptimized
+                              className="object-contain p-1"
+                            />
+                          ) : (
+                            <div className="text-[9px] text-zinc-500 text-center font-mono">
+                              <span className="text-base block">📱</span>
+                              <span>No QR</span>
+                            </div>
+                          )}
+                          {isUploadingQr && (
+                            <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-purple-300 text-[10px] animate-pulse">
+                              <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mb-1" />
+                              <span>Uploading...</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0 space-y-1.5">
+                          <input
+                            ref={eventQrFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            disabled={isUploadingQr}
+                            onChange={handleEventQrFileChange}
+                            className="w-full text-[11px] text-zinc-300 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                          />
+                          <div className="flex gap-1.5">
+                            <input
+                              type="url"
+                              placeholder="Or paste QR image URL..."
+                              value={eventForm.paymentQrUrl || eventForm.qrCodeUrl || ""}
                               onChange={(e) =>
-                                handleUpdateCustomQuestion(field.id, {
-                                  fieldType: e.target.value as CustomFieldType,
+                                setEventForm({
+                                  ...eventForm,
+                                  paymentQrUrl: e.target.value,
+                                  qrCodeUrl: e.target.value,
                                 })
                               }
-                              className="w-full px-2.5 py-2 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 text-xs cursor-pointer font-mono"
-                            >
-                              <option value="Short Text">Short Text</option>
-                              <option value="Paragraph">Paragraph</option>
-                              <option value="Dropdown Options">Dropdown Options</option>
-                              <option value="File Upload (PPT/PDF/Image)">File Upload (PPT/PDF/Image)</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Dropdown Options Input if selected */}
-                        {field.fieldType === "Dropdown Options" && (
-                          <div className="pt-1">
-                            <label className="text-[10px] text-amber-300 block mb-1 font-semibold">
-                              Dropdown Options (Comma-separated) <span className="text-amber-400">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              required
-                              placeholder="Option 1, Option 2, Option 3..."
-                              value={field.options || ""}
-                              onChange={(e) =>
-                                handleUpdateCustomQuestion(field.id, { options: e.target.value })
-                              }
-                              className="w-full px-3 py-2 rounded-xl bg-amber-950/20 border border-amber-500/30 text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400 text-xs"
+                              className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-xs"
                             />
-                            <span className="text-[9px] text-zinc-400 mt-0.5 block">
-                              Enter values separated by commas. Students will select one from this dropdown.
-                            </span>
-                          </div>
-                        )}
-
-                        {/* Required Checkbox Toggle */}
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/[0.06]">
-                          {field.fieldType === "File Upload (PPT/PDF/Image)" ? (
-                            <span className="text-[10px] text-amber-300 font-mono">
-                              ⚡ Media/Presentation uploads (PPT/PDF) are always optional for students
-                            </span>
-                          ) : (
-                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                              <input
-                                type="checkbox"
-                                checked={field.required}
-                                onChange={(e) =>
-                                  handleUpdateCustomQuestion(field.id, { required: e.target.checked })
+                            {(eventForm.paymentQrUrl || eventForm.qrCodeUrl) && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setEventForm({ ...eventForm, paymentQrUrl: "", qrCodeUrl: "" })
                                 }
-                                className="w-3.5 h-3.5 rounded border-white/20 bg-black text-purple-500 focus:ring-0 focus:outline-none cursor-pointer"
-                              />
-                              <span className="text-xs text-zinc-300">
-                                Required Question
-                              </span>
-                            </label>
-                          )}
-
-                          <span className="text-[10px] font-mono text-purple-300/80">
-                            {field.fieldType === "File Upload (PPT/PDF/Image)"
-                              ? "Optional • Cloudinary /auto/upload"
-                              : field.fieldType}
-                          </span>
+                                className="px-2 py-1 rounded-lg bg-red-950/50 hover:bg-red-900/60 border border-red-500/30 text-red-300 text-[10px] shrink-0 cursor-pointer"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    ))}
+                    </div>
                   </div>
-                )}
+
+                  {/* UPI ID & Fee Customization */}
+                  <div className="p-3.5 rounded-xl border border-white/[0.08] bg-white/[0.02] space-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-[11px] font-medium text-zinc-300 block mb-1">
+                          Event UPI ID
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. tesa@sggs"
+                          value={eventForm.upiId || ""}
+                          onChange={(e) => setEventForm({ ...eventForm, upiId: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-white text-xs font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-medium text-zinc-300 block mb-1">
+                          Registration Fee Text
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. ₹150 / ₹250 or Free"
+                          value={eventForm.registrationFee || ""}
+                          onChange={(e) => setEventForm({ ...eventForm, registrationFee: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-white text-xs font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-[11px] font-medium text-zinc-300 block mb-1">
+                          Accepted Payment Apps
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. GPay • PhonePe • Paytm • BHIM"
+                          value={eventForm.acceptedPaymentApps || ""}
+                          onChange={(e) => setEventForm({ ...eventForm, acceptedPaymentApps: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-medium text-zinc-300 block mb-1">
+                          Event Status *
+                        </label>
+                        <select
+                          value={eventForm.eventStatus || (eventForm.status === "closed" ? "Concluded" : "Upcoming")}
+                          onChange={(e) => {
+                            const val = e.target.value as "Upcoming" | "Concluded";
+                            setEventForm({
+                              ...eventForm,
+                              eventStatus: val,
+                              status: val === "Concluded" ? "closed" : "upcoming",
+                            });
+                          }}
+                          className="w-full px-3 py-1.5 rounded-lg bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 cursor-pointer font-mono text-xs"
+                        >
+                          <option value="Upcoming">Upcoming</option>
+                          <option value="Concluded">Concluded</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-medium text-zinc-300 block mb-1">
+                        Payment Instructions Note
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder="Instructions displayed below the QR code to students..."
+                        value={eventForm.paymentInstructions || ""}
+                        onChange={(e) => setEventForm({ ...eventForm, paymentInstructions: e.target.value })}
+                        className="w-full px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500 font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Event Gallery Photos Section (Visible if Concluded) */}
+                  {(eventForm.eventStatus === "Concluded" || eventForm.status === "closed") && (
+                    <div className="p-3.5 rounded-xl border border-purple-500/30 bg-purple-950/10 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
+                          Event Gallery Photos
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/30">
+                          {(eventForm.galleryUrls?.length || 0) + galleryFiles.length} Photos
+                        </span>
+                      </div>
+
+                      <input
+                        ref={galleryFileInputRef}
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={handleGalleryFilesChange}
+                        className="w-full text-xs text-zinc-300 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[10px] file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer"
+                      />
+
+                      {((eventForm.galleryUrls && eventForm.galleryUrls.length > 0) || galleryFiles.length > 0) && (
+                        <div className="grid grid-cols-4 gap-1.5 max-h-28 overflow-y-auto p-1">
+                          {eventForm.galleryUrls?.map((url, uIdx) => (
+                            <div key={`existing-${uIdx}`} className="relative aspect-square rounded-lg border border-white/10 overflow-hidden group bg-black">
+                              <Image src={url} alt={`Gallery ${uIdx}`} fill unoptimized className="object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveExistingGalleryUrl(url)}
+                                className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-950/90 text-red-300 border border-red-500/40 text-[9px] flex items-center justify-center cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                          {galleryFiles.map((file, fIdx) => (
+                            <div key={`file-${fIdx}`} className="relative aspect-square rounded-lg border border-amber-500/40 overflow-hidden group bg-zinc-900 flex flex-col items-center justify-center p-1 text-center">
+                              <span className="text-xs">📷</span>
+                              <span className="text-[8px] text-amber-300 truncate w-full">{file.name}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveGalleryFile(fIdx)}
+                                className="absolute top-1 right-1 w-4 h-4 rounded-full bg-red-950/90 text-red-300 border border-red-500/40 text-[9px] flex items-center justify-center cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column (lg:col-span-7 space-y-3): Compact Form Fields & Dynamic Questions */}
+                <div className="lg:col-span-7 space-y-3">
+                  {/* Title */}
+                  <div>
+                    <label className="text-zinc-400 block mb-1 font-medium">Event Title *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. TEX-CONCLAVE 2026: National Smart Fibers Symposium"
+                      value={eventForm.title}
+                      onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                      className="w-full py-2 px-3 text-sm rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 font-sans"
+                    />
+                  </div>
+
+                  {/* Category, Date, Venue, Capacity, Deadline */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-zinc-400 block mb-1 font-medium">Category</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. National Conclave / Hackathon"
+                        value={eventForm.category}
+                        onChange={(e) => setEventForm({ ...eventForm, category: e.target.value })}
+                        className="w-full py-2 px-3 text-sm rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-zinc-400 block mb-1 font-medium">Date &amp; Schedule *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. April 28–29, 2026"
+                        value={eventForm.date}
+                        onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
+                        className="w-full py-2 px-3 text-sm rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-zinc-400 block mb-1 font-medium">Venue / Complex</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. SGGSIE&amp;T Main Auditorium"
+                        value={eventForm.venue}
+                        onChange={(e) => setEventForm({ ...eventForm, venue: e.target.value })}
+                        className="w-full py-2 px-3 text-sm rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-zinc-400 block mb-1 font-medium">Registration Capacity</label>
+                      <input
+                        type="number"
+                        value={eventForm.capacity || 100}
+                        onChange={(e) => setEventForm({ ...eventForm, capacity: Number(e.target.value) })}
+                        className="w-full py-2 px-3 text-sm rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-zinc-400 block mb-1 font-medium">Registration Deadline</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. April 15, 2026"
+                        value={eventForm.deadline || ""}
+                        onChange={(e) => setEventForm({ ...eventForm, deadline: e.target.value })}
+                        className="w-full py-2 px-3 text-sm rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-zinc-400 block mb-1 font-medium">Key Highlights Pill</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ₹1,50,000 Cash Pool • IEEE"
+                        value={eventForm.highlights || ""}
+                        onChange={(e) => setEventForm({ ...eventForm, highlights: e.target.value })}
+                        className="w-full py-2 px-3 text-sm rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Summary */}
+                  <div>
+                    <label className="text-zinc-400 block mb-1 font-medium">Event Summary</label>
+                    <textarea
+                      rows={2}
+                      placeholder="Detailed synopsis of symposium tracks, competitions..."
+                      value={eventForm.summary}
+                      onChange={(e) => setEventForm({ ...eventForm, summary: e.target.value })}
+                      className="w-full py-2 px-3 text-xs rounded-xl bg-white/[0.03] border border-white/10 text-white focus:outline-none focus:border-purple-500 font-sans"
+                    />
+                  </div>
+
+                  {/* Custom Registration Form Builder */}
+                  <div className="p-3.5 rounded-xl border border-white/[0.08] bg-white/[0.02] space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/[0.08]">
+                      <div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-950/80 text-purple-300 border border-purple-500/30 uppercase">
+                          CUSTOM REGISTRATION QUESTIONS
+                        </span>
+                        <p className="text-[10px] text-zinc-400 mt-0.5">
+                          Configure specialized fields (Team Name, Abstract, PPT/PDF Upload, etc.).
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleAddCustomQuestion}
+                        className="glass-button-secondary text-purple-300 hover:text-white border-purple-500/30 hover:border-purple-500/60 rounded-lg px-2.5 py-1.5 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                      >
+                        <span>+ Add Question</span>
+                      </button>
+                    </div>
+
+                    {/* Question List */}
+                    {(!eventForm.customFormFields || eventForm.customFormFields.length === 0) ? (
+                      <div className="py-3 px-3 rounded-lg border border-dashed border-white/10 text-center text-zinc-500 text-[11px]">
+                        No custom questions added. Standard fields (Name, PRN, Year, Phone, Payment Screenshot, Media) are automatically included.
+                      </div>
+                    ) : (
+                      <div className="space-y-2.5 max-h-44 overflow-y-auto p-1">
+                        {eventForm.customFormFields.map((field, index) => (
+                          <div
+                            key={field.id}
+                            className="p-3 rounded-xl border border-white/[0.08] bg-black/40 space-y-2"
+                          >
+                            <div className="flex items-center justify-between gap-2 pb-1 border-b border-white/[0.06]">
+                              <span className="text-[10px] font-mono font-bold text-purple-400">
+                                QUESTION #{index + 1}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCustomQuestion(field.id)}
+                                className="text-[10px] font-mono text-red-400 hover:text-red-300 px-2 py-0.5 rounded bg-red-500/10 border border-red-500/30 cursor-pointer"
+                              >
+                                ✕ Remove
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                              <div className="sm:col-span-2">
+                                <label className="text-[10px] text-zinc-400 block mb-0.5 uppercase font-semibold">
+                                  Title <span className="text-purple-400">*</span>
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="e.g. Team Name, Abstract Title..."
+                                  value={field.questionTitle}
+                                  onChange={(e) =>
+                                    handleUpdateCustomQuestion(field.id, { questionTitle: e.target.value })
+                                  }
+                                  className="w-full px-2.5 py-1.5 rounded-lg bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 text-xs"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] text-zinc-400 block mb-0.5 uppercase font-semibold">
+                                  Type <span className="text-purple-400">*</span>
+                                </label>
+                                <select
+                                  value={field.fieldType}
+                                  onChange={(e) =>
+                                    handleUpdateCustomQuestion(field.id, {
+                                      fieldType: e.target.value as CustomFieldType,
+                                    })
+                                  }
+                                  className="w-full px-2 py-1.5 rounded-lg bg-[#0b0c10] border border-white/10 text-white text-xs cursor-pointer font-mono"
+                                >
+                                  <option value="Short Text">Short Text</option>
+                                  <option value="Paragraph">Paragraph</option>
+                                  <option value="Dropdown Options">Dropdown Options</option>
+                                  <option value="File Upload (PPT/PDF/Image)">File Upload (PPT/PDF)</option>
+                                </select>
+                              </div>
+                            </div>
+
+                            {field.fieldType === "Dropdown Options" && (
+                              <div>
+                                <label className="text-[10px] text-amber-300 block mb-0.5">
+                                  Dropdown Options (Comma-separated)
+                                </label>
+                                <input
+                                  type="text"
+                                  required
+                                  placeholder="Option 1, Option 2, Option 3..."
+                                  value={field.options || ""}
+                                  onChange={(e) =>
+                                    handleUpdateCustomQuestion(field.id, { options: e.target.value })
+                                  }
+                                  className="w-full px-2.5 py-1.5 rounded-lg bg-amber-950/20 border border-amber-500/30 text-white text-xs"
+                                />
+                              </div>
+                            )}
+
+                            <div className="flex items-center justify-between pt-1 border-t border-white/[0.06]">
+                              {field.fieldType === "File Upload (PPT/PDF/Image)" ? (
+                                <span className="text-[10px] text-amber-300 font-mono">
+                                  ⚡ Presentation/Media uploads are always optional for students
+                                </span>
+                              ) : (
+                                <label className="inline-flex items-center gap-1.5 cursor-pointer select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={field.required}
+                                    onChange={(e) =>
+                                      handleUpdateCustomQuestion(field.id, { required: e.target.checked })
+                                    }
+                                    className="w-3.5 h-3.5 rounded border-white/20 bg-black text-purple-500 cursor-pointer"
+                                  />
+                                  <span className="text-xs text-zinc-300">Required Question</span>
+                                </label>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
+              {/* Sticky Bottom Action Bar (shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-end gap-3) */}
+              <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsEventModalOpen(false)}
-                  disabled={isSubmittingEvent || isUploadingBanner || isUploadingGallery}
-                  className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer disabled:opacity-40"
+                  disabled={isSubmittingEvent || isUploadingBanner || isUploadingGallery || isUploadingQr}
+                  className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 text-xs font-mono transition-colors cursor-pointer disabled:opacity-40"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={!isFirebaseConfigured || isSubmittingEvent || isUploadingBanner || isUploadingGallery}
-                  className={`glow-button-primary px-5 py-2.5 rounded-xl font-semibold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                  disabled={!isFirebaseConfigured || isSubmittingEvent || isUploadingBanner || isUploadingGallery || isUploadingQr}
+                  className={`glow-button-primary px-5 py-2.5 rounded-xl font-semibold uppercase tracking-wider text-xs transition-all flex items-center gap-2 ${
                     !isFirebaseConfigured
                       ? "bg-red-950/70 border border-red-500/40 text-red-300 cursor-not-allowed opacity-75"
                       : "bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white shadow-[0_0_20px_rgba(139,92,246,0.35)] cursor-pointer disabled:opacity-50"
@@ -3993,17 +4003,17 @@ export default function AdminDashboardPage() {
                       <span className="w-2 h-2 rounded-full bg-red-400" />
                       <span>Database Disconnected</span>
                     </>
-                  ) : (isUploadingGallery || isUploadingBanner || isSubmittingEvent) ? (
+                  ) : (isUploadingGallery || isUploadingBanner || isUploadingQr || isSubmittingEvent) ? (
                     <>
                       <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
                       <span>
-                        {isUploadingGallery || isUploadingBanner
+                        {isUploadingGallery || isUploadingBanner || isUploadingQr
                           ? "Uploading Media..."
                           : "Saving Event..."}
                       </span>
                     </>
                   ) : (
-                    <span>{editingEventId ? "Save Changes" : "Save Event"}</span>
+                    <span>{editingEventId ? "Save Event Changes" : "Publish Event"}</span>
                   )}
                 </button>
               </div>

@@ -90,10 +90,6 @@ export default function EventDetailModal({
   const [year, setYear] = useState("Second Year B.Tech");
   const [contactNumber, setContactNumber] = useState("");
 
-  // Dedicated Banner / Poster File (PNG, JPG, WEBP)
-  const [bannerFile, setBannerFile] = useState<File | null>(null);
-  const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   // Dedicated Project Media / Presentation File (PPT, PDF, Image)
   const [presentationFile, setPresentationFile] = useState<File | null>(null);
@@ -171,8 +167,6 @@ export default function EventDetailModal({
     setPrn("");
     setYear("Second Year B.Tech");
     setContactNumber("");
-    setBannerFile(null);
-    setBannerPreviewUrl(null);
     setPresentationFile(null);
     setPaymentFile(null);
     setPreviewUrl(null);
@@ -317,9 +311,6 @@ export default function EventDetailModal({
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
-    if (bannerPreviewUrl) {
-      URL.revokeObjectURL(bannerPreviewUrl);
-    }
     setViewMode("detail");
     onClose();
   };
@@ -328,37 +319,6 @@ export default function EventDetailModal({
   const isOpen = !isConcluded && event?.status === "open";
   const isUpcoming = !isConcluded && event?.status === "upcoming";
 
-  // Dedicated Event Poster / Banner File Change (accept=".png,.jpg,.jpeg,.webp")
-  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setErrorMessage("Please select a valid image file (PNG, JPG, JPEG, WEBP) for the banner/poster.");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setErrorMessage("Banner image exceeds 10MB limit. Please upload a smaller image.");
-      return;
-    }
-
-    setErrorMessage("");
-    setBannerFile(file);
-    const objUrl = URL.createObjectURL(file);
-    setBannerPreviewUrl(objUrl);
-  };
-
-  const handleRemoveBannerFile = () => {
-    setBannerFile(null);
-    if (bannerPreviewUrl) {
-      URL.revokeObjectURL(bannerPreviewUrl);
-      setBannerPreviewUrl(null);
-    }
-    if (bannerInputRef.current) {
-      bannerInputRef.current.value = "";
-    }
-  };
 
   // Dedicated Presentation File Change (accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,.webp")
   const handlePresentationFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -468,14 +428,7 @@ export default function EventDetailModal({
     setSubmittingStep("Uploading files to Cloudinary...");
 
     try {
-      // 1. Upload Dedicated Event Banner / Poster if selected
-      let bannerUrl = "";
-      if (bannerFile) {
-        setSubmittingStep("Uploading Banner / Poster to Cloudinary...");
-        bannerUrl = await uploadToCloudinary(bannerFile);
-      }
-
-      // 2. Upload Dedicated Project Media / Presentation if selected
+      // 1. Upload Dedicated Project Media / Presentation if selected
       let submissionFileUrl = "";
       if (presentationFile) {
         setSubmittingStep("Uploading Presentation (PPT, PDF, or Image) to Cloudinary...");
@@ -504,7 +457,6 @@ export default function EventDetailModal({
         prn: prn.trim().toUpperCase(),
         year,
         contactNumber: contactNumber.trim(),
-        bannerUrl: bannerUrl || "",
         submissionFileUrl: submissionFileUrl || "",
         paymentScreenshotUrl,
         customAnswers: finalCustomAnswers,
@@ -541,7 +493,6 @@ export default function EventDetailModal({
           eventId: event.id,
           registeredAt: new Date().toISOString().slice(0, 10),
           status: "pending",
-          bannerUrl: bannerUrl || "",
           paymentScreenshotUrl,
           submissionFileUrl,
           customAnswers: finalCustomAnswers,
@@ -558,10 +509,10 @@ export default function EventDetailModal({
           eventTitle: event.title,
           fullName: fullName.trim(),
           prn: prn.trim().toUpperCase(),
+          bannerUrl: "",
           year,
           status: "pending",
           registeredAt: new Date().toISOString().slice(0, 10),
-          bannerUrl: bannerUrl || "",
           submissionFileUrl,
           paymentScreenshotUrl,
           customAnswers: finalCustomAnswers,
@@ -596,7 +547,7 @@ export default function EventDetailModal({
   return (
     <AnimatePresence>
       {event && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden">
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-hidden">
           {/* Dark Glassmorphic Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -604,32 +555,32 @@ export default function EventDetailModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={!isSubmitting ? handleModalClose : undefined}
-            className="fixed inset-0 bg-black/85 backdrop-blur-md z-40"
+            className="fixed inset-0 z-40"
             aria-hidden="true"
           />
 
-          {/* Modal Container: Command Center Aesthetic with Strict Viewport Fit */}
+          {/* Modal Box */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, scale: 0.96, y: 12 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-modal-title"
-            className="relative z-50 w-full max-w-2xl rounded-3xl glass-modal-panel overflow-hidden max-h-[90vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-white/10 group"
+            className="relative z-50 w-full max-w-5xl max-h-[86vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden group"
           >
             {/* Ambient Aurora Glow in Corners */}
             <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-violet-600/20 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" />
             <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-gradient-to-tr from-indigo-600/15 via-purple-600/10 to-transparent blur-3xl rounded-full" />
 
             {/* =================================================================
-                PINNED STICKY HEADER & TABS BAR (NEVER SCROLLS OFF SCREEN)
+                STICKY TOP BAR (NEVER SCROLLS OFF SCREEN)
                 ================================================================= */}
-            <div className="relative z-30 shrink-0 px-4 sm:px-6 py-3.5 bg-[#09080c]/95 backdrop-blur-xl border-b border-white/[0.08] flex items-center justify-between gap-2 sm:gap-3">
-              {/* Left: TESA Emblem & Event Info */}
-              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016] gap-3">
+              {/* Left: Modal Title + Status Badge */}
+              <div className="flex items-center gap-2.5 min-w-0">
                 <div className="relative w-8 h-8 rounded-full border border-white/30 p-[1.5px] overflow-hidden bg-white shrink-0 shadow-[0_0_15px_rgba(124,58,237,0.35)]">
                   <Image
                     src="/tesa-logo.png"
@@ -640,23 +591,23 @@ export default function EventDetailModal({
                   />
                 </div>
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="flex items-center gap-2">
+                    <h3 id="event-modal-title" className="text-sm sm:text-base font-bold text-white truncate max-w-[130px] sm:max-w-[260px]">
+                      {viewMode === "register" ? "Event Registration" : event.title}
+                    </h3>
                     <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 uppercase tracking-wider shrink-0">
-                      {event.category}
-                    </span>
-                    <span className="text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[200px]">
-                      {event.title}
+                      {isOpen ? "● Open" : isUpcoming ? "▲ Upcoming" : "■ Concluded"}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Center / Navigation Tabs: Overview | Register | Verified */}
+              {/* Center: Mode Tabs */}
               <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/10 shrink-0">
                 <button
                   type="button"
                   onClick={() => setViewMode("detail")}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
                     viewMode === "detail"
                       ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.4)]"
                       : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
@@ -669,7 +620,7 @@ export default function EventDetailModal({
                 <button
                   type="button"
                   onClick={() => setViewMode("register")}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                     viewMode === "register"
                       ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.4)]"
                       : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
@@ -684,7 +635,7 @@ export default function EventDetailModal({
                 <button
                   type="button"
                   onClick={() => setViewMode("verifiedList")}
-                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                  className={`px-2.5 sm:px-3 py-1 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1 ${
                     viewMode === "verifiedList"
                       ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]"
                       : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
@@ -699,283 +650,147 @@ export default function EventDetailModal({
                 </button>
               </div>
 
-              {/* Right: Close (X) Button (always visible, always clickable) */}
+              {/* Right: Close (X) Button */}
               <button
                 onClick={handleModalClose}
                 disabled={isSubmitting}
                 aria-label="Close modal"
-                className="shrink-0 min-w-[38px] min-h-[38px] w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xl shadow-lg disabled:opacity-40"
+                className="shrink-0 w-8 h-8 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer disabled:opacity-40"
               >
-                <svg
-                  className="w-4 h-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
+                ✕
               </button>
             </div>
 
             {/* =================================================================
-                SCROLLABLE MODAL VIEW BODY (ONLY CONTENT SCROLLS)
+                MAIN MODAL CONTENT SWITCHER (BASED ON VIEW MODE)
                 ================================================================= */}
-            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-7 custom-scrollbar">
-              {/* Content Switcher based on viewMode */}
-              <AnimatePresence mode="wait">
-                {viewMode === "detail" ? (
-                  /* =============================================================
-                     VIEW 1: EVENT DOSSIER & BRIEFING
-                     ============================================================= */
-                  <motion.div
-                    key="view-detail"
-                    initial={{ opacity: 0, x: -15 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -15 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {/* Event Media / Banner */}
+            {viewMode === "register" ? (
+              /* ===============================================================
+                 REGISTER VIEW: 2-COLUMN VIEWPORT-FIT STUDENT REGISTRATION
+                 =============================================================== */
+              <form onSubmit={handleSubmitRegistration} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                {/* Compact 2-Column Scrollable Body */}
+                <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 custom-scrollbar">
+                  {/* Left Column (lg:col-span-5 space-y-4): Read-only Banner, Details & Scannable QR */}
+                  <div className="lg:col-span-5 space-y-4">
+                    {/* Read-only Event Banner Preview (h-32 w-full object-cover rounded-xl) */}
                     {eventMediaCover ? (
-                      <div className="relative w-full h-48 sm:h-56 rounded-2xl overflow-hidden border border-white/10 mb-6 shadow-xl">
+                      <div className="relative h-32 w-full rounded-xl overflow-hidden border border-white/10 bg-black shrink-0 shadow-md">
                         <Image
                           src={eventMediaCover}
                           alt={event.title}
                           fill
-                          sizes="(max-width: 640px) 100vw, 680px"
-                          className="object-cover"
+                          unoptimized
+                          className="h-32 w-full object-cover rounded-xl"
                         />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-[#0b0c10]/30 to-transparent pointer-events-none" />
-
-                      {/* Overlaid Badges */}
-                      <div className="absolute top-3 left-3 flex items-center gap-2">
-                        <span className="text-[10px] font-mono px-3 py-1 rounded-full bg-black/70 text-purple-300 border border-purple-500/30 backdrop-blur-md uppercase tracking-wider font-semibold">
-                          {event.category}
-                        </span>
-                        <span
-                          className={`text-[9px] font-mono px-2.5 py-0.5 rounded-full border backdrop-blur-md font-semibold ${
-                            isOpen
-                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.3)]"
-                              : isUpcoming
-                              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-                              : "bg-zinc-900/80 text-zinc-400 border-zinc-700/50"
-                          }`}
-                        >
-                          {isOpen ? "● REGISTRATION OPEN" : isUpcoming ? "▲ UPCOMING" : "■ CONCLUDED"}
-                        </span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="w-full h-20 rounded-2xl bg-purple-950/20 border border-purple-500/20 mb-6 flex items-center justify-center font-mono text-xs text-purple-400">
-                      OFFICIAL TESA NATIONAL CONCLAVE ARCHIVE
-                    </div>
-                  )}
-
-                  {/* Event Title */}
-                  <h3
-                    id="event-modal-title"
-                    className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight mb-4"
-                  >
-                    {event.title}
-                  </h3>
-
-                  {/* Key Information Badges */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/[0.08] mb-5 font-mono text-xs">
-                    <div className="flex items-center gap-2.5 text-zinc-300">
-                      <span className="text-purple-400 text-sm">📅</span>
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block">EVENT DATE</span>
-                        <span className="font-semibold text-white">{event.date}</span>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2.5 text-zinc-300">
-                      <span className="text-purple-400 text-sm">📍</span>
-                      <div>
-                        <span className="text-[10px] text-zinc-500 block">VENUE / LOCATION</span>
-                        <span className="font-semibold text-white truncate">{event.venue}</span>
-                      </div>
-                    </div>
-
-                    {event.deadline && (
-                      <div className="flex items-center gap-2.5 text-zinc-300">
-                        <span className="text-amber-400 text-sm">⏳</span>
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block">REGISTRATION DEADLINE</span>
-                          <span className="font-semibold text-white">{event.deadline}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {event.capacity && (
-                      <div className="flex items-center gap-2.5 text-zinc-300">
-                        <span className="text-purple-400 text-sm">👥</span>
-                        <div>
-                          <span className="text-[10px] text-zinc-500 block">SEAT CAPACITY</span>
-                          <span className="font-semibold text-white">{event.capacity} Delegates</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Full Event Description */}
-                  <div className="mb-5">
-                    <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider block mb-1.5">
-                      FULL EVENT BRIEFING &amp; OBJECTIVES:
-                    </span>
-                    <p className="text-sm text-zinc-300 leading-relaxed font-sans font-normal">
-                      {event.summary}
-                    </p>
-                  </div>
-
-                  {/* Highlights Pill */}
-                  {event.highlights && (
-                    <div className="p-3 rounded-xl bg-purple-950/20 border border-purple-500/25 text-xs font-mono text-purple-200 mb-6 flex items-center gap-2.5 shadow-[0_0_15px_rgba(168,85,247,0.1)]">
-                      <span className="text-purple-400 text-base">✦</span>
-                      <span className="leading-snug">{event.highlights}</span>
-                    </div>
-                  )}
-
-                  {/* Event Gallery Photos Grid (If Concluded or Available) */}
-                  {event.galleryUrls && event.galleryUrls.length > 0 && (
-                    <div className="mb-6">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-[10px] font-mono uppercase text-purple-400 tracking-wider">
-                          EVENT PHOTO ARCHIVE ({event.galleryUrls.length} PHOTOGRAPHS):
-                        </span>
-                        <span className="text-[10px] font-mono text-zinc-500">CLICK TO VIEW ORIGINAL</span>
-                      </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                        {event.galleryUrls.map((imgUrl, idx) => (
-                          <a
-                            key={idx}
-                            href={imgUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="relative aspect-[4/3] rounded-xl overflow-hidden border border-white/10 hover:border-purple-500/50 group/img transition-all block shadow-md"
-                          >
-                            <Image
-                              src={imgUrl}
-                              alt={`${event.title} archival photo ${idx + 1}`}
-                              fill
-                              unoptimized={imgUrl.startsWith("data:")}
-                              sizes="(max-width: 640px) 50vw, 25vw"
-                              className="object-cover group-hover/img:scale-105 transition-transform duration-300"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                              <span className="text-white text-xs font-mono">🔍 VIEW</span>
-                            </div>
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons: Register Now & Check Verified List */}
-                  <div className="pt-2 flex flex-col sm:flex-row gap-3">
-                    {isOpen || isUpcoming ? (
-                      <button
-                        onClick={() => setViewMode("register")}
-                        className="flex-1 min-h-[44px] py-3.5 px-6 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-sm uppercase tracking-wider transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_0_25px_rgba(139,92,246,0.4)] flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <span>{isOpen ? "Register Now" : "Pre-Register / Reserve Seat"}</span>
-                        <span className="text-base">→</span>
-                      </button>
-                    ) : (
-                      <div className="flex-1 py-3 rounded-xl bg-zinc-900/80 border border-white/10 text-center font-mono text-xs text-zinc-400 flex items-center justify-center gap-2">
-                        <span className="text-purple-400">■</span>
-                        <span>Archive Recorded • Concluded</span>
-                      </div>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("verifiedList")}
-                      className="min-h-[44px] py-3.5 px-5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 font-mono text-xs font-bold uppercase tracking-wider transition-all shadow-[0_0_15px_rgba(16,185,129,0.2)] flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <span>📋 Check Registration &amp; Verified List</span>
-                    </button>
-                  </div>
-                </motion.div>
-              ) : viewMode === "register" ? (
-                /* =============================================================
-                   VIEW 2: COMMAND-CENTER REGISTRATION WITH CUSTOM FORMS & PPT UPLOAD
-                   ============================================================= */
-                <motion.div
-                  key="view-register"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {/* Event Media Banner Preview */}
-                  {eventMediaCover && (
-                    <div className="relative w-full h-32 sm:h-40 rounded-2xl overflow-hidden border border-white/10 mb-5 shadow-lg">
-                      <Image
-                        src={eventMediaCover}
-                        alt={event.title}
-                        fill
-                        sizes="(max-width: 640px) 100vw, 680px"
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-[#0b0c10]/40 to-transparent pointer-events-none" />
-                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-purple-300 border border-purple-500/30 uppercase tracking-wider font-semibold">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-[10px] font-mono">
+                          <span className="px-2 py-0.5 rounded bg-black/70 text-purple-300 border border-purple-500/30 truncate max-w-[70%]">
                             {event.category}
                           </span>
-                          <h4 className="text-sm sm:text-base font-bold text-white tracking-tight mt-1 truncate">
-                            {event.title}
-                          </h4>
+                          <span className="text-emerald-400 bg-black/70 px-2 py-0.5 rounded border border-emerald-500/30 font-semibold">
+                            ● Open
+                          </span>
                         </div>
-                        <span className="text-[10px] font-mono text-emerald-400 bg-black/70 px-2.5 py-1 rounded-full border border-emerald-500/30 shrink-0 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-                          ● Registration Open
+                      </div>
+                    ) : (
+                      <div className="h-24 w-full rounded-xl bg-purple-950/20 border border-purple-500/20 flex items-center justify-center font-mono text-xs text-purple-400">
+                        OFFICIAL TESA NATIONAL SYMPOSIUM
+                      </div>
+                    )}
+
+                    {/* Event Date / Venue Summary Card */}
+                    <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 space-y-2 text-xs font-mono">
+                      <div className="flex items-center justify-between text-zinc-300">
+                        <span className="text-zinc-400 text-[11px] flex items-center gap-1.5">
+                          <span>📅</span> Date:
+                        </span>
+                        <span className="font-semibold text-white truncate max-w-[65%]">{event.date}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-zinc-300">
+                        <span className="text-zinc-400 text-[11px] flex items-center gap-1.5">
+                          <span>📍</span> Venue:
+                        </span>
+                        <span className="font-semibold text-white truncate max-w-[65%]">{event.venue}</span>
+                      </div>
+                      {event.deadline && (
+                        <div className="flex items-center justify-between text-zinc-300">
+                          <span className="text-zinc-400 text-[11px] flex items-center gap-1.5">
+                            <span>⏰</span> Deadline:
+                          </span>
+                          <span className="text-amber-400 font-semibold truncate max-w-[65%]">{event.deadline}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Scannable Payment QR Code Card with UPI Details */}
+                    <div className="p-3.5 rounded-xl bg-gradient-to-br from-purple-950/30 via-[#0d0e15] to-[#07080c] border border-purple-500/30 space-y-3 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          Payment Details
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30 font-bold">
+                          {activeFee}
                         </span>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Header Title */}
-                  <div className="mb-5 flex items-start gap-3">
-                    <div className="relative w-9 h-9 mt-0.5 rounded-full border border-white/30 p-[1.5px] overflow-hidden bg-white shrink-0 shadow-[0_0_15px_rgba(124,58,237,0.35)]">
-                      <Image
-                        src="/tesa-logo.png"
-                        alt="TESA Logo"
-                        width={36}
-                        height={36}
-                        className="w-full h-full object-cover rounded-full"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                        <span>Delegate Registration</span>
-                        <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                          VERIFICATION STEP
-                        </span>
-                      </h3>
-                      <p className="text-xs text-zinc-300 mt-1 font-sans leading-relaxed">
-                        Please enter your delegate details, upload your poster / banner (optional), attach presentation slides (optional), and complete fee verification.
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-36 h-36 shrink-0 bg-white p-2 rounded-xl border border-purple-400/40 shadow-md flex items-center justify-center">
+                          <Image
+                            src={activePaymentQrUrl}
+                            alt="Event Payment QR Code"
+                            width={144}
+                            height={144}
+                            unoptimized
+                            className="w-36 h-36 object-contain bg-white p-2 rounded-xl"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1.5 text-xs font-mono">
+                          <div>
+                            <span className="text-[10px] text-zinc-400 block">UPI ID:</span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="font-bold text-white text-[11px] bg-purple-950/80 px-2 py-0.5 rounded border border-purple-500/40 select-all truncate">
+                                {activeUpiId}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={handleCopyUpi}
+                                className="px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-purple-300 hover:text-white cursor-pointer transition-colors shrink-0"
+                              >
+                                {copiedUpi ? "✓" : "Copy"}
+                              </button>
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-[10px] text-zinc-400 block">Accepted Apps:</span>
+                            <span className="text-[10px] text-purple-200 block truncate">
+                              {activeAcceptedApps}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      {activeInstructions && (
+                        <p className="text-[10px] text-zinc-400 leading-snug">
+                          {activeInstructions}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {/* Error Notification */}
-                  {errorMessage && (
-                    <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs font-mono mb-4 flex items-center gap-2">
-                      <span className="text-red-400 text-sm">⚠</span>
-                      <span>{errorMessage}</span>
-                    </div>
-                  )}
+                  {/* Right Column (lg:col-span-7 space-y-3): Student Form Inputs & Uploads */}
+                  <div className="lg:col-span-7 space-y-3 font-mono text-xs">
+                    {/* Error Notification */}
+                    {errorMessage && (
+                      <div className="p-2.5 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs font-mono flex items-center gap-2">
+                        <span className="text-red-400 text-sm">⚠</span>
+                        <span>{errorMessage}</span>
+                      </div>
+                    )}
 
-                  {/* Registration Form */}
-                  <form onSubmit={handleSubmitRegistration} className="space-y-4 font-mono text-xs">
-                    {/* Full Name & Student ID/PRN */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    {/* Student Full Name, PRN, Year, Phone (Compact 2-Column Inputs) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] text-zinc-400 block mb-1">
+                        <label className="text-[10px] font-mono text-zinc-400 block mb-1">
                           FULL NAME <span className="text-purple-400">*</span>
                         </label>
                         <input
@@ -985,12 +800,12 @@ export default function EventDetailModal({
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           placeholder="e.g. Rahul Sharma"
-                          className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-sans text-sm disabled:opacity-50"
+                          className="w-full py-2 px-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-sm font-sans disabled:opacity-50"
                         />
                       </div>
 
                       <div>
-                        <label className="text-[11px] text-zinc-400 block mb-1">
+                        <label className="text-[10px] font-mono text-zinc-400 block mb-1">
                           STUDENT ID / PRN <span className="text-purple-400">*</span>
                         </label>
                         <input
@@ -1000,15 +815,12 @@ export default function EventDetailModal({
                           value={prn}
                           onChange={(e) => setPrn(e.target.value)}
                           placeholder="e.g. 2023BTE042"
-                          className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all uppercase text-sm font-sans disabled:opacity-50"
+                          className="w-full py-2 px-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-sm font-sans uppercase disabled:opacity-50"
                         />
                       </div>
-                    </div>
 
-                    {/* Year of Study & Contact Number */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                       <div>
-                        <label className="text-[11px] text-zinc-400 block mb-1">
+                        <label className="text-[10px] font-mono text-zinc-400 block mb-1">
                           YEAR OF STUDY <span className="text-purple-400">*</span>
                         </label>
                         <select
@@ -1016,7 +828,7 @@ export default function EventDetailModal({
                           disabled={isSubmitting}
                           value={year}
                           onChange={(e) => setYear(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-base sm:text-xs disabled:opacity-50 cursor-pointer"
+                          className="w-full py-2 px-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 text-xs disabled:opacity-50 cursor-pointer"
                         >
                           <option value="First Year B.Tech">First Year B.Tech</option>
                           <option value="Second Year B.Tech">Second Year B.Tech</option>
@@ -1028,8 +840,8 @@ export default function EventDetailModal({
                       </div>
 
                       <div>
-                        <label className="text-[11px] text-zinc-400 block mb-1">
-                          CONTACT NUMBER (WHATSAPP) <span className="text-purple-400">*</span>
+                        <label className="text-[10px] font-mono text-zinc-400 block mb-1">
+                          PHONE / WHATSAPP <span className="text-purple-400">*</span>
                         </label>
                         <input
                           type="tel"
@@ -1038,128 +850,17 @@ export default function EventDetailModal({
                           value={contactNumber}
                           onChange={(e) => setContactNumber(e.target.value)}
                           placeholder="e.g. 9876543210"
-                          className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-sm font-sans disabled:opacity-50"
+                          className="w-full py-2 px-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-sm font-sans disabled:opacity-50"
                         />
                       </div>
                     </div>
 
-                    {/* Dedicated Banner / Poster Upload Field (PNG, JPG, WEBP) */}
-                    <div className="p-4 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs text-purple-300 block font-semibold flex items-center gap-1.5">
-                          <span>Upload Event Banner / Poster</span>
-                          <span className="text-zinc-500 text-[10px] font-normal font-mono">(Optional)</span>
-                        </label>
-                        <span className="text-[10px] text-zinc-500 font-mono">
-                          PNG, JPG, JPEG, or WEBP (Optional)
-                        </span>
-                      </div>
-
-                      <input
-                        ref={bannerInputRef}
-                        type="file"
-                        accept=".png,.jpg,.jpeg,.webp"
-                        disabled={isSubmitting}
-                        onChange={handleBannerFileChange}
-                        className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer disabled:opacity-50"
-                      />
-
-                      {bannerFile ? (
-                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-purple-500/30 text-xs">
-                          <div className="flex items-center gap-2.5 text-white truncate min-w-0">
-                            {bannerPreviewUrl && (
-                              <div className="relative w-12 h-10 rounded-lg overflow-hidden border border-purple-400/40 shrink-0 bg-black">
-                                <Image
-                                  src={bannerPreviewUrl}
-                                  alt="Banner preview"
-                                  fill
-                                  unoptimized
-                                  className="object-cover"
-                                />
-                              </div>
-                            )}
-                            <div className="truncate">
-                              <span className="truncate block font-semibold">{bannerFile.name}</span>
-                              <span className="text-zinc-400 text-[10px]">
-                                ({(bannerFile.size / (1024 * 1024)).toFixed(2)} MB) • Ready to upload
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleRemoveBannerFile}
-                            className="text-red-400 hover:text-red-300 text-[10px] px-2.5 py-1 rounded bg-red-950/60 border border-red-500/30 transition-colors shrink-0 cursor-pointer"
-                          >
-                            ✕ Remove
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-zinc-400 font-sans">
-                          Attach your event poster banner, creative graphic design, or project poster (PNG, JPG, WEBP up to 10MB). Uploaded directly to Cloudinary.
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Dedicated Media Upload Field: PPT, PDF (Optional) */}
-                    <div className="p-4 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs text-purple-300 block font-semibold flex items-center gap-1.5">
-                          <span>Upload Presentation / Media</span>
-                          <span className="text-zinc-500 text-[10px] font-normal font-mono">(Optional)</span>
-                        </label>
-                        <span className="text-[10px] text-zinc-500 font-mono">
-                          PPT, PPTX, or PDF (Optional)
-                        </span>
-                      </div>
-
-                      <input
-                        ref={presentationInputRef}
-                        type="file"
-                        accept=".ppt,.pptx,.pdf"
-                        disabled={isSubmitting}
-                        onChange={handlePresentationFileChange}
-                        className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer disabled:opacity-50"
-                      />
-
-                      {presentationFile ? (
-                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-purple-500/30 text-xs">
-                          <div className="flex items-center gap-2 text-white truncate min-w-0">
-                            <span>📄</span>
-                            <span className="truncate block font-semibold">{presentationFile.name}</span>
-                            <span className="text-zinc-400 text-[10px]">
-                              ({(presentationFile.size / (1024 * 1024)).toFixed(2)} MB)
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setPresentationFile(null);
-                              if (presentationInputRef.current) presentationInputRef.current.value = "";
-                            }}
-                            className="text-red-400 hover:text-red-300 text-[10px] px-2.5 py-1 rounded bg-red-950/60 border border-red-500/30 transition-colors shrink-0 cursor-pointer"
-                          >
-                            ✕ Remove
-                          </button>
-                        </div>
-                      ) : (
-                        <p className="text-[10px] text-zinc-400 font-sans">
-                          Attach your slide deck (PPTX/PPT) or research summary document (PDF). Uploaded to Cloudinary (/auto/upload).
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Dynamic Rendering of Custom Questions Created by Admin */}
+                    {/* Custom Form Questions (if configured by admin) */}
                     {event.customFormFields && event.customFormFields.length > 0 && (
-                      <div className="pt-3 border-t border-white/10 space-y-3.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 uppercase">
-                            EVENT CUSTOM FIELDS
-                          </span>
-                          <span className="text-[11px] font-bold text-white uppercase tracking-wider">
-                            Specialized Event Questions
-                          </span>
-                        </div>
-
+                      <div className="pt-2 border-t border-white/10 space-y-2.5">
+                        <span className="text-[10px] font-mono text-purple-300 uppercase tracking-wider block font-bold">
+                          Event Questions
+                        </span>
                         {event.customFormFields.map((field) => (
                           <div key={field.id} className="space-y-1">
                             <label className="text-[11px] text-zinc-300 block font-semibold">
@@ -1186,13 +887,13 @@ export default function EventDetailModal({
                                   }))
                                 }
                                 placeholder={`Enter your ${field.questionTitle.toLowerCase()}...`}
-                                className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-sm font-sans disabled:opacity-50 transition-all"
+                                className="w-full py-2 px-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-xs font-sans disabled:opacity-50 transition-all"
                               />
                             )}
 
                             {field.fieldType === "Paragraph" && (
                               <textarea
-                                rows={3}
+                                rows={2}
                                 required={field.required}
                                 disabled={isSubmitting}
                                 value={customAnswers[field.questionTitle] || ""}
@@ -1203,7 +904,7 @@ export default function EventDetailModal({
                                   }))
                                 }
                                 placeholder={`Provide details for ${field.questionTitle.toLowerCase()}...`}
-                                className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-base sm:text-xs font-sans disabled:opacity-50 transition-all"
+                                className="w-full py-2 px-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-xs font-sans disabled:opacity-50 transition-all"
                               />
                             )}
 
@@ -1218,7 +919,7 @@ export default function EventDetailModal({
                                     [field.questionTitle]: e.target.value,
                                   }))
                                 }
-                                className="w-full px-4 py-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-base sm:text-xs cursor-pointer font-sans disabled:opacity-50 transition-all"
+                                className="w-full py-2 px-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 text-xs cursor-pointer font-sans disabled:opacity-50 transition-all"
                               >
                                 <option value="">-- Select an option --</option>
                                 {field.options
@@ -1234,7 +935,7 @@ export default function EventDetailModal({
                             )}
 
                             {field.fieldType === "File Upload (PPT/PDF/Image)" && (
-                              <div className="p-3.5 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all">
+                              <div className="p-2.5 rounded-xl border border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all">
                                 <input
                                   type="file"
                                   required={false}
@@ -1246,19 +947,17 @@ export default function EventDetailModal({
                                       e.target.files?.[0] || null
                                     )
                                   }
-                                  className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                                  className="w-full text-xs text-zinc-300 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-[11px] file:font-mono file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer disabled:opacity-50"
                                 />
                                 {customFiles[field.questionTitle] && (
-                                  <div className="mt-2 text-[10px] text-purple-300 font-mono flex items-center justify-between p-2 rounded-lg bg-white/[0.04] border border-purple-500/30">
-                                    <span>✓ Selected: {customFiles[field.questionTitle].name}</span>
+                                  <div className="mt-1.5 text-[10px] text-purple-300 font-mono flex items-center justify-between p-1.5 rounded-lg bg-white/[0.04] border border-purple-500/30">
+                                    <span className="truncate max-w-[80%]">✓ {customFiles[field.questionTitle].name}</span>
                                     <button
                                       type="button"
-                                      onClick={() =>
-                                        handleCustomQuestionFileChange(field.questionTitle, null)
-                                      }
-                                      className="text-red-400 hover:text-red-300"
+                                      onClick={() => handleCustomQuestionFileChange(field.questionTitle, null)}
+                                      className="text-red-400 hover:text-red-300 text-[10px]"
                                     >
-                                      ✕ Remove
+                                      ✕
                                     </button>
                                   </div>
                                 )}
@@ -1269,88 +968,14 @@ export default function EventDetailModal({
                       </div>
                     )}
 
-                    {/* Payment QR Code & UPI Instructions */}
-                    <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-950/40 via-[#0d0e15] to-[#07080c] border border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.15)] flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
-                      {/* Payment QR Code Image Container */}
-                      <div className="flex flex-col items-center shrink-0">
-                        <div className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-2xl bg-white p-2 border-2 border-purple-400/50 shadow-xl overflow-hidden group/qr">
-                          <Image
-                            src={activePaymentQrUrl}
-                            alt="Event Payment QR Code"
-                            width={160}
-                            height={160}
-                            unoptimized
-                            className="w-full h-full object-contain rounded-xl"
-                          />
-                          <a
-                            href={activePaymentQrUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-mono font-bold"
-                          >
-                            🔍 Tap to Enlarge
-                          </a>
-                        </div>
-                        <span className="text-[9px] font-mono text-purple-300 mt-1.5 flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                          SCAN TO PAY
-                        </span>
+                    {/* Upload Payment Screenshot Dropzone (* Required) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-zinc-200">
+                          Upload Payment Screenshot <span className="text-purple-400">*</span>
+                        </label>
+                        <span className="text-[10px] text-zinc-400 font-mono">PNG, JPG up to 8MB</span>
                       </div>
-
-                      {/* Payment Details & Steps */}
-                      <div className="flex-1 w-full space-y-2 text-left">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
-                            STEP 1: SCAN &amp; PAY
-                          </span>
-                          <span className="text-[10px] font-mono text-zinc-400">
-                            Instant UPI Verification
-                          </span>
-                        </div>
-
-                        <h4 className="text-sm sm:text-base font-bold text-white tracking-tight">
-                          Event Registration Fee
-                        </h4>
-
-                        <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs font-mono">
-                          <div className="flex items-center justify-between">
-                            <span className="text-zinc-400">UPI ID:</span>
-                            <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-white bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30 select-all font-mono">
-                                {activeUpiId}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={handleCopyUpi}
-                                className="px-2 py-0.5 rounded bg-white/[0.08] hover:bg-white/[0.15] text-[10px] text-purple-300 hover:text-white transition-colors cursor-pointer font-mono"
-                                title="Copy UPI ID"
-                              >
-                                {copiedUpi ? "✓ Copied" : "Copy"}
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span className="text-zinc-400">Participation Fee:</span>
-                            <span className="text-emerald-400 font-bold">{activeFee}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-zinc-400">Accepted Apps:</span>
-                            <span className="text-purple-300">{activeAcceptedApps}</span>
-                          </div>
-                        </div>
-
-                        <p className="text-[11px] text-zinc-400 leading-relaxed whitespace-pre-line">
-                          {activeInstructions}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Payment Screenshot File Input */}
-                    <div>
-                      <label className="text-[11px] text-zinc-300 block mb-1 font-semibold">
-                        Upload Payment Screenshot (Required for Participation Fee) <span className="text-red-400">*</span>
-                      </label>
-
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -1360,38 +985,31 @@ export default function EventDetailModal({
                         className="hidden"
                         id="payment-screenshot-input"
                       />
-
                       {previewUrl ? (
-                        <div className="p-3 rounded-2xl border border-purple-500/40 bg-white/[0.02] flex items-center justify-between gap-3 shadow-[0_0_20px_rgba(168,85,247,0.15)]">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="relative w-16 h-14 rounded-lg overflow-hidden border border-purple-400/40 shrink-0 bg-black">
+                        <div className="p-2.5 rounded-xl border border-purple-500/40 bg-white/[0.03] flex items-center justify-between gap-3 shadow-md">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden border border-purple-400/40 shrink-0 bg-black">
                               <Image
                                 src={previewUrl}
-                                alt="Payment proof preview"
+                                alt="Payment proof"
                                 fill
                                 unoptimized
                                 className="object-cover"
                               />
                             </div>
                             <div className="min-w-0">
-                              <span className="text-white font-semibold text-xs block truncate">
+                              <span className="text-white font-medium text-xs block truncate">
                                 {paymentFile?.name || "screenshot.png"}
                               </span>
-                              <span className="text-[10px] text-emerald-400 flex items-center gap-1">
-                                <span>✓ Ready to upload to Cloudinary</span>
-                                {paymentFile && (
-                                  <span className="text-zinc-400">
-                                    ({(paymentFile.size / 1024).toFixed(0)} KB)
-                                  </span>
-                                )}
+                              <span className="text-[10px] text-emerald-400 font-mono">
+                                ✓ Ready to upload
                               </span>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <label
                               htmlFor="payment-screenshot-input"
-                              className="px-2.5 py-1.5 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] text-[10px] text-zinc-200 cursor-pointer transition-colors"
+                              className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-[10px] text-zinc-200 cursor-pointer"
                             >
                               Change
                             </label>
@@ -1399,120 +1017,308 @@ export default function EventDetailModal({
                               type="button"
                               onClick={handleRemovePaymentFile}
                               disabled={isSubmitting}
-                              className="px-2.5 py-1.5 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-[10px] text-red-300 cursor-pointer transition-colors"
+                              className="px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-[10px] text-red-300 cursor-pointer"
                             >
-                              ✕ Remove
+                              ✕
                             </button>
                           </div>
                         </div>
                       ) : (
                         <label
                           htmlFor="payment-screenshot-input"
-                          className="w-full p-6 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] hover:bg-purple-500/[0.03] flex flex-col items-center justify-center gap-2 transition-all cursor-pointer group shadow-inner"
+                          className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] hover:bg-purple-500/[0.03] flex items-center justify-center gap-3 transition-all cursor-pointer group"
                         >
-                          <div className="w-10 h-10 rounded-full bg-purple-950/60 border border-purple-500/40 flex items-center justify-center text-purple-300 text-lg group-hover:scale-110 transition-transform">
-                            📷
-                          </div>
-                          <div className="text-center">
-                            <span className="text-xs text-white font-semibold block">
-                              Click to select Payment Screenshot
+                          <span className="text-lg">📷</span>
+                          <div className="text-left">
+                            <span className="text-xs text-white font-medium block">
+                              Click to upload Payment Screenshot
                             </span>
-                            <span className="text-[10px] text-zinc-400">
-                              PNG, JPG, JPEG, WEBP up to 8MB
+                            <span className="text-[10px] text-zinc-400 font-mono">
+                              Required proof of participation fee
                             </span>
                           </div>
                         </label>
                       )}
                     </div>
 
-                    {/* Submit Registration Button */}
-                    <div className="pt-2">
-                      <button
-                        type="submit"
+                    {/* Upload Presentation / Media Dropzone (Optional) */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
+                          <span>Upload Project Media / PPT / PDF</span>
+                          <span className="text-zinc-500 text-[10px] font-normal font-mono">(Optional)</span>
+                        </label>
+                        <span className="text-[10px] text-zinc-400 font-mono">PPT, PPTX, PDF</span>
+                      </div>
+                      <input
+                        ref={presentationInputRef}
+                        type="file"
+                        accept=".ppt,.pptx,.pdf"
                         disabled={isSubmitting}
-                        className="w-full min-h-[48px] py-3.5 px-6 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-sm uppercase tracking-wider transition-all shadow-[inset_0_1px_0_0_rgba(255,255,255,0.25),0_0_30px_rgba(139,92,246,0.45)] flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                      >
-                        {isSubmitting ? (
-                          <>
-                            <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                            <span>{submittingStep || "Uploading to Cloudinary..."}</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Complete Event Registration</span>
-                            <span>→</span>
-                          </>
-                        )}
-                      </button>
+                        onChange={handlePresentationFileChange}
+                        className="hidden"
+                        id="presentation-media-input"
+                      />
+                      {presentationFile ? (
+                        <div className="p-2.5 rounded-xl border border-purple-500/40 bg-white/[0.03] flex items-center justify-between gap-3 shadow-md">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="text-lg">📄</span>
+                            <div className="min-w-0">
+                              <span className="text-white font-medium text-xs block truncate">
+                                {presentationFile.name}
+                              </span>
+                              <span className="text-[10px] text-purple-300 font-mono">
+                                ({(presentationFile.size / (1024 * 1024)).toFixed(2)} MB)
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPresentationFile(null);
+                              if (presentationInputRef.current) presentationInputRef.current.value = "";
+                            }}
+                            disabled={isSubmitting}
+                            className="px-2.5 py-1 rounded-lg bg-red-950/60 hover:bg-red-900 border border-red-500/30 text-[10px] text-red-300 cursor-pointer"
+                          >
+                            ✕ Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <label
+                          htmlFor="presentation-media-input"
+                          className="w-full py-2.5 px-4 rounded-xl border-2 border-dashed border-white/10 hover:border-purple-500/50 bg-white/[0.02] flex items-center justify-center gap-3 transition-all cursor-pointer group"
+                        >
+                          <span className="text-base">📎</span>
+                          <div className="text-left">
+                            <span className="text-xs text-zinc-300 group-hover:text-white font-medium block">
+                              Attach Presentation Deck or Document
+                            </span>
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              Optional • PPT, PPTX, or PDF
+                            </span>
+                          </div>
+                        </label>
+                      )}
                     </div>
-                  </form>
-                </motion.div>
-              ) : viewMode === "verifiedList" ? (
-                /* =============================================================
-                   VIEW 3: "CHECK REGISTRATION & VERIFIED LIST" (PUBLIC COMMAND CENTER)
-                   ============================================================= */
-                <motion.div
-                  key="view-verified"
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.25 }}
-                  className="font-mono text-xs"
-                >
-                  {/* Top Bar with Back and Context */}
-                  <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/[0.08]">
+                  </div>
+                </div>
+
+                {/* Sticky Bottom Action Bar (Pinned, 100% visible at all times) */}
+                <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-between gap-3">
+                  <span className="text-[11px] font-mono text-zinc-400 hidden sm:inline">
+                    Fee: <span className="text-emerald-400 font-bold">{activeFee}</span> • Cloudinary &amp; Firestore Secured
+                  </span>
+                  <div className="flex items-center gap-3 ml-auto">
                     <button
                       type="button"
-                      onClick={() => setViewMode("detail")}
-                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+                      onClick={handleModalClose}
+                      disabled={isSubmitting}
+                      className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 text-xs font-mono transition-colors cursor-pointer disabled:opacity-40"
                     >
-                      <span>←</span>
-                      <span>Back to Briefing</span>
+                      Cancel
                     </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                          <span>{submittingStep || "Uploading..."}</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Submit Registration</span>
+                          <span>→</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            ) : viewMode === "detail" ? (
+              /* ===============================================================
+                 DETAIL VIEW: 2-COLUMN VIEWPORT-FIT EVENT DOSSIER
+                 =============================================================== */
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-5 grid grid-cols-1 lg:grid-cols-12 gap-5 custom-scrollbar">
+                  {/* Left Column: Banner, Date, Venue, Capacity */}
+                  <div className="lg:col-span-5 space-y-4">
+                    {eventMediaCover ? (
+                      <div className="relative h-44 w-full rounded-xl overflow-hidden border border-white/10 shadow-lg">
+                        <Image
+                          src={eventMediaCover}
+                          alt={event.title}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-[#0b0c10]/30 to-transparent pointer-events-none" />
+                        <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between">
+                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-purple-300 border border-purple-500/30 uppercase tracking-wider font-semibold">
+                            {event.category}
+                          </span>
+                          <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-black/70 text-emerald-400 border border-emerald-500/30 font-semibold">
+                            {isOpen ? "● Open" : isUpcoming ? "▲ Upcoming" : "■ Concluded"}
+                          </span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="h-28 w-full rounded-xl bg-purple-950/20 border border-purple-500/20 flex items-center justify-center font-mono text-xs text-purple-400">
+                        OFFICIAL TESA NATIONAL CONCLAVE ARCHIVE
+                      </div>
+                    )}
 
+                    {/* Key Details Card */}
+                    <div className="p-3.5 rounded-xl bg-white/[0.02] border border-white/10 space-y-2 text-xs font-mono">
+                      <div className="flex items-center justify-between text-zinc-300">
+                        <span className="text-zinc-500 text-[11px] flex items-center gap-1.5">
+                          <span>📅</span> Date:
+                        </span>
+                        <span className="font-semibold text-white">{event.date}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-zinc-300">
+                        <span className="text-zinc-500 text-[11px] flex items-center gap-1.5">
+                          <span>📍</span> Venue:
+                        </span>
+                        <span className="font-semibold text-white truncate max-w-[65%]">{event.venue}</span>
+                      </div>
+                      {event.deadline && (
+                        <div className="flex items-center justify-between text-zinc-300">
+                          <span className="text-zinc-500 text-[11px] flex items-center gap-1.5">
+                            <span>⏳</span> Deadline:
+                          </span>
+                          <span className="font-semibold text-amber-400">{event.deadline}</span>
+                        </div>
+                      )}
+                      {event.capacity && (
+                        <div className="flex items-center justify-between text-zinc-300">
+                          <span className="text-zinc-500 text-[11px] flex items-center gap-1.5">
+                            <span>👥</span> Capacity:
+                          </span>
+                          <span className="font-semibold text-white">{event.capacity} Delegates</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Fee Details Card */}
+                    <div className="p-3 rounded-xl bg-white/[0.02] border border-white/10 text-xs font-mono flex items-center justify-between">
+                      <span className="text-zinc-400">Registration Fee:</span>
+                      <span className="font-bold text-emerald-400">{activeFee}</span>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Title, Synopsis, Highlights, Gallery */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                        {event.title}
+                      </h3>
+                      {event.highlights && (
+                        <div className="mt-2 p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/30 text-xs font-mono text-purple-200 flex items-center gap-2">
+                          <span className="text-purple-400">✦</span>
+                          <span>{event.highlights}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <span className="text-[10px] font-mono uppercase text-zinc-400 tracking-wider block mb-1">
+                        Full Event Dossier &amp; Briefing:
+                      </span>
+                      <p className="text-xs text-zinc-300 leading-relaxed font-sans whitespace-pre-line">
+                        {event.summary}
+                      </p>
+                    </div>
+
+                    {/* Gallery Photos (If Concluded) */}
+                    {event.galleryUrls && event.galleryUrls.length > 0 && (
+                      <div className="space-y-2 pt-2 border-t border-white/10">
+                        <span className="text-[10px] font-mono uppercase text-purple-400 tracking-wider block">
+                          Event Photo Archive ({event.galleryUrls.length} Photographs):
+                        </span>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                          {event.galleryUrls.map((imgUrl, idx) => (
+                            <a
+                              key={idx}
+                              href={imgUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="relative aspect-video rounded-lg overflow-hidden border border-white/10 hover:border-purple-500/50 group block"
+                            >
+                              <Image
+                                src={imgUrl}
+                                alt={`${event.title} archive photo ${idx + 1}`}
+                                fill
+                                unoptimized
+                                className="object-cover group-hover:scale-105 transition-transform"
+                              />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sticky Bottom Action Bar */}
+                <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("verifiedList")}
+                    className="px-3.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-mono text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                  >
+                    <span>📋 Verified Delegates</span>
+                    {registeredParticipants.length > 0 && (
+                      <span className="px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-[10px]">
+                        {registeredParticipants.length}
+                      </span>
+                    )}
+                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleModalClose}
+                      className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 text-xs font-mono transition-colors cursor-pointer"
+                    >
+                      Close
+                    </button>
                     {(isOpen || isUpcoming) && (
                       <button
                         type="button"
                         onClick={() => setViewMode("register")}
-                        className="min-h-[36px] px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition-all flex items-center gap-1 cursor-pointer shadow-[0_0_15px_rgba(147,51,234,0.4)]"
+                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 via-purple-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-lg flex items-center gap-2 cursor-pointer"
                       >
-                        <span>Register Now →</span>
+                        <span>{isOpen ? "Register Now" : "Pre-Register"}</span>
+                        <span>→</span>
                       </button>
                     )}
                   </div>
-
-                  {/* Header */}
-                  <div className="mb-5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        PUBLIC VERIFICATION PORTAL
-                      </span>
-                      <span className="text-[10px] text-zinc-400">
-                        Live Firestore Sync
-                      </span>
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-                      Check Registration &amp; Verified List
-                    </h3>
-                    <p className="text-xs text-zinc-300 font-sans mt-0.5">
-                      Verify your participation status for <span className="text-white font-semibold">{event.title}</span>. Search by your Name or PRN to view your response dossier.
-                    </p>
-                  </div>
-
+                </div>
+              </div>
+            ) : viewMode === "verifiedList" ? (
+              /* ===============================================================
+                 VERIFIED LIST VIEW: SEARCH AND VERIFIED ATTENDEES
+                 =============================================================== */
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden font-mono text-xs">
+                <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
                   {/* Search Bar */}
-                  <div className="relative mb-4">
+                  <div className="relative">
                     <input
                       type="text"
                       placeholder="Search by your Name, Student PRN, or Registration ID..."
                       value={participantSearch}
                       onChange={(e) => setParticipantSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all font-sans text-xs"
+                      className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 text-xs font-sans"
                     />
-                    <span className="absolute left-3 top-3.5 text-zinc-500 text-sm">🔍</span>
+                    <span className="absolute left-3 top-2.5 text-zinc-500 text-sm">🔍</span>
                     {participantSearch && (
                       <button
                         onClick={() => setParticipantSearch("")}
-                        className="absolute right-3 top-3 text-zinc-400 hover:text-white text-xs px-1.5 py-0.5 rounded bg-white/10"
+                        className="absolute right-3 top-2.5 text-zinc-400 hover:text-white text-xs px-1.5 py-0.5 rounded bg-white/10"
                       >
                         ✕
                       </button>
@@ -1520,7 +1326,7 @@ export default function EventDetailModal({
                   </div>
 
                   {/* Attendees List */}
-                  <div className="max-h-[360px] overflow-y-auto space-y-2.5 pr-1 scrollbar-thin scrollbar-thumb-purple-500/30">
+                  <div className="space-y-2">
                     {isFetchingParticipants ? (
                       <div className="p-8 text-center text-zinc-400">
                         <div className="w-5 h-5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mx-auto mb-2" />
@@ -1529,297 +1335,115 @@ export default function EventDetailModal({
                     ) : filteredParticipants.length > 0 ? (
                       filteredParticipants.map((p, idx) => {
                         const isVerified = p.status === "verified" || p.status === "approved" || (p as any).verified === true;
-                        const isPending = p.status === "pending";
-
                         return (
                           <div
                             key={p.registrationId || idx}
-                            className="p-4 rounded-2xl border border-white/[0.07] bg-white/[0.02] hover:border-purple-500/40 hover:bg-white/[0.04] transition-all space-y-2.5"
+                            className="p-3.5 rounded-xl border border-white/[0.07] bg-white/[0.02] flex items-center justify-between gap-3"
                           >
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <div>
-                                <span className="font-bold text-white text-sm block">
-                                  {p.fullName}
-                                </span>
-                                <span className="text-[11px] text-purple-300">
-                                  PRN: {p.prn} • <span className="text-zinc-400">{p.year}</span>
-                                </span>
-                              </div>
-
-                              {/* Live Glowing Neon Status Badge */}
-                              <div>
-                                {isVerified ? (
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                    <span>✔ VERIFIED</span>
-                                  </span>
-                                ) : isPending ? (
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 font-bold text-[10px] shadow-[0_0_15px_rgba(245,158,11,0.25)]">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
-                                    <span>⏳ PENDING VERIFICATION</span>
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 font-bold text-[10px]">
-                                    <span>✖ REJECTED</span>
-                                  </span>
-                                )}
-                              </div>
+                            <div>
+                              <span className="font-bold text-white text-xs block">
+                                {p.fullName}
+                              </span>
+                              <span className="text-[11px] text-purple-300">
+                                PRN: {p.prn} • <span className="text-zinc-400">{p.year}</span>
+                              </span>
                             </div>
-
-                            {/* Details & Actions Row */}
-                            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/5 text-[10px] text-zinc-400">
-                              <div className="flex items-center gap-3">
-                                <span>
-                                  Payment Status:{" "}
-                                  <strong className={isVerified ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
-                                    {isVerified ? "✔ Fee Verified" : "⏳ Review Pending"}
-                                  </strong>
-                                </span>
-
-                                {p.bannerUrl && (
-                                  <a
-                                    href={p.bannerUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-pink-300 hover:text-pink-200 underline flex items-center gap-1 font-semibold"
-                                  >
-                                    <span>🎨 Poster Banner ↗</span>
-                                  </a>
-                                )}
-
-                                {p.submissionFileUrl && (
-                                  <a
-                                    href={p.submissionFileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-purple-300 hover:text-purple-200 underline flex items-center gap-1 font-semibold"
-                                  >
-                                    <span>📄 Presentation Link ↗</span>
-                                  </a>
-                                )}
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => setActiveDossierReg(p)}
-                                className="px-3 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-purple-300 text-[10px] transition-colors cursor-pointer border border-white/10"
-                              >
-                                View Submitted Responses →
-                              </button>
-                            </div>
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                                isVerified
+                                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                                  : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
+                              }`}
+                            >
+                              <span>{isVerified ? "✔ VERIFIED" : "⏳ PENDING VERIFICATION"}</span>
+                            </span>
                           </div>
                         );
                       })
                     ) : (
-                      <div className="p-8 text-center text-zinc-500 border border-dashed border-white/10 rounded-2xl">
-                        <p className="text-zinc-400 font-semibold mb-1">No registered participants found.</p>
-                        <p className="text-[11px] text-zinc-600">
-                          Try searching another Name or PRN, or register using the &quot;Register Now&quot; button above.
-                        </p>
+                      <div className="py-8 text-center text-zinc-500">
+                        No registered participants found matching your query.
                       </div>
                     )}
                   </div>
+                </div>
 
-                  {/* Participant Submission Dossier Modal View */}
-                  {activeDossierReg && (
-                    <div className="mt-4 p-4 rounded-2xl border border-purple-500/40 bg-black/80 space-y-3 shadow-xl">
-                      <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                        <div>
-                          <span className="text-[10px] text-purple-400 font-bold uppercase">
-                            SUBMITTED FORM RESPONSES
-                          </span>
-                          <h4 className="text-white font-bold text-sm">
-                            {activeDossierReg.fullName} ({activeDossierReg.prn})
-                          </h4>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveDossierReg(null)}
-                          className="text-zinc-400 hover:text-white text-xs px-2 py-0.5 rounded bg-white/10"
-                        >
-                          ✕ Close
-                        </button>
-                      </div>
-
-                      <div className="space-y-1.5 text-xs">
-                        <div className="flex justify-between py-1 border-b border-white/5">
-                          <span className="text-zinc-400">Academic Year:</span>
-                          <span className="text-white">{activeDossierReg.year}</span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-white/5">
-                          <span className="text-zinc-400">Verification Status:</span>
-                          <span className={activeDossierReg.status === "verified" || activeDossierReg.status === "approved" ? "text-emerald-400 font-bold" : "text-amber-400 font-bold"}>
-                            {activeDossierReg.status.toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between py-1 border-b border-white/5">
-                          <span className="text-zinc-400">Registration ID:</span>
-                          <span className="text-purple-300 font-mono">{activeDossierReg.registrationId}</span>
-                        </div>
-
-                        {activeDossierReg.bannerUrl && (
-                          <div className="flex justify-between py-1 border-b border-white/5 items-center">
-                            <span className="text-zinc-400">Uploaded Poster / Banner:</span>
-                            <a
-                              href={activeDossierReg.bannerUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-pink-300 hover:text-white underline font-semibold flex items-center gap-1"
-                            >
-                              <span>Open Uploaded Banner (Image) ↗</span>
-                            </a>
-                          </div>
-                        )}
-
-                        {activeDossierReg.submissionFileUrl && (
-                          <div className="flex justify-between py-1 border-b border-white/5 items-center">
-                            <span className="text-zinc-400">Project Presentation / Media:</span>
-                            <a
-                              href={activeDossierReg.submissionFileUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-purple-300 hover:text-white underline font-semibold flex items-center gap-1"
-                            >
-                              <span>Open Uploaded File (PPT/PDF) ↗</span>
-                            </a>
-                          </div>
-                        )}
-
-                        {/* Custom Answers */}
-                        {activeDossierReg.customAnswers && Object.keys(activeDossierReg.customAnswers).length > 0 && (
-                          <div className="pt-2">
-                            <span className="text-[10px] text-zinc-400 block mb-1 uppercase font-semibold">
-                              Custom Questions &amp; Answers:
-                            </span>
-                            <div className="space-y-1 p-2 rounded-lg bg-white/[0.02] border border-white/5">
-                              {Object.entries(activeDossierReg.customAnswers).map(([k, v], vIdx) => (
-                                <div key={vIdx} className="flex flex-col sm:flex-row sm:justify-between py-0.5 text-[11px]">
-                                  <span className="text-zinc-400">{k}:</span>
-                                  <span className="text-white font-medium break-all">
-                                    {typeof v === "string" && (v.startsWith("http://") || v.startsWith("https://")) ? (
-                                      <a href={v} target="_blank" rel="noopener noreferrer" className="text-purple-300 underline">
-                                        View Attachment ↗
-                                      </a>
-                                    ) : (
-                                      String(v)
-                                    )}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </motion.div>
-              ) : (
-                /* =============================================================
-                   VIEW 4: SUCCESS STATE & GREEN CHECKMARK VERIFICATION
-                   ============================================================= */
-                <motion.div
-                  key="view-success"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-center py-6 sm:py-8 font-mono text-xs"
-                >
-                  {/* Glowing Emerald Checkmark Icon */}
-                  <div className="w-20 h-20 rounded-full bg-emerald-500/10 border-2 border-emerald-400/80 flex items-center justify-center text-emerald-400 shadow-[0_0_40px_rgba(16,185,129,0.4)] mx-auto mb-5 animate-pulse">
-                    <svg
-                      className="w-10 h-10"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </div>
-
-                  <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono text-xs mb-3 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span>PROOF RECEIVED • VERIFICATION QUEUED</span>
-                  </div>
-
-                  <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight mb-2">
-                    Registration Submitted for Verification
-                  </h3>
-
-                  <p className="text-sm text-zinc-300 max-w-md mx-auto leading-relaxed mb-6 font-sans font-normal">
-                    Your delegate information, project presentation, and payment screenshot have been successfully uploaded to Cloudinary and dispatched to the TESA Council.
-                  </p>
-
-                  {/* Submission Receipt Box */}
-                  <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] max-w-md mx-auto mb-7 text-left font-mono text-xs space-y-2.5">
-                    <div className="flex justify-between items-center text-zinc-400 pb-1.5 border-b border-white/5">
-                      <span>REGISTRATION ID:</span>
-                      <span className="text-purple-300 font-bold">{submittedRegId || "REG-CONFIRMED"}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-zinc-400">
-                      <span>EVENT:</span>
-                      <span className="text-white font-semibold truncate max-w-[220px]">{event.title}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-zinc-400">
-                      <span>DELEGATE NAME:</span>
-                      <span className="text-white font-semibold">{fullName}</span>
-                    </div>
-
-                    <div className="flex justify-between items-center text-zinc-400">
-                      <span>STUDENT PRN:</span>
-                      <span className="text-purple-300 font-semibold">{prn.toUpperCase()}</span>
-                    </div>
-
-                    {bannerFile && (
-                      <div className="flex justify-between items-center text-zinc-400">
-                        <span>POSTER / BANNER:</span>
-                        <span className="text-pink-300 font-semibold flex items-center gap-1.5">
-                          <span>✓ Cloudinary Uploaded</span>
-                        </span>
-                      </div>
-                    )}
-
-                    {presentationFile && (
-                      <div className="flex justify-between items-center text-zinc-400">
-                        <span>PRESENTATION:</span>
-                        <span className="text-purple-300 font-semibold flex items-center gap-1.5">
-                          <span>✓ Cloudinary Uploaded</span>
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center text-zinc-400 pt-1.5 border-t border-white/5">
-                      <span>PAYMENT PROOF:</span>
-                      <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
-                        <span>✓ Cloudinary Verified</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("verifiedList")}
-                      className="w-full sm:w-auto min-h-[44px] px-6 py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-purple-300 font-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
-                    >
-                      Check Live Status in Verified List →
-                    </button>
-
+                {/* Sticky Bottom Action Bar */}
+                <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-between gap-3">
+                  <span className="text-zinc-400 text-xs">
+                    Total Registered: <span className="text-white font-bold">{registeredParticipants.length}</span>
+                  </span>
+                  <div className="flex items-center gap-3">
                     <button
                       type="button"
                       onClick={handleModalClose}
-                      className="w-full sm:w-auto min-h-[44px] px-8 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-[0_0_25px_rgba(16,185,129,0.4)] cursor-pointer"
+                      className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 text-xs font-mono transition-colors cursor-pointer"
                     >
-                      Done &amp; Close Window
+                      Close
                     </button>
+                    {(isOpen || isUpcoming) && (
+                      <button
+                        type="button"
+                        onClick={() => setViewMode("register")}
+                        className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs uppercase tracking-wider transition-all cursor-pointer"
+                      >
+                        Register Now →
+                      </button>
+                    )}
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                </div>
+              </div>
+            ) : (
+              /* ===============================================================
+                 SUCCESS VIEW: GREEN CHECKMARK & REGISTRATION RECEIPT
+                 =============================================================== */
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden font-mono text-xs">
+                <div className="flex-1 overflow-y-auto p-5 flex flex-col items-center justify-center text-center space-y-4 custom-scrollbar">
+                  <div className="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-400/80 flex items-center justify-center text-emerald-400 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                    <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                    Registration Submitted for Verification
+                  </h3>
+                  <p className="text-xs text-zinc-300 max-w-md font-sans">
+                    Your delegate information and payment screenshot have been securely dispatched to the TESA Council.
+                  </p>
+                  <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.08] max-w-sm w-full text-left space-y-2 text-xs">
+                    <div className="flex justify-between text-zinc-400">
+                      <span>REGISTRATION ID:</span>
+                      <span className="text-purple-300 font-bold">{submittedRegId || "REG-CONFIRMED"}</span>
+                    </div>
+                    <div className="flex justify-between text-zinc-400">
+                      <span>DELEGATE:</span>
+                      <span className="text-white font-semibold">{fullName}</span>
+                    </div>
+                    <div className="flex justify-between text-zinc-400">
+                      <span>STUDENT PRN:</span>
+                      <span className="text-purple-300 font-semibold">{prn.toUpperCase()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("verifiedList")}
+                    className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-purple-300 text-xs font-mono transition-colors cursor-pointer"
+                  >
+                    Check Status in Verified List →
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleModalClose}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-lg"
+                  >
+                    Done &amp; Close
+                  </button>
+                </div>
+              </div>
+            )}
         </motion.div>
       </div>
       )}
