@@ -114,10 +114,10 @@ export default function Textile3DCenterpiece({ onOpenRegister }: CenterpieceProp
             className="flex flex-wrap items-center gap-4"
           >
             <button
-              onClick={() => onOpenRegister("TEX-CONCLAVE 2026")}
-              className="px-6 py-3 rounded-full text-xs font-mono font-bold tracking-wider uppercase text-black bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-400 hover:opacity-90 shadow-[0_0_30px_rgba(0,240,255,0.4)] transition-all"
+              onClick={() => onOpenRegister("TEXPLORER 2026")}
+              className="px-6 py-3 rounded-full text-xs font-mono font-bold tracking-wider uppercase text-black bg-gradient-to-r from-cyan-400 via-purple-300 to-pink-400 hover:opacity-90 shadow-[0_0_30px_rgba(0,240,255,0.4)] transition-all cursor-pointer"
             >
-              Register for Conclave →
+              Register for TEXPLORER →
             </button>
             <a
               href="#grid"

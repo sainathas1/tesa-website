@@ -71,6 +71,8 @@ export interface EventItem {
   status: "open" | "upcoming" | "closed";
   eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
+  paymentQrUrl?: string;
+  qrCodeUrl?: string;
   summary: string;
   highlights?: string;
   galleryUrls?: string[];
@@ -215,57 +217,166 @@ const INITIAL_TEAM: TeamMember[] = [
 
 const INITIAL_EVENTS: EventItem[] = [
   {
-    id: "ev-demo-1",
-    title: "TEX-CONCLAVE 2026: National Smart Fibers Symposium",
-    category: "National Conclave",
-    date: "April 28–29, 2026",
-    venue: "SGGSIE&T Main Auditorium",
-    deadline: "April 15, 2026",
-    capacity: 250,
+    id: "ev-texplorer-2026",
+    title: "TEXPLORER 2026: National Mega Textile Conclave",
+    category: "Mega National Festival",
+    date: "April 28–30, 2026",
+    venue: "SGGSIE&T Main Auditorium & Textile Complex",
+    deadline: "April 20, 2026",
+    capacity: 500,
     status: "open",
     eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60",
-    summary: "Flagship national convention uniting textile researchers, paper presentations, and live CAD weaving contests.",
-    highlights: "₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE Certification",
+    summary: "SGGSIE&T TESA's premier annual mega national technical symposium uniting 40+ engineering colleges. Features 6 competitive tracks: Technical Research Presentations, Smart Weaves Hackathon, CAD Fabric Design, National Textile Quiz, Working Models, and Live Machinery Workshops.",
+    highlights: "₹2,00,000+ Prize Pool • 6 Concurrent Tracks • National IEEE / TESA Certification",
+    customFormFields: [
+      {
+        id: "cf-tex-track",
+        questionTitle: "Select Your TEXPLORER Competition Track",
+        fieldType: "Dropdown Options",
+        options: "Tex-Paper: Technical Research Presentation, Tex-Hack: Smart Weaves & IoT Looms Hackathon, Tex-Design: CAD & Digital Jacquard Mania, Tex-Quiz: National Textile Brain Quest, Tex-Exhibit: Working Model & Prototype Expo, Tex-Workshop: Nanofiber Electrospinning Lab",
+        required: true,
+      },
+      {
+        id: "cf-team-name",
+        questionTitle: "Team / Project Title",
+        fieldType: "Short Text",
+        required: true,
+      },
+      {
+        id: "cf-abstract",
+        questionTitle: "Abstract / Concept Summary",
+        fieldType: "Paragraph",
+        required: true,
+      },
+      {
+        id: "cf-deck",
+        questionTitle: "Upload Research Deck / Abstract Document (Optional - PPT/PDF/Image)",
+        fieldType: "File Upload (PPT/PDF/Image)",
+        required: false,
+      },
+    ],
   },
   {
-    id: "ev-demo-2",
-    title: "SMART WEAVES HACKATHON 2026",
+    id: "ev-tex-hack-2026",
+    title: "TEXPLORER: Tex-Hack (Smart Weaves 36-Hr Hackathon)",
     category: "Technical Hackathon",
-    date: "May 10–11, 2026",
+    date: "April 29–30, 2026",
     venue: "Textile CAD/CAM Studio & IoT Labs",
-    deadline: "May 1, 2026",
-    capacity: 100,
-    status: "upcoming",
+    deadline: "April 22, 2026",
+    capacity: 120,
+    status: "open",
     eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
-    summary: "36-hour sprint pairing textile engineers with electronics students to build wearable fabric sensors.",
-    highlights: "Hardware Looms Access • Angel Mentors • Seed Incubation",
+    summary: "Conducted under the TEXPLORER mega fest: 36-hour sprint pairing textile innovators with electronics & computer engineering students to build wearable fabric sensors, conductive yarns, and automated loom scanners.",
+    highlights: "Hardware Looms Access • Angel Mentors • Seed Incubation • ₹60,000 Cash Prizes",
+    customFormFields: [
+      {
+        id: "cf-team-hack",
+        questionTitle: "Hackathon Squad Name",
+        fieldType: "Short Text",
+        required: true,
+      },
+      {
+        id: "cf-tech-stack",
+        questionTitle: "Hardware / Software Architecture Proposed",
+        fieldType: "Paragraph",
+        required: true,
+      },
+      {
+        id: "cf-pitch-deck",
+        questionTitle: "Pitch Deck / Concept Schema (Optional - PPT/PDF/Image)",
+        fieldType: "File Upload (PPT/PDF/Image)",
+        required: false,
+      },
+    ],
   },
   {
-    id: "ev-demo-3",
-    title: "NANOFIBER & ELECTROSPINNING WORKSHOP",
-    category: "Laboratory Workshop",
-    date: "June 5–6, 2026",
-    venue: "Advanced Technical Textiles Lab",
-    deadline: "May 25, 2026",
-    capacity: 60,
+    id: "ev-tex-paper-2026",
+    title: "TEXPLORER: Tex-Paper (National Research Presentation)",
+    category: "Research Symposium",
+    date: "April 28, 2026",
+    venue: "Main Auditorium & Seminar Hall 1",
+    deadline: "April 18, 2026",
+    capacity: 150,
+    status: "open",
+    eventStatus: "Upcoming",
+    mediaUrl: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=60",
+    summary: "The flagship technical paper presentation track of TEXPLORER. Students present original peer-reviewed research on Sustainable Fibers, Electrospinning, Technical Textiles, and Industrial Decarbonization.",
+    highlights: "Publication in TESA Journal • Industry Jury • ₹40,000 Cash Awards",
+    customFormFields: [
+      {
+        id: "cf-paper-title",
+        questionTitle: "Research Paper Title",
+        fieldType: "Short Text",
+        required: true,
+      },
+      {
+        id: "cf-paper-abstract",
+        questionTitle: "Paper Abstract & Findings",
+        fieldType: "Paragraph",
+        required: true,
+      },
+      {
+        id: "cf-paper-file",
+        questionTitle: "Draft Paper / Presentation Deck (Optional - PPT/PDF)",
+        fieldType: "File Upload (PPT/PDF/Image)",
+        required: false,
+      },
+    ],
+  },
+  {
+    id: "ev-tex-design-2026",
+    title: "TEXPLORER: Tex-Design (CAD & Digital Jacquard Sprint)",
+    category: "CAD Design Challenge",
+    date: "April 29, 2026",
+    venue: "Textile CAD Simulation Laboratory",
+    deadline: "April 24, 2026",
+    capacity: 80,
     status: "open",
     eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=60",
-    summary: "Hands-on synthesis of polymeric nanofibers for high-efficiency air filters and biomedical wound dressings.",
-    highlights: "Live Electrospinner Demo • ASTM Characterization • Kit Provided",
+    summary: "Live digital dobby and electronic jacquard design challenge under TEXPLORER. Competitors draft intricate fabric weave structures and simulate 3D garment drape patterns.",
+    highlights: "Staubli & NedGraphics Licenses • Industry Portfolio Mentorship • ₹30,000 Cash Pool",
+    customFormFields: [
+      {
+        id: "cf-cad-software",
+        questionTitle: "Preferred CAD Tool (NedGraphics / Staubli / Corel / Photoshop)",
+        fieldType: "Short Text",
+        required: true,
+      },
+      {
+        id: "cf-cad-portfolio",
+        questionTitle: "Prior Portfolio Sample (Optional - PPT/PDF/Image)",
+        fieldType: "File Upload (PPT/PDF/Image)",
+        required: false,
+      },
+    ],
   },
   {
-    id: "ev-demo-4",
-    title: "TEX-CONCLAVE 2025: Sustainable Textiles Conclave",
-    category: "National Conclave",
+    id: "ev-tex-quiz-2026",
+    title: "TEXPLORER: Tex-Quiz (National Textile Brain Quest)",
+    category: "Technical Quiz",
+    date: "April 30, 2026",
+    venue: "Textile Conference Hall",
+    deadline: "April 26, 2026",
+    capacity: 100,
+    status: "open",
+    eventStatus: "Upcoming",
+    mediaUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=60",
+    summary: "Thrilling 3-round technical quiz covering polymer science, high-speed spinning, wet chemical processing, and international technical textile standards.",
+    highlights: "Buzzer Rounds • Cash Prizes • TESA Trophies",
+  },
+  {
+    id: "ev-texplorer-2025",
+    title: "TEXPLORER 2025: National Mega Conclave & Symposium",
+    category: "Mega National Festival",
     date: "March 15–16, 2025",
     venue: "SGGSIE&T Main Auditorium",
     status: "closed",
     eventStatus: "Concluded",
     mediaUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=60",
-    summary: "Over 480 delegates from 28 technical colleges participated in competitive research tracks and industrial roundtables.",
+    summary: "Over 480 delegates from 28 technical colleges participated in competitive research tracks, hackathons, and industrial roundtables.",
     highlights: "480+ Delegates • 65 Peer-Reviewed Papers • Industry Roundtable",
     galleryUrls: [
       "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80",
@@ -276,41 +387,8 @@ const INITIAL_EVENTS: EventItem[] = [
   },
 ];
 
-const INITIAL_REGISTRATIONS: Registration[] = [
-  {
-    id: "reg-1",
-    studentName: "Aditya Deshmukh",
-    prn: "2023BTE042",
-    email: "aditya.d@sggs.ac.in",
-    department: "Textile Technology",
-    year: "Third Year B.Tech",
-    eventTitle: "TEX-CONCLAVE 2026: National Smart Fibers Symposium",
-    registeredAt: "2026-03-28",
-    status: "approved",
-  },
-  {
-    id: "reg-2",
-    studentName: "Priyanka Joshi",
-    prn: "2024BTE019",
-    email: "priyanka.j@sggs.ac.in",
-    department: "Textile Technology",
-    year: "Second Year B.Tech",
-    eventTitle: "SMART WEAVES HACKATHON 2026",
-    registeredAt: "2026-03-29",
-    status: "pending",
-  },
-  {
-    id: "reg-3",
-    studentName: "Kunal Shinde",
-    prn: "2022BTE005",
-    email: "kunal.s@sggs.ac.in",
-    department: "Textile Technology",
-    year: "Final Year B.Tech",
-    eventTitle: "NANOFIBER & ELECTROSPINNING WORKSHOP",
-    registeredAt: "2026-03-30",
-    status: "approved",
-  },
-];
+// No dummy registrations - clean slate for live student submissions
+const INITIAL_REGISTRATIONS: Registration[] = [];
 
 // Sample portrait links for fast preview testing in modals
 const SAMPLE_PORTRAITS = [
@@ -388,6 +466,8 @@ export default function AdminDashboardPage() {
     status: "open",
     eventStatus: "Upcoming",
     mediaUrl: "",
+    paymentQrUrl: "",
+    qrCodeUrl: "",
     summary: "",
     highlights: "",
     galleryUrls: [],
@@ -395,6 +475,14 @@ export default function AdminDashboardPage() {
   });
   const eventFileInputRef = useRef<HTMLInputElement>(null);
   const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  const eventQrFileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingQr, setIsUploadingQr] = useState<boolean>(false);
+
+  // Dedicated Payment QR Code configuration for Event Registration tab
+  const [registrationQrUrl, setRegistrationQrUrl] = useState<string>("");
+  const [selectedQrEventId, setSelectedQrEventId] = useState<string>("all");
+  const [isUploadingRegQr, setIsUploadingRegQr] = useState<boolean>(false);
+  const regQrFileInputRef = useRef<HTMLInputElement>(null);
 
   // --------------------------------------------------------------------------
   // 3. STATE: REGISTRATIONS & EXCEL EXPORT
@@ -527,27 +615,65 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     try {
       const storedTeam = localStorage.getItem("tesa_team");
-      if (storedTeam) {
+      if (storedTeam !== null) {
         const parsed = JSON.parse(storedTeam);
-        if (Array.isArray(parsed) && parsed.length > 0) setTeamList(parsed);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasCore = parsed.some((m: any) =>
+            (m.category || "").toLowerCase().includes("core") ||
+            (m.role || "").toLowerCase().includes("president") ||
+            (m.role || "").toLowerCase().includes("secretary")
+          );
+          const validatedTeam = hasCore
+            ? parsed
+            : [...parsed, ...INITIAL_TEAM.filter((m) => !parsed.some((p: any) => p.id === m.id))];
+          setTeamList(validatedTeam);
+        }
       } else {
         localStorage.setItem("tesa_team", JSON.stringify(INITIAL_TEAM));
       }
 
       const storedEvents = localStorage.getItem("tesa_events");
-      if (storedEvents) {
+      if (storedEvents !== null) {
         const parsed = JSON.parse(storedEvents);
-        if (Array.isArray(parsed) && parsed.length > 0) setEventsList(parsed);
+        if (Array.isArray(parsed)) setEventsList(parsed);
       } else {
         localStorage.setItem("tesa_events", JSON.stringify(INITIAL_EVENTS));
       }
 
       const storedRegs = localStorage.getItem("tesa_registrations");
       if (storedRegs) {
-        const parsed = JSON.parse(storedRegs);
-        if (Array.isArray(parsed) && parsed.length > 0) setRegistrations(parsed);
+        try {
+          const parsed = JSON.parse(storedRegs);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            // Strip any dummy / mock registrations
+            const cleanRegs = parsed.filter(
+              (r: any) =>
+                r.id !== "reg-1" &&
+                r.id !== "reg-2" &&
+                r.id !== "reg-3" &&
+                r.studentName !== "Aditya Deshmukh" &&
+                r.studentName !== "Priyanka Joshi" &&
+                r.studentName !== "Kunal Shinde"
+            );
+            setRegistrations(cleanRegs);
+            localStorage.setItem("tesa_registrations", JSON.stringify(cleanRegs));
+          } else {
+            setRegistrations([]);
+          }
+        } catch {
+          setRegistrations([]);
+        }
       } else {
-        localStorage.setItem("tesa_registrations", JSON.stringify(INITIAL_REGISTRATIONS));
+        localStorage.setItem("tesa_registrations", JSON.stringify([]));
+        setRegistrations([]);
+      }
+
+      const storedQr = localStorage.getItem("tesa_payment_qr");
+      if (storedQr) {
+        setRegistrationQrUrl(storedQr);
+      } else {
+        const defaultQr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR";
+        setRegistrationQrUrl(defaultQr);
       }
     } catch (err) {
       console.warn("localStorage note:", err);
@@ -596,31 +722,58 @@ export default function AdminDashboardPage() {
     try {
       // 1. Team sync
       const teamSnap = await getDocs(collection(db, "team"));
-      if (!teamSnap.empty) {
-        const items: TeamMember[] = [];
-        teamSnap.forEach((d) => items.push({ ...(d.data() as TeamMember), id: d.id }));
-        setTeamList(items);
-        localStorage.setItem("tesa_team", JSON.stringify(items));
+      const itemsTeam: TeamMember[] = [];
+      teamSnap.forEach((d) => itemsTeam.push({ ...(d.data() as TeamMember), id: d.id }));
+      if (itemsTeam.length > 0) {
+        const remoteIds = new Set(itemsTeam.map((m) => m.id));
+        const hasCore = itemsTeam.some(
+          (m) =>
+            (m.category || "").toLowerCase() === "core" ||
+            (m.role || "").toLowerCase().includes("president") ||
+            (m.role || "").toLowerCase().includes("secretary")
+        );
+        const mergedTeam = hasCore
+          ? itemsTeam
+          : [...itemsTeam, ...INITIAL_TEAM.filter((m) => !remoteIds.has(m.id))];
+        setTeamList(mergedTeam);
+        localStorage.setItem("tesa_team", JSON.stringify(mergedTeam));
+      } else {
+        setTeamList(INITIAL_TEAM);
+        localStorage.setItem("tesa_team", JSON.stringify(INITIAL_TEAM));
       }
 
       // 2. Events sync
-      const evSnap = await getDocs(query(collection(db, "events"), orderBy("createdAt", "desc")));
-      if (!evSnap.empty) {
-        const items: EventItem[] = [];
-        evSnap.forEach((d) => items.push({ ...(d.data() as EventItem), id: d.id }));
-        setEventsList(items);
-        localStorage.setItem("tesa_events", JSON.stringify(items));
-      }
+      const evSnap = await getDocs(collection(db, "events"));
+      const itemsEvents: EventItem[] = [];
+      evSnap.forEach((d) => itemsEvents.push({ ...(d.data() as EventItem), id: d.id }));
+      itemsEvents.sort((a: any, b: any) => {
+        const getTimestamp = (e: any) => {
+          if (e.createdAt?.seconds) return e.createdAt.seconds * 1000;
+          if (e.updatedAt?.seconds) return e.updatedAt.seconds * 1000;
+          if (e.createdAt) {
+            const p = new Date(e.createdAt).getTime();
+            if (!isNaN(p)) return p;
+          }
+          if (e.date) {
+            const p = new Date(e.date).getTime();
+            if (!isNaN(p)) return p;
+          }
+          return 0;
+        };
+        return getTimestamp(b) - getTimestamp(a);
+      });
+      setEventsList(itemsEvents);
+      localStorage.setItem("tesa_events", JSON.stringify(itemsEvents));
 
       // 3. Registrations sync (both event_registrations and registrations collections)
-      const items: Registration[] = [];
+      const itemsRegs: Registration[] = [];
 
       try {
         const evRegSnap = await getDocs(collection(db, "event_registrations"));
         if (!evRegSnap.empty) {
           evRegSnap.forEach((d) => {
             const data = d.data();
-            items.push({
+            itemsRegs.push({
               id: d.id,
               studentName: data.fullName || data.studentName || "Student",
               prn: data.prn || "N/A",
@@ -644,16 +797,23 @@ export default function AdminDashboardPage() {
       try {
         const regSnap = await getDocs(collection(db, "registrations"));
         if (!regSnap.empty) {
-          regSnap.forEach((d) => items.push({ ...(d.data() as Registration), id: d.id }));
+          regSnap.forEach((d) => itemsRegs.push({ ...(d.data() as Registration), id: d.id }));
         }
       } catch (e) {
         console.warn("registrations sync fallback:", e);
       }
 
-      if (items.length > 0) {
-        setRegistrations(items);
-        localStorage.setItem("tesa_registrations", JSON.stringify(items));
-      }
+      const cleanItemsRegs = itemsRegs.filter(
+        (r) =>
+          r.id !== "reg-1" &&
+          r.id !== "reg-2" &&
+          r.id !== "reg-3" &&
+          r.studentName !== "Aditya Deshmukh" &&
+          r.studentName !== "Priyanka Joshi" &&
+          r.studentName !== "Kunal Shinde"
+      );
+      setRegistrations(cleanItemsRegs);
+      localStorage.setItem("tesa_registrations", JSON.stringify(cleanItemsRegs));
 
       setFirestoreStatus("connected");
     } catch (err: any) {
@@ -833,6 +993,39 @@ export default function AdminDashboardPage() {
     showToast(`Removed council member ${name}.`);
   };
 
+  const isMatchAdminCategory = (m: TeamMember, cat: string) => {
+    if (cat === "all") return true;
+    const memberCat = (m.category || "").toLowerCase().trim();
+    const filterCat = cat.toLowerCase().trim();
+    if (memberCat === filterCat) return true;
+    if (filterCat === "core") {
+      const role = (m.role || "").toLowerCase();
+      const designation = (m.designation || "").toLowerCase();
+      return (
+        memberCat.includes("core") ||
+        memberCat.includes("council") ||
+        role.includes("president") ||
+        role.includes("secretary") ||
+        role.includes("treasurer") ||
+        designation.includes("council") ||
+        designation.includes("executive")
+      );
+    }
+    if (filterCat === "technical") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("tech") || memberCat.includes("research") || role.includes("tech");
+    }
+    if (filterCat === "events") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("event") || memberCat.includes("hack") || role.includes("event");
+    }
+    if (filterCat === "outreach") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("outreach") || memberCat.includes("pr") || memberCat.includes("media") || memberCat.includes("alumni") || role.includes("outreach");
+    }
+    return false;
+  };
+
   // --------------------------------------------------------------------------
   // EVENT ACTIONS (Banner Upload & Firestore Save)
   // --------------------------------------------------------------------------
@@ -851,6 +1044,8 @@ export default function AdminDashboardPage() {
       status: "open",
       eventStatus: "Upcoming",
       mediaUrl: "",
+      paymentQrUrl: registrationQrUrl || "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR",
+      qrCodeUrl: registrationQrUrl || "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR",
       summary: "",
       highlights: "",
       galleryUrls: [],
@@ -864,9 +1059,12 @@ export default function AdminDashboardPage() {
     setGalleryFiles([]);
     const resolvedStatus: "Upcoming" | "Concluded" =
       ev.eventStatus || (ev.status === "closed" ? "Concluded" : "Upcoming");
+    const resolvedQr = ev.paymentQrUrl || ev.qrCodeUrl || registrationQrUrl || "";
     setEventForm({
       ...ev,
       eventStatus: resolvedStatus,
+      paymentQrUrl: resolvedQr,
+      qrCodeUrl: resolvedQr,
       galleryUrls: ev.galleryUrls || [],
       customFormFields: ev.customFormFields ? JSON.parse(JSON.stringify(ev.customFormFields)) : [],
     });
@@ -891,6 +1089,10 @@ export default function AdminDashboardPage() {
     fieldId: string,
     updates: Partial<CustomFormField>
   ) => {
+    // If setting to File Upload (PPT/PDF/Image), media is always kept optional per requirement
+    if (updates.fieldType === "File Upload (PPT/PDF/Image)") {
+      updates.required = false;
+    }
     setEventForm((prev) => ({
       ...prev,
       customFormFields: (prev.customFormFields || []).map((field) =>
@@ -947,6 +1149,111 @@ export default function AdminDashboardPage() {
       showToast(err?.message || "Failed to upload banner to Cloudinary.", "error");
     } finally {
       setIsUploadingBanner(false);
+    }
+  };
+
+  const handleEventQrFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      showToast("Payment QR Code image exceeds 8MB. Please choose a smaller image.", "error");
+      return;
+    }
+
+    try {
+      setIsUploadingQr(true);
+      showToast("Uploading Payment QR Code to Cloudinary...", "info");
+      const url = await uploadToCloudinary(file);
+      setEventForm((prev) => ({ ...prev, paymentQrUrl: url, qrCodeUrl: url }));
+      showToast("Payment QR Code uploaded to Cloudinary successfully!");
+    } catch (err: any) {
+      console.error("Cloudinary QR upload error:", err);
+      showToast(err?.message || "Failed to upload Payment QR to Cloudinary.", "error");
+    } finally {
+      setIsUploadingQr(false);
+    }
+  };
+
+  const handleRegQrFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      showToast("Payment QR Code image exceeds 8MB. Please choose a smaller image.", "error");
+      return;
+    }
+
+    try {
+      setIsUploadingRegQr(true);
+      showToast("Uploading Payment QR Code to Cloudinary...", "info");
+      const url = await uploadToCloudinary(file);
+      setRegistrationQrUrl(url);
+      localStorage.setItem("tesa_payment_qr", url);
+
+      if (selectedQrEventId === "all") {
+        const updated = eventsList.map((ev) => ({
+          ...ev,
+          paymentQrUrl: url,
+          qrCodeUrl: url,
+        }));
+        setEventsList(updated);
+        localStorage.setItem("tesa_events", JSON.stringify(updated));
+        for (const ev of updated) {
+          try {
+            await setDoc(doc(db, "events", ev.id), { paymentQrUrl: url, qrCodeUrl: url }, { merge: true });
+          } catch {}
+        }
+        showToast("Payment QR Code updated for all events successfully!");
+      } else {
+        const updated = eventsList.map((ev) =>
+          ev.id === selectedQrEventId ? { ...ev, paymentQrUrl: url, qrCodeUrl: url } : ev
+        );
+        setEventsList(updated);
+        localStorage.setItem("tesa_events", JSON.stringify(updated));
+        try {
+          await setDoc(doc(db, "events", selectedQrEventId), { paymentQrUrl: url, qrCodeUrl: url }, { merge: true });
+        } catch {}
+        showToast("Payment QR Code updated for selected event successfully!");
+      }
+    } catch (err: any) {
+      console.error("Cloudinary QR upload error:", err);
+      showToast(err?.message || "Failed to upload Payment QR to Cloudinary.", "error");
+    } finally {
+      setIsUploadingRegQr(false);
+    }
+  };
+
+  const handleSaveRegQrUrl = async () => {
+    if (!registrationQrUrl.trim()) {
+      showToast("Please provide a valid QR Code image URL or upload an image.", "error");
+      return;
+    }
+    localStorage.setItem("tesa_payment_qr", registrationQrUrl);
+    if (selectedQrEventId === "all") {
+      const updated = eventsList.map((ev) => ({
+        ...ev,
+        paymentQrUrl: registrationQrUrl,
+        qrCodeUrl: registrationQrUrl,
+      }));
+      setEventsList(updated);
+      localStorage.setItem("tesa_events", JSON.stringify(updated));
+      for (const ev of updated) {
+        try {
+          await setDoc(doc(db, "events", ev.id), { paymentQrUrl: registrationQrUrl, qrCodeUrl: registrationQrUrl }, { merge: true });
+        } catch {}
+      }
+      showToast("Payment QR Code URL saved for all events!");
+    } else {
+      const updated = eventsList.map((ev) =>
+        ev.id === selectedQrEventId ? { ...ev, paymentQrUrl: registrationQrUrl, qrCodeUrl: registrationQrUrl } : ev
+      );
+      setEventsList(updated);
+      localStorage.setItem("tesa_events", JSON.stringify(updated));
+      try {
+        await setDoc(doc(db, "events", selectedQrEventId), { paymentQrUrl: registrationQrUrl, qrCodeUrl: registrationQrUrl }, { merge: true });
+      } catch {}
+      showToast("Payment QR Code URL saved for selected event!");
     }
   };
 
@@ -1105,6 +1412,34 @@ export default function AdminDashboardPage() {
     }
 
     showToast("Registration record deleted.");
+  };
+
+  const handleClearDummyRegistrations = async () => {
+    const cleanList = registrations.filter(
+      (r) =>
+        r.id !== "reg-1" &&
+        r.id !== "reg-2" &&
+        r.id !== "reg-3" &&
+        r.studentName !== "Aditya Deshmukh" &&
+        r.studentName !== "Priyanka Joshi" &&
+        r.studentName !== "Kunal Shinde"
+    );
+    setRegistrations(cleanList);
+    try {
+      localStorage.setItem("tesa_registrations", JSON.stringify(cleanList));
+      localStorage.removeItem("tesa_event_registrations");
+    } catch {}
+
+    const dummyIds = ["reg-1", "reg-2", "reg-3"];
+    for (const dId of dummyIds) {
+      try {
+        await deleteDoc(doc(db, "event_registrations", dId));
+      } catch {}
+      try {
+        await deleteDoc(doc(db, "registrations", dId));
+      } catch {}
+    }
+    showToast("All dummy and mock registrations cleared.", "success");
   };
 
   const handleExportToExcel = () => {
@@ -1303,18 +1638,19 @@ export default function AdminDashboardPage() {
 
       {/* Top Header */}
       <header className="sticky top-0 z-40 w-full border-b border-white/10 bg-[#050508]/85 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex flex-wrap items-center justify-between gap-2 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/"
-              className="min-h-[44px] px-4 py-2 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 text-xs font-mono text-zinc-300 hover:text-purple-300 transition-colors flex items-center gap-1.5 cursor-pointer backdrop-blur-xl"
+              className="min-h-[38px] px-2.5 sm:px-4 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 text-[11px] sm:text-xs font-mono text-zinc-300 hover:text-purple-300 transition-colors flex items-center gap-1.5 cursor-pointer backdrop-blur-xl shrink-0"
             >
               <span>←</span>
-              <span>Public Website</span>
+              <span className="hidden sm:inline">Public Website</span>
+              <span className="sm:hidden">Site</span>
             </Link>
             <div className="h-4 w-px bg-white/10 hidden sm:block" />
-            <div className="flex items-center gap-2.5">
-              <div className="relative w-8 h-8 rounded-full border border-purple-400/40 p-0.5 overflow-hidden bg-black shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+            <div className="flex items-center gap-2">
+              <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-purple-400/40 p-0.5 overflow-hidden bg-black shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
                 <Image
                   src="/tesa-logo.png"
                   alt="TESA Logo"
@@ -1324,32 +1660,29 @@ export default function AdminDashboardPage() {
                 />
               </div>
               <div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="font-mono text-xs sm:text-sm font-bold text-white tracking-wider">
-                    TESA CONTROL SUITE
+                    TESA CONTROL
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30">
-                    DARK STUDIO v4.0
+                  <span className="text-[9px] sm:text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30">
+                    STUDIO
                   </span>
                 </div>
-                <span className="text-[10px] font-mono text-zinc-500 hidden sm:block">
-                  SGGSIE&amp;T Textile Engineering Students Association
-                </span>
               </div>
             </div>
           </div>
 
           {/* User Profile & Sign Out */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 px-2.5 py-1 rounded-xl bg-white/[0.03] border border-white/10 backdrop-blur-xl">
               {user.photoURL && (
                 <Image
                   src={user.photoURL}
                   alt={user.displayName || "Admin"}
-                  width={28}
-                  height={28}
+                  width={24}
+                  height={24}
                   unoptimized
-                  className="w-7 h-7 rounded-lg border border-purple-400/40 object-cover"
+                  className="w-6 h-6 rounded-md border border-purple-400/40 object-cover"
                 />
               )}
               <div className="hidden md:block text-left text-xs font-mono">
@@ -1362,7 +1695,7 @@ export default function AdminDashboardPage() {
               </div>
               <button
                 onClick={() => signOut(auth)}
-                className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/10 hover:bg-red-950/40 hover:border-red-500/40 hover:text-red-300 text-xs font-mono transition-colors cursor-pointer"
+                className="min-h-[36px] px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 hover:bg-red-950/40 hover:border-red-500/40 hover:text-red-300 text-xs font-mono transition-colors cursor-pointer"
                 title="Sign out"
               >
                 Sign Out
@@ -1373,29 +1706,30 @@ export default function AdminDashboardPage() {
       </header>
 
       {/* Main Admin Console */}
-      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-12">
+      <main className="relative z-10 flex-1 max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 w-full space-y-8 sm:space-y-12">
         {/* Navigation Tabs Bar: Team is #1 */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/[0.08]">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {[
-              { id: "team", label: "MANAGE TESA TEAM", icon: "👥", count: teamList.length },
-              { id: "events", label: "MANAGE EVENTS", icon: "📅", count: eventsList.length },
-              { id: "registrations", label: "MANAGE REGISTRATIONS & VERIFY", icon: "📋", count: registrations.length },
-              { id: "all", label: "STACKED VIEW (ALL)", icon: "🌟", count: null },
+              { id: "team", label: "TEAM", fullLabel: "MANAGE TESA TEAM", icon: "👥", count: teamList.length },
+              { id: "events", label: "EVENTS", fullLabel: "MANAGE EVENTS", icon: "📅", count: eventsList.length },
+              { id: "registrations", label: "REGISTRATIONS", fullLabel: "MANAGE REGISTRATIONS", icon: "📋", count: registrations.length },
+              { id: "all", label: "ALL", fullLabel: "STACKED VIEW", icon: "🌟", count: null },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-mono font-semibold tracking-wide border transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[11px] sm:text-xs font-mono font-semibold tracking-wide border transition-all cursor-pointer ${
                   activeTab === tab.id
                     ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white border-white/20 shadow-[0_0_20px_rgba(139,92,246,0.4)] font-bold"
                     : "bg-white/[0.03] text-zinc-300 border-white/10 hover:border-purple-500/40 hover:text-white"
                 }`}
               >
                 <span>{tab.icon}</span>
-                <span>{tab.label}</span>
+                <span className="sm:hidden">{tab.label}</span>
+                <span className="hidden sm:inline">{tab.fullLabel}</span>
                 {tab.count !== null && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] ${
+                  <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] ${
                     activeTab === tab.id ? "bg-black/40 text-white font-extrabold" : "bg-white/10 text-purple-300"
                   }`}>
                     {tab.count}
@@ -1493,10 +1827,37 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Team Members Grid: Bento Cards with Hover Spotlight Glow */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {teamList
-                .filter((m) => teamCategoryFilter === "all" || m.category === teamCategoryFilter)
-                .map((member) => (
+            {teamList.filter((m) => isMatchAdminCategory(m, teamCategoryFilter)).length === 0 ? (
+              <div className="py-14 px-6 text-center rounded-3xl border border-white/10 bg-[#0b0c10]/70 backdrop-blur-xl shadow-2xl max-w-xl mx-auto">
+                <div className="w-14 h-14 mx-auto mb-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl text-purple-300">
+                  👥
+                </div>
+                <h3 className="text-lg font-mono font-bold text-white mb-1.5">
+                  No Members Found in this Category
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md mx-auto mb-5">
+                  There are currently no council members assigned to this category.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => setTeamCategoryFilter("all")}
+                    className="px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+                  >
+                    View All ({teamList.length})
+                  </button>
+                  <button
+                    onClick={handleOpenAddTeamModal}
+                    className="px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)] cursor-pointer"
+                  >
+                    + Add Member
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {teamList
+                  .filter((m) => isMatchAdminCategory(m, teamCategoryFilter))
+                  .map((member) => (
                   <div
                     key={member.id}
                     className="bento-card group rounded-3xl p-5 flex flex-col justify-between hover:border-purple-500/40 hover:-translate-y-1.5 transition-all duration-300 relative overflow-hidden"
@@ -1588,7 +1949,8 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                 ))}
-            </div>
+              </div>
+            )}
           </section>
         )}
 
@@ -1798,6 +2160,154 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
+            {/* EVENT PAYMENT QR CODE MANAGER (For Event Registration & Payment Verification) */}
+            <div className="p-5 sm:p-6 rounded-3xl glass-card border border-purple-500/30 bg-gradient-to-br from-purple-950/20 via-[#0b0c10] to-[#07080c] space-y-4 shadow-[0_10px_35px_rgba(0,0,0,0.6)]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-xl text-purple-300 shrink-0">
+                    💳
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                        Event Payment QR Code &amp; UPI Gateway
+                      </h3>
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold">
+                        LIVE ON REGISTRATION FORM
+                      </span>
+                    </div>
+                    <p className="text-xs text-zinc-400 mt-0.5">
+                      Upload or update the payment QR code image displayed to students in the registration modal when they sign up for events.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Event Target Selector */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-[11px] font-mono text-zinc-400">Target Event:</span>
+                  <select
+                    value={selectedQrEventId}
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      setSelectedQrEventId(selectedId);
+                      if (selectedId === "all") {
+                        const stored = localStorage.getItem("tesa_payment_qr");
+                        if (stored) setRegistrationQrUrl(stored);
+                      } else {
+                        const targetEv = eventsList.find((ev) => ev.id === selectedId);
+                        if (targetEv?.paymentQrUrl || targetEv?.qrCodeUrl) {
+                          setRegistrationQrUrl(targetEv.paymentQrUrl || targetEv.qrCodeUrl || "");
+                        }
+                      }
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-[#0b0c10] border border-white/10 text-xs font-mono text-white focus:outline-none focus:border-purple-500 cursor-pointer"
+                  >
+                    <option value="all">★ All Events (Master Default QR)</option>
+                    {eventsList.map((ev) => (
+                      <option key={ev.id} value={ev.id}>
+                        {ev.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {/* QR Code Preview & Upload Area */}
+              <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-start">
+                {/* QR Code Thumbnail Preview */}
+                <div className="flex flex-col items-center shrink-0">
+                  <div className="relative w-32 h-32 rounded-2xl bg-white p-2 border-2 border-purple-400/50 shadow-xl overflow-hidden group">
+                    <Image
+                      src={
+                        registrationQrUrl ||
+                        "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR"
+                      }
+                      alt="Payment QR Code"
+                      width={128}
+                      height={128}
+                      unoptimized
+                      className="w-full h-full object-contain rounded-xl"
+                    />
+                    <a
+                      href={
+                        registrationQrUrl ||
+                        "https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR"
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-mono font-bold"
+                    >
+                      🔍 Full View
+                    </a>
+                    {isUploadingRegQr && (
+                      <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-purple-300 text-[10px] animate-pulse">
+                        <div className="w-5 h-5 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mb-1" />
+                        <span>Uploading...</span>
+                      </div>
+                    )}
+                  </div>
+                  <span className="text-[10px] font-mono text-purple-300 mt-1.5">
+                    UPI: tesa@sggs
+                  </span>
+                </div>
+
+                {/* Upload & Configuration Controls */}
+                <div className="flex-1 w-full space-y-3">
+                  <div>
+                    <label className="text-xs font-semibold text-zinc-300 block mb-1.5">
+                      Upload Payment QR Code Image (File from Device / Cloudinary)
+                    </label>
+                    <input
+                      ref={regQrFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingRegQr}
+                      onChange={handleRegQrFileChange}
+                      className="w-full text-xs text-zinc-300 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                    />
+                    <span className="text-[10px] text-zinc-400 block mt-1">
+                      Upload your GPay / PhonePe / Paytm UPI QR code screenshot or image. Auto-optimizes on Cloudinary.
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-zinc-400 block">
+                      Or Provide Hosted QR Image URL:
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="https://res.cloudinary.com/.../image/upload/qr.png"
+                        value={registrationQrUrl}
+                        onChange={(e) => setRegistrationQrUrl(e.target.value)}
+                        className="flex-1 px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveRegQrUrl}
+                        className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition-colors shrink-0 cursor-pointer shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+                      >
+                        Save &amp; Apply
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const def = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR";
+                          setRegistrationQrUrl(def);
+                          localStorage.setItem("tesa_payment_qr", def);
+                          showToast("Reset to official dynamic UPI QR code!");
+                        }}
+                        className="px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/10 text-zinc-300 text-xs shrink-0 cursor-pointer"
+                        title="Reset to default UPI QR"
+                      >
+                        Reset Default
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Filter & Search Bar: Dark Command Center */}
             <div className="p-4 rounded-2xl glass-card flex flex-col md:flex-row items-center gap-3 text-xs">
               <div className="relative flex-1 w-full">
@@ -1840,14 +2350,25 @@ export default function AdminDashboardPage() {
 
             {/* Registrations Data Table: Dark Bento Card Table */}
             <div className="bento-card rounded-3xl overflow-hidden relative">
-              <div className="flex items-center justify-between px-5 py-3 bg-white/[0.02] border-b border-white/[0.08] text-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 bg-white/[0.02] border-b border-white/[0.08] text-xs">
                 <span className="flex items-center gap-2 text-purple-300 font-medium">
                   <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
                   Live Participant Registry
                 </span>
-                <span className="text-zinc-500 text-[11px] font-mono">
-                  Real-time sync with Firestore
-                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleClearDummyRegistrations}
+                    className="px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-300 hover:text-red-200 border border-red-500/30 text-[11px] font-mono transition-colors cursor-pointer flex items-center gap-1.5"
+                    title="Remove any dummy or mock registrations"
+                  >
+                    <span>🗑</span>
+                    <span>Clear Dummy Records</span>
+                  </button>
+                  <span className="text-zinc-500 text-[11px] font-mono hidden sm:inline">
+                    Real-time sync with Firestore
+                  </span>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse text-xs">
@@ -2039,8 +2560,8 @@ export default function AdminDashboardPage() {
                 MODAL: STUDENT FORM RESPONSES & VERIFICATION INSPECTOR
                 ============================================================= */}
             {selectedRegForAnswers && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
-                <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-6 sm:p-7 text-xs my-8">
+              <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl overflow-y-auto overscroll-contain">
+                <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-5 sm:p-7 text-xs my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto">
                   {/* Top Modal Header */}
                   <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
                     <div>
@@ -2217,8 +2738,8 @@ export default function AdminDashboardPage() {
           MODAL: ADD / EDIT COUNCIL MEMBER (With Sleek Portrait Frame Preview)
           ======================================================================= */}
       {isTeamModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
-          <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-6 sm:p-7 text-xs my-8">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl overflow-y-auto overscroll-contain">
+          <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-5 sm:p-7 text-xs my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
               <div>
                 <span className="text-[10px] text-purple-400 uppercase tracking-widest block font-mono">
@@ -2474,8 +2995,8 @@ export default function AdminDashboardPage() {
           MODAL: ADD / EDIT EVENT (With Google Forms Builder & Gallery)
           ======================================================================= */}
       {isEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-xl overflow-y-auto">
-          <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-6 sm:p-7 text-xs my-8">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl overflow-y-auto overscroll-contain">
+          <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-5 sm:p-7 text-xs my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto">
             <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
               <div>
                 <span className="text-[10px] text-purple-400 uppercase tracking-widest block font-mono">
@@ -2539,6 +3060,73 @@ export default function AdminDashboardPage() {
                       onChange={(e) => setEventForm({ ...eventForm, mediaUrl: e.target.value })}
                       className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Event Payment QR Code Section */}
+              <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
+                    Event Payment QR Code (For UPI / GPay / PhonePe Registration Fee)
+                  </span>
+                  <span className="text-[10px] font-mono text-zinc-400">
+                    Displayed during student registration
+                  </span>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-4 items-center">
+                  <div className="w-24 h-24 rounded-2xl border border-purple-500/30 bg-white p-1.5 overflow-hidden shrink-0 relative flex items-center justify-center shadow-lg">
+                    {eventForm.paymentQrUrl || eventForm.qrCodeUrl ? (
+                      <Image
+                        src={eventForm.paymentQrUrl || eventForm.qrCodeUrl || ""}
+                        alt="Event Payment QR Code"
+                        fill
+                        unoptimized
+                        className="object-contain p-1"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-[9px] text-zinc-500 text-center font-mono">
+                        <span className="text-xl mb-0.5">📱</span>
+                        <span>No QR Code</span>
+                      </div>
+                    )}
+                    {isUploadingQr && (
+                      <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-purple-300 text-[10px] animate-pulse">
+                        <div className="w-4 h-4 rounded-full border-2 border-purple-400 border-t-transparent animate-spin mb-1" />
+                        <span>Uploading...</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 w-full space-y-2">
+                    <input
+                      ref={eventQrFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      disabled={isUploadingQr}
+                      onChange={handleEventQrFileChange}
+                      className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-gradient-to-r file:from-violet-600 file:to-purple-600 file:text-white hover:file:opacity-90 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                    />
+                    <div className="flex gap-2">
+                      <input
+                        type="url"
+                        placeholder="Or paste QR Code image URL..."
+                        value={eventForm.paymentQrUrl || eventForm.qrCodeUrl || ""}
+                        onChange={(e) => setEventForm({ ...eventForm, paymentQrUrl: e.target.value, qrCodeUrl: e.target.value })}
+                        className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
+                      />
+                      {(eventForm.paymentQrUrl || eventForm.qrCodeUrl) && (
+                        <button
+                          type="button"
+                          onClick={() => setEventForm({ ...eventForm, paymentQrUrl: "", qrCodeUrl: "" })}
+                          className="px-3 py-2 rounded-xl bg-red-950/50 hover:bg-red-900/60 border border-red-500/30 text-red-300 text-xs shrink-0 cursor-pointer"
+                          title="Clear QR Code"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2846,24 +3434,30 @@ export default function AdminDashboardPage() {
                         )}
 
                         {/* Required Checkbox Toggle */}
-                        <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
-                          <label className="inline-flex items-center gap-2 cursor-pointer select-none">
-                            <input
-                              type="checkbox"
-                              checked={field.required}
-                              onChange={(e) =>
-                                handleUpdateCustomQuestion(field.id, { required: e.target.checked })
-                              }
-                              className="w-3.5 h-3.5 rounded border-white/20 bg-black text-purple-500 focus:ring-0 focus:outline-none cursor-pointer"
-                            />
-                            <span className="text-xs text-zinc-300">
-                              Required Question
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-white/[0.06]">
+                          {field.fieldType === "File Upload (PPT/PDF/Image)" ? (
+                            <span className="text-[10px] text-amber-300 font-mono">
+                              ⚡ Media/Presentation uploads (PPT/PDF) are always optional for students
                             </span>
-                          </label>
+                          ) : (
+                            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                              <input
+                                type="checkbox"
+                                checked={field.required}
+                                onChange={(e) =>
+                                  handleUpdateCustomQuestion(field.id, { required: e.target.checked })
+                                }
+                                className="w-3.5 h-3.5 rounded border-white/20 bg-black text-purple-500 focus:ring-0 focus:outline-none cursor-pointer"
+                              />
+                              <span className="text-xs text-zinc-300">
+                                Required Question
+                              </span>
+                            </label>
+                          )}
 
                           <span className="text-[10px] font-mono text-purple-300/80">
                             {field.fieldType === "File Upload (PPT/PDF/Image)"
-                              ? "Cloudinary /auto/upload"
+                              ? "Optional • Cloudinary /auto/upload"
                               : field.fieldType}
                           </span>
                         </div>

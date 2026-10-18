@@ -44,3 +44,17 @@ export async function uploadToCloudinary(file: File): Promise<string> {
 
   return secureUrl;
 }
+
+/**
+ * Cloudinary Face-Detection Avatar Optimization Helper
+ * Automatically transforms Cloudinary URLs to center on the person's face
+ * with a 4:5 portrait ratio and high quality compression.
+ */
+export function getOptimizedAvatarUrl(url?: string): string {
+  if (!url) return "";
+  if (url.includes("res.cloudinary.com") && url.includes("/image/upload/")) {
+    if (url.includes("c_fill,g_face")) return url;
+    return url.replace("/image/upload/", "/image/upload/c_fill,g_face,w_800,h_1000,q_auto/");
+  }
+  return url;
+}

@@ -17,14 +17,14 @@ export default function Navbar({
 }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>("hero");
+  const [activeTab, setActiveTab] = useState<string>("hero-experience");
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 30);
+      setIsScrolled(window.scrollY > 250);
 
       // Detect current section in view
-      const sections = ["hero", "events", "team"];
+      const sections = ["hero-experience", "events-section", "verified-section", "team-section"];
       const scrollPosition = window.scrollY + 200;
       for (const section of sections) {
         const el = document.getElementById(section);
@@ -46,6 +46,9 @@ export default function Navbar({
   const handleNavClick = (sectionId: string) => {
     setMobileMenuOpen(false);
     setActiveTab(sectionId);
+    if (sectionId === "verified-section" && onOpenVerifiedList) {
+      onOpenVerifiedList();
+    }
     const element = document.getElementById(sectionId);
     if (element) {
       element.scrollIntoView({ behavior: "smooth" });
@@ -53,29 +56,30 @@ export default function Navbar({
   };
 
   const navLinks = [
-    { label: "Home", id: "hero" },
-    { label: "Events", id: "events" },
-    { label: "TESA Team", id: "team" },
+    { label: "Atelier", id: "hero-experience" },
+    { label: "Events", id: "events-section" },
+    { label: "Verified List", id: "verified-section" },
+    { label: "TESA Team", id: "team-section" },
   ];
 
   return (
     <>
-      {/* Floating Pill-Shaped Frosted Glass Navbar */}
+      {/* Floating Pill-Shaped Frosted Glass Navbar (reveals when scrolled below Hero) */}
       <header
-        className={`fixed top-4 sm:top-6 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-5xl rounded-full transition-all duration-300 ${
+        className={`fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl rounded-full transition-all duration-400 ease-out ${
           isScrolled
-            ? "glass-pill-navbar px-4 sm:px-6 py-2 sm:py-2.5 shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(124,58,237,0.25)] border-white/20"
-            : "glass-pill-navbar px-4 sm:px-6 py-2.5 sm:py-3 shadow-[0_10px_40px_rgba(0,0,0,0.75)] border-white/15"
+            ? "opacity-100 pointer-events-auto translate-y-0 glass-pill-navbar px-3.5 sm:px-6 py-2 sm:py-2.5 shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(255,255,255,0.08)] border border-white/20"
+            : "opacity-0 pointer-events-none -translate-y-8"
         }`}
       >
-        <div className="flex items-center justify-between gap-3 sm:gap-4 w-full">
+        <div className="flex flex-wrap items-center justify-between gap-2 w-full">
           {/* Brand Identity with Official TESA Logo */}
           <Link
             href="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 group shrink-0 min-h-[40px]"
+            className="flex items-center gap-2 group shrink-0 min-h-[38px]"
           >
-            <div className="relative w-8 h-8 rounded-full border border-white/20 p-0.5 overflow-hidden bg-black/60 group-hover:scale-105 group-hover:border-purple-400 transition-all shadow-[0_0_15px_rgba(124,58,237,0.25)] shrink-0">
+            <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-white/20 p-0.5 overflow-hidden bg-black/60 group-hover:scale-105 group-hover:border-purple-400 transition-all shadow-[0_0_15px_rgba(124,58,237,0.25)] shrink-0">
               <Image
                 src="/tesa-logo.png"
                 alt="TESA Logo"
@@ -89,16 +93,16 @@ export default function Navbar({
               <span className="font-bold text-xs sm:text-sm tracking-wide text-white group-hover:text-purple-300 transition-colors">
                 TESA
               </span>
-              <span className="text-[9px] font-mono text-zinc-400 -mt-0.5 tracking-tight hidden sm:block">
+              <span className="text-[8px] sm:text-[9px] font-mono text-zinc-400 -mt-0.5 tracking-tight hidden xs:block sm:block">
                 SGGSIE&amp;T
               </span>
             </div>
           </Link>
 
-          {/* Center Navigation Links with Smooth Active Indicator */}
+          {/* Center Navigation Links with Smooth Active Indicator (Collapsed on mobile < 768px) */}
           <nav
             aria-label="Desktop Navigation"
-            className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1 rounded-full border border-white/[0.06]"
+            className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1 rounded-full border border-white/[0.06] shrink-0"
           >
             {navLinks.map((link) => {
               const isActive = activeTab === link.id;
@@ -106,7 +110,7 @@ export default function Navbar({
                 <button
                   key={link.id}
                   onClick={() => handleNavClick(link.id)}
-                  className={`relative px-4 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all duration-300 cursor-pointer ${
+                  className={`relative px-3.5 sm:px-4 py-1.5 rounded-full text-xs font-medium tracking-wide transition-all duration-300 cursor-pointer ${
                     isActive
                       ? "text-white"
                       : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
@@ -126,27 +130,31 @@ export default function Navbar({
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-2.5">
-            <LoginButton />
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* User Profile / Auth Action Pill */}
+            <div className="shrink-0">
+              <LoginButton />
+            </div>
 
             {onOpenVerifiedList && (
               <button
                 type="button"
                 onClick={onOpenVerifiedList}
-                className="hidden lg:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-mono font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] cursor-pointer shrink-0"
+                className="hidden xl:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-mono font-medium text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition-all shadow-[0_0_15px_rgba(16,185,129,0.15)] cursor-pointer shrink-0"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Verified List</span>
+                <span className="hidden 2xl:inline">CHECK REGISTRATION LIST • LIVE</span>
+                <span className="2xl:hidden">LIVE LIST</span>
               </button>
             )}
 
             <button
               onClick={onOpenRegister}
-              className="relative group overflow-hidden px-4 sm:px-5 py-2 rounded-full text-xs font-semibold text-white tracking-wide transition-all duration-300 glow-button-primary cursor-pointer shrink-0 inline-flex items-center justify-center gap-1.5"
+              className="relative group overflow-hidden px-3 sm:px-5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-xs font-semibold text-white tracking-wide transition-all duration-300 glow-button-primary cursor-pointer shrink-0 inline-flex items-center justify-center gap-1 sm:gap-1.5"
             >
               <span>Register</span>
               <svg
-                className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform"
+                className="w-3 h-3 sm:w-3.5 sm:h-3.5 group-hover:translate-x-0.5 transition-transform"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -164,7 +172,7 @@ export default function Navbar({
               type="button"
               onClick={() => setMobileMenuOpen((prev) => !prev)}
               aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-              className="md:hidden min-w-[38px] min-h-[38px] w-9 h-9 rounded-full bg-white/[0.05] border border-white/10 text-zinc-300 hover:text-white flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
+              className="md:hidden min-w-[36px] min-h-[36px] w-9 h-9 rounded-full bg-white/[0.05] border border-white/10 text-zinc-300 hover:text-white flex flex-col items-center justify-center gap-1 transition-all cursor-pointer shrink-0"
             >
               <span
                 className={`w-3.5 h-0.5 bg-current rounded-full transition-transform duration-300 ${
@@ -220,6 +228,12 @@ export default function Navbar({
                 ))}
 
                 <div className="pt-3 border-t border-white/10 space-y-2 mt-1">
+                  {/* Dedicated Mobile Login / Profile Access */}
+                  <div className="sm:hidden flex items-center justify-between p-2.5 rounded-2xl bg-white/[0.03] border border-white/10 mb-2">
+                    <span className="text-[11px] font-mono text-zinc-400 px-1">Account:</span>
+                    <LoginButton />
+                  </div>
+
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
@@ -239,7 +253,7 @@ export default function Navbar({
                       }}
                       className="w-full py-2.5 px-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <span>✔ Check Verified Registrations</span>
+                      <span>✔ CHECK REGISTRATION LIST • LIVE</span>
                     </button>
                   )}
                 </div>

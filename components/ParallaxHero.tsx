@@ -275,10 +275,10 @@ export default function ParallaxHero({ onOpenRegister }: HeroProps) {
                 Nanotech Research Facility
               </span>
               <button
-                onClick={() => onOpenRegister("TEX-CONCLAVE 2026")}
-                className="text-xs font-bold text-white hover:text-cyan-300 flex items-center gap-1 group-hover:translate-x-1 transition-transform"
+                onClick={() => onOpenRegister("TEXPLORER 2026")}
+                className="text-xs font-bold text-white hover:text-cyan-300 flex items-center gap-1 group-hover:translate-x-1 transition-transform cursor-pointer"
               >
-                <span>Conclave &apos;26 →</span>
+                <span>TEXPLORER &apos;26 →</span>
               </button>
             </div>
           </MouseTiltCard>

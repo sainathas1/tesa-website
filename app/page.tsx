@@ -10,6 +10,21 @@ import Navbar from "@/components/Navbar";
 import AuroraBackground from "@/components/AuroraBackground";
 import TeamDetailModal from "@/components/TeamDetailModal";
 import EventDetailModal, { CustomFormField } from "@/components/EventDetailModal";
+import TextilePortalHero from "@/components/TextilePortalHero";
+
+/**
+ * Cloudinary Face-Detection Avatar Optimization Helper
+ * Automatically transforms Cloudinary URLs to center on the person's face
+ * with a 4:5 portrait ratio and high quality compression.
+ */
+export function getOptimizedAvatarUrl(url?: string): string {
+  if (!url) return "";
+  if (url.includes("res.cloudinary.com") && url.includes("/image/upload/")) {
+    if (url.includes("c_fill,g_face")) return url;
+    return url.replace("/image/upload/", "/image/upload/c_fill,g_face,w_800,h_1000,q_auto/");
+  }
+  return url;
+}
 
 // ============================================================================
 // DATA INTERFACES
@@ -26,6 +41,8 @@ interface EventItem {
   status: "open" | "upcoming" | "closed";
   eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
+  paymentQrUrl?: string;
+  qrCodeUrl?: string;
   summary: string;
   highlights?: string;
   galleryUrls?: string[];
@@ -54,59 +71,59 @@ interface TeamMember {
 
 const DEFAULT_EVENTS: EventItem[] = [
   {
-    id: "ev-conclave-2026",
-    title: "TEX-CONCLAVE 2026: National Smart Fibers Symposium",
-    category: "National Conclave",
-    date: "April 28–29, 2026",
-    venue: "SGGSIE&T Main Auditorium",
-    deadline: "April 15, 2026",
-    capacity: 250,
+    id: "ev-texplorer-2026",
+    title: "TEXPLORER 2026: National Mega Textile Conclave",
+    category: "Mega National Festival",
+    date: "April 28–30, 2026",
+    venue: "SGGSIE&T Main Auditorium & Textile Complex",
+    deadline: "April 20, 2026",
+    capacity: 500,
     status: "open",
     eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60",
-    summary: "Flagship national convention uniting textile researchers, paper presentations, and live CAD weaving contests.",
-    highlights: "₹1,50,000 Cash Pool • 30+ Engineering Colleges • IEEE Certification",
+    summary: "SGGSIE&T TESA's premier annual mega national technical symposium uniting 40+ engineering colleges. Features 6 competitive tracks: Technical Research Presentations, Smart Weaves Hackathon, CAD Fabric Design, National Textile Quiz, Working Models, and Live Machinery Workshops.",
+    highlights: "₹2,00,000+ Prize Pool • 6 Concurrent Tracks • National IEEE / TESA Certification",
     customFormFields: [
       {
+        id: "cf-tex-track",
+        questionTitle: "Select Your TEXPLORER Competition Track",
+        fieldType: "Dropdown Options",
+        options: "Tex-Paper: Technical Research Presentation, Tex-Hack: Smart Weaves & IoT Looms Hackathon, Tex-Design: CAD & Digital Jacquard Mania, Tex-Quiz: National Textile Brain Quest, Tex-Exhibit: Working Model & Prototype Expo, Tex-Workshop: Nanofiber Electrospinning Lab",
+        required: true,
+      },
+      {
         id: "cf-team-name",
-        questionTitle: "Team / Project Name",
+        questionTitle: "Team / Project Title",
         fieldType: "Short Text",
         required: true,
       },
       {
-        id: "cf-track",
-        questionTitle: "Conclave Innovation Track",
-        fieldType: "Dropdown Options",
-        options: "Smart Fibers & Wearables, Electrospinning & Nanofiltration, Sustainable Textile Processing, Automated Weaving & IoT Looms",
-        required: true,
-      },
-      {
         id: "cf-abstract",
-        questionTitle: "Abstract & Technical Methodology",
+        questionTitle: "Abstract / Concept Summary",
         fieldType: "Paragraph",
         required: true,
       },
       {
         id: "cf-deck",
-        questionTitle: "Upload Research Deck / Presentation (PPT / PDF)",
+        questionTitle: "Upload Research Deck / Abstract Document (Optional - PPT/PDF/Image)",
         fieldType: "File Upload (PPT/PDF/Image)",
         required: false,
       },
     ],
   },
   {
-    id: "ev-hackathon-2026",
-    title: "SMART WEAVES HACKATHON 2026",
+    id: "ev-tex-hack-2026",
+    title: "TEXPLORER: Tex-Hack (Smart Weaves 36-Hr Hackathon)",
     category: "Technical Hackathon",
-    date: "May 10–11, 2026",
+    date: "April 29–30, 2026",
     venue: "Textile CAD/CAM Studio & IoT Labs",
-    deadline: "May 1, 2026",
-    capacity: 100,
-    status: "upcoming",
+    deadline: "April 22, 2026",
+    capacity: 120,
+    status: "open",
     eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
-    summary: "36-hour sprint pairing textile engineers with electronics students to build wearable fabric sensors and smart looms.",
-    highlights: "Hardware Looms Access • Angel Mentors • Seed Incubation",
+    summary: "Conducted under the TEXPLORER mega fest: 36-hour sprint pairing textile innovators with electronics & computer engineering students to build wearable fabric sensors, conductive yarns, and automated loom scanners.",
+    highlights: "Hardware Looms Access • Angel Mentors • Seed Incubation • ₹60,000 Cash Prizes",
     customFormFields: [
       {
         id: "cf-team-hack",
@@ -116,65 +133,124 @@ const DEFAULT_EVENTS: EventItem[] = [
       },
       {
         id: "cf-tech-stack",
-        questionTitle: "Hardware / Software Stack Proposed",
+        questionTitle: "Hardware / Software Architecture Proposed",
         fieldType: "Paragraph",
         required: true,
       },
       {
         id: "cf-pitch-deck",
-        questionTitle: "Pitch Deck / Concept Schema (PPT/PDF/Image)",
+        questionTitle: "Pitch Deck / Concept Schema (Optional - PPT/PDF/Image)",
         fieldType: "File Upload (PPT/PDF/Image)",
-        required: true,
+        required: false,
       },
     ],
   },
   {
-    id: "ev-workshop-2026",
-    title: "NANOFIBER & ELECTROSPINNING WORKSHOP",
-    category: "Laboratory Workshop",
-    date: "June 5–6, 2026",
-    venue: "Advanced Technical Textiles Lab",
-    deadline: "May 25, 2026",
-    capacity: 60,
+    id: "ev-tex-paper-2026",
+    title: "TEXPLORER: Tex-Paper (National Research Presentation)",
+    category: "Research Symposium",
+    date: "April 28, 2026",
+    venue: "Main Auditorium & Seminar Hall 1",
+    deadline: "April 18, 2026",
+    capacity: 150,
+    status: "open",
+    eventStatus: "Upcoming",
+    mediaUrl: "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=60",
+    summary: "The flagship technical paper presentation track of TEXPLORER. Students present original peer-reviewed research on Sustainable Fibers, Electrospinning, Technical Textiles, and Industrial Decarbonization.",
+    highlights: "Publication in TESA Journal • Industry Jury • ₹40,000 Cash Awards",
+    customFormFields: [
+      {
+        id: "cf-paper-title",
+        questionTitle: "Research Paper Title",
+        fieldType: "Short Text",
+        required: true,
+      },
+      {
+        id: "cf-paper-abstract",
+        questionTitle: "Paper Abstract & Findings",
+        fieldType: "Paragraph",
+        required: true,
+      },
+      {
+        id: "cf-paper-file",
+        questionTitle: "Draft Paper / Presentation Deck (Optional - PPT/PDF)",
+        fieldType: "File Upload (PPT/PDF/Image)",
+        required: false,
+      },
+    ],
+  },
+  {
+    id: "ev-tex-design-2026",
+    title: "TEXPLORER: Tex-Design (CAD & Digital Jacquard Sprint)",
+    category: "CAD Design Challenge",
+    date: "April 29, 2026",
+    venue: "Textile CAD Simulation Laboratory",
+    deadline: "April 24, 2026",
+    capacity: 80,
     status: "open",
     eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=60",
-    summary: "Hands-on synthesis of polymeric nanofibers for high-efficiency air filters and biomedical wound dressings.",
+    summary: "Live digital dobby and electronic jacquard design challenge under TEXPLORER. Competitors draft intricate fabric weave structures and simulate 3D garment drape patterns.",
+    highlights: "Staubli & NedGraphics Licenses • Industry Portfolio Mentorship • ₹30,000 Cash Pool",
+    customFormFields: [
+      {
+        id: "cf-cad-software",
+        questionTitle: "Preferred CAD Tool (NedGraphics / Staubli / Corel / Photoshop)",
+        fieldType: "Short Text",
+        required: true,
+      },
+      {
+        id: "cf-cad-portfolio",
+        questionTitle: "Prior Portfolio Sample (Optional - PPT/PDF/Image)",
+        fieldType: "File Upload (PPT/PDF/Image)",
+        required: false,
+      },
+    ],
+  },
+  {
+    id: "ev-tex-quiz-2026",
+    title: "TEXPLORER: Tex-Quiz (National Textile Brain Quest)",
+    category: "Technical Quiz",
+    date: "April 30, 2026",
+    venue: "Textile Conference Hall",
+    deadline: "April 26, 2026",
+    capacity: 100,
+    status: "open",
+    eventStatus: "Upcoming",
+    mediaUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=60",
+    summary: "Thrilling 3-round technical quiz covering polymer science, high-speed spinning, wet chemical processing, and international technical textile standards.",
+    highlights: "Buzzer Rounds • Cash Prizes • TESA Trophies",
+  },
+  {
+    id: "ev-tex-workshop-2026",
+    title: "TEXPLORER: Nanofiber & Electrospinning Workshop",
+    category: "Laboratory Workshop",
+    date: "May 15–16, 2026",
+    venue: "Advanced Technical Textiles Lab",
+    deadline: "May 5, 2026",
+    capacity: 60,
+    status: "upcoming",
+    eventStatus: "Upcoming",
+    mediaUrl: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&auto=format&fit=crop&q=60",
+    summary: "Hands-on synthesis of polymeric nanofibers for high-efficiency air filters and biomedical wound dressings, conducted in Department labs as part of TEXPLORER series.",
     highlights: "Live Electrospinner Demo • ASTM Characterization • Kit Provided",
   },
   {
-    id: "ev-conclave-2025",
-    title: "TEX-CONCLAVE 2025: Sustainable & High-Performance Textiles",
-    category: "National Conclave",
+    id: "ev-texplorer-2025",
+    title: "TEXPLORER 2025: National Mega Conclave & Symposium",
+    category: "Mega National Festival",
     date: "March 15–16, 2025",
     venue: "SGGSIE&T Main Auditorium",
     status: "closed",
     eventStatus: "Concluded",
     mediaUrl: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=60",
-    summary: "Over 480 delegates from 28 technical colleges participated in competitive research tracks and industrial roundtables.",
+    summary: "Over 480 delegates from 28 technical colleges participated in competitive research tracks, hackathons, and industrial roundtables.",
     highlights: "480+ Delegates • 65 Peer-Reviewed Papers • Industry Roundtable",
     galleryUrls: [
       "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1511578314322-379afb476865?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=800&auto=format&fit=crop&q=80",
       "https://images.unsplash.com/photo-1505373877841-8d25f7d46678?w=800&auto=format&fit=crop&q=80",
-    ],
-  },
-  {
-    id: "ev-hackathon-2024",
-    title: "SMART WEAVES HACKATHON 2024",
-    category: "Technical Hackathon",
-    date: "October 18–19, 2024",
-    venue: "CAD/CAM Studio & IoT Labs",
-    status: "closed",
-    eventStatus: "Concluded",
-    mediaUrl: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=800&auto=format&fit=crop&q=60",
-    summary: "36-hour sprint where 32 interdisciplinary teams engineered wearable garment sensors and automated defect scanners.",
-    highlights: "32 Teams • 3 Provisional Patents Filed • Industry Mentors",
-    galleryUrls: [
-      "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
-      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=800&auto=format&fit=crop&q=80",
     ],
   },
 ];
@@ -340,18 +416,26 @@ export default function Home() {
     // 1. Initial cached population
     try {
       const cachedEvents = localStorage.getItem("tesa_events");
-      if (cachedEvents) {
+      if (cachedEvents !== null) {
         const parsed = JSON.parse(cachedEvents);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           setEventsList(parsed);
         }
       }
 
       const cachedTeam = localStorage.getItem("tesa_team");
-      if (cachedTeam) {
+      if (cachedTeam !== null) {
         const parsedTeam = JSON.parse(cachedTeam);
         if (Array.isArray(parsedTeam) && parsedTeam.length > 0) {
-          setTeamList(parsedTeam);
+          const hasCore = parsedTeam.some((m: any) =>
+            (m.category || "").toLowerCase().includes("core") ||
+            (m.role || "").toLowerCase().includes("president") ||
+            (m.role || "").toLowerCase().includes("secretary")
+          );
+          const validatedTeam = hasCore
+            ? parsedTeam
+            : [...parsedTeam, ...DEFAULT_TEAM.filter((m) => !parsedTeam.some((p: any) => p.id === m.id))];
+          setTeamList(validatedTeam);
         }
       }
     } catch {
@@ -361,25 +445,53 @@ export default function Home() {
     // 2. Live sync from Firestore
     async function syncFirestoreData() {
       try {
-        const eventsQuery = query(collection(db, "events"), orderBy("createdAt", "desc"));
-        const evSnap = await getDocs(eventsQuery);
-        if (!evSnap.empty) {
-          const remoteEvents: EventItem[] = [];
-          evSnap.forEach((doc) => {
-            remoteEvents.push({ ...(doc.data() as EventItem), id: doc.id });
-          });
-          setEventsList(remoteEvents);
-          localStorage.setItem("tesa_events", JSON.stringify(remoteEvents));
-        }
+        const evSnap = await getDocs(collection(db, "events"));
+        const remoteEvents: EventItem[] = [];
+        evSnap.forEach((doc) => {
+          remoteEvents.push({ ...(doc.data() as EventItem), id: doc.id });
+        });
+        remoteEvents.sort((a: any, b: any) => {
+          const getTimestamp = (e: any) => {
+            if (e.createdAt?.seconds) return e.createdAt.seconds * 1000;
+            if (e.updatedAt?.seconds) return e.updatedAt.seconds * 1000;
+            if (e.createdAt) {
+              const p = new Date(e.createdAt).getTime();
+              if (!isNaN(p)) return p;
+            }
+            if (e.date) {
+              const p = new Date(e.date).getTime();
+              if (!isNaN(p)) return p;
+            }
+            return 0;
+          };
+          return getTimestamp(b) - getTimestamp(a);
+        });
+        setEventsList(remoteEvents);
+        localStorage.setItem("tesa_events", JSON.stringify(remoteEvents));
 
         const teamSnap = await getDocs(collection(db, "team"));
-        if (!teamSnap.empty) {
-          const remoteTeam: TeamMember[] = [];
-          teamSnap.forEach((doc) => {
-            remoteTeam.push({ ...(doc.data() as TeamMember), id: doc.id });
-          });
-          setTeamList(remoteTeam);
-          localStorage.setItem("tesa_team", JSON.stringify(remoteTeam));
+        const remoteTeam: TeamMember[] = [];
+        teamSnap.forEach((doc) => {
+          remoteTeam.push({ ...(doc.data() as TeamMember), id: doc.id });
+        });
+
+        if (remoteTeam.length > 0) {
+          const remoteIds = new Set(remoteTeam.map((m) => m.id));
+          const hasCore = remoteTeam.some(
+            (m) =>
+              (m.category || "").toLowerCase() === "core" ||
+              (m.role || "").toLowerCase().includes("president") ||
+              (m.role || "").toLowerCase().includes("secretary")
+          );
+          // If remote only has custom non-core members, merge with default council members so council never vanishes
+          const mergedTeam = hasCore
+            ? remoteTeam
+            : [...remoteTeam, ...DEFAULT_TEAM.filter((m) => !remoteIds.has(m.id))];
+          setTeamList(mergedTeam);
+          localStorage.setItem("tesa_team", JSON.stringify(mergedTeam));
+        } else {
+          setTeamList(DEFAULT_TEAM);
+          localStorage.setItem("tesa_team", JSON.stringify(DEFAULT_TEAM));
         }
       } catch (err) {
         console.warn("Firestore live sync offline, using local cached data:", err);
@@ -408,12 +520,12 @@ export default function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [lightboxImage]);
 
-  const handleOpenRegistration = (eventTitle: string = "TEX-CONCLAVE 2026") => {
+  const handleOpenRegistration = (eventTitle: string = "TEXPLORER 2026") => {
     const matched =
       eventsList.find(
         (e) =>
           e.title.toLowerCase().includes(eventTitle.toLowerCase()) ||
-          e.id === "ev-conclave-2026"
+          e.id === "ev-texplorer-2026"
       ) ||
       upcomingEvents[0] ||
       eventsList[0];
@@ -421,12 +533,12 @@ export default function Home() {
     setModalInitialMode("register");
   };
 
-  const handleOpenVerifiedList = (eventTitle: string = "TEX-CONCLAVE 2026") => {
+  const handleOpenVerifiedList = (eventTitle: string = "TEXPLORER 2026") => {
     const matched =
       eventsList.find(
         (e) =>
           e.title.toLowerCase().includes(eventTitle.toLowerCase()) ||
-          e.id === "ev-conclave-2026"
+          e.id === "ev-texplorer-2026"
       ) ||
       upcomingEvents[0] ||
       eventsList[0];
@@ -453,113 +565,66 @@ export default function Home() {
       ? upcomingEvents
       : upcomingEvents.filter((e) => e.status === upcomingSubFilter);
 
+  const isMatchCategory = (m: TeamMember, cat: string) => {
+    if (cat === "all") return true;
+    const memberCat = (m.category || "").toLowerCase().trim();
+    const filterCat = cat.toLowerCase().trim();
+    if (memberCat === filterCat) return true;
+
+    // Core Council includes explicit "core", or council leadership titles (President, Vice President, General Secretary, Treasurer, Head)
+    if (filterCat === "core") {
+      const role = (m.role || "").toLowerCase();
+      const designation = (m.designation || "").toLowerCase();
+      return (
+        memberCat.includes("core") ||
+        memberCat.includes("council") ||
+        role.includes("president") ||
+        role.includes("secretary") ||
+        role.includes("treasurer") ||
+        role.includes("head") ||
+        role.includes("lead") ||
+        designation.includes("council") ||
+        designation.includes("executive")
+      );
+    }
+    if (filterCat === "technical") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("tech") || memberCat.includes("research") || role.includes("tech");
+    }
+    if (filterCat === "events") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("event") || memberCat.includes("hack") || role.includes("event");
+    }
+    if (filterCat === "outreach") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("outreach") || memberCat.includes("pr") || memberCat.includes("media") || memberCat.includes("alumni") || role.includes("outreach");
+    }
+    return false;
+  };
+
   const filteredTeam =
     teamCategoryFilter === "all"
       ? teamList
-      : teamList.filter((m) => m.category === teamCategoryFilter);
+      : teamList.filter((m) => isMatchCategory(m, teamCategoryFilter));
 
   return (
-    <main className="overflow-x-hidden max-w-full w-full bg-[#050508] text-zinc-100 min-h-screen relative selection:bg-purple-500/30 selection:text-purple-200">
-      {/* 1. Deep Obsidian Canvas with Ambient Aurora Light Orbs & Micro-Dot Grid */}
-      <AuroraBackground />
-
-      {/* 2. Floating Pill-Shaped Glass Navbar */}
-      <Navbar
-        onOpenRegister={() => handleOpenRegistration("TEX-CONCLAVE 2026")}
-        onOpenVerifiedList={() => handleOpenVerifiedList("TEX-CONCLAVE 2026")}
+    <main className="overflow-x-hidden max-w-full w-full bg-[#090807] text-zinc-100 min-h-screen relative selection:bg-white/20 selection:text-white">
+      {/* =========================================================================
+          SECTION 1: PLANET JUMPING - ASTRO-TEXTILE & SMART GARMENT 3D CANVAS HERO
+          ========================================================================= */}
+      <TextilePortalHero
+        onOpenRegister={() => handleOpenRegistration("TEXPLORER 2026")}
+        onOpenVerifiedList={() => handleOpenVerifiedList("TEXPLORER 2026")}
       />
 
-      {/* =========================================================================
-          SECTION 1: EDITORIAL HERO SECTION (High-Contrast Kinetic Typography)
-          ========================================================================= */}
-      <section
-        id="hero"
-        className="relative min-h-[92vh] sm:min-h-screen flex flex-col justify-center items-center text-center px-4 sm:px-6 lg:px-8 pt-32 sm:pt-40 pb-20 sm:pb-28 z-10"
-      >
-        <div className="max-w-4xl mx-auto flex flex-col items-center">
-          {/* Subtle Studio Frosted Glass Pill Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -16, filter: "blur(6px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/20 bg-white/[0.05] text-[11px] sm:text-xs font-mono text-zinc-200 mb-8 backdrop-blur-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_10px_30px_rgba(0,0,0,0.6)]"
-          >
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-violet-500 shadow-[0_0_10px_#a855f7]" />
-            </span>
-            <span className="tracking-wide">SGGSIE&amp;T • TEXTILE ENGINEERING STUDENTS ASSOCIATION</span>
-            <span className="text-[10px] text-zinc-400 hidden sm:inline">• EST. 1987</span>
-          </motion.div>
+      {/* Deep Obsidian Canvas with Ambient Aurora Light Orbs & Micro-Dot Grid */}
+      <AuroraBackground />
 
-          {/* Main Headline: Metallic Silver-to-Zinc Gradient with Animated Iridescent Accent Word */}
-          <div className="relative">
-            {/* Ambient Radial Aura behind Hero Headline */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-xl h-44 bg-gradient-to-r from-violet-600/30 via-fuchsia-600/25 to-cyan-500/25 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse" />
-
-            <motion.h1
-              initial={{ opacity: 0, y: 24, filter: "blur(10px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              transition={{ duration: 0.85, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight mb-6 leading-[1.08]"
-            >
-              <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
-                WEAVE THE{" "}
-              </span>
-              <span className="bg-gradient-to-r from-violet-400 via-fuchsia-300 via-cyan-300 to-rose-400 bg-clip-text text-transparent drop-shadow-[0_0_45px_rgba(168,85,247,0.55)] animate-text-shimmer">
-                FUTURE
-              </span>
-            </motion.h1>
-          </div>
-
-          {/* Short Crisp Tagline */}
-          <motion.p
-            initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.85, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="text-base sm:text-lg md:text-xl text-zinc-400 font-normal max-w-2xl mx-auto leading-relaxed mb-10"
-          >
-            Pioneering conductive smart fibers, electrospun nanofiltration membranes, and autonomous electronic rapier looms at SGGSIE&amp;T Nanded.
-          </motion.p>
-
-          {/* Action Buttons: Specular Inner Highlight + Magnetic Glow */}
-          <motion.div
-            initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            transition={{ duration: 0.85, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-wrap items-center justify-center gap-3.5 text-xs font-mono"
-          >
-            <a
-              href="#events"
-              className="glow-button-primary min-h-[46px] inline-flex items-center justify-center px-7 py-3 rounded-full text-white font-bold tracking-wide transition-all duration-300 cursor-pointer"
-            >
-              Explore Events →
-            </a>
-
-            <a
-              href="#team"
-              className="glass-button-secondary min-h-[46px] inline-flex items-center justify-center px-6 py-3 rounded-full text-zinc-300 hover:text-white transition-all duration-300 cursor-pointer"
-            >
-              Meet the Team
-            </a>
-
-            <button
-              onClick={() => handleOpenRegistration("TEX-CONCLAVE 2026")}
-              className="min-h-[46px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-purple-950/60 hover:bg-purple-900/80 border border-purple-500/40 hover:border-purple-400 text-purple-300 hover:text-white transition-all duration-300 backdrop-blur-xl shadow-[0_0_20px_rgba(168,85,247,0.25)] cursor-pointer"
-            >
-              Register for Conclave &apos;26
-            </button>
-
-            <button
-              onClick={() => handleOpenVerifiedList("TEX-CONCLAVE 2026")}
-              className="min-h-[46px] inline-flex items-center justify-center px-6 py-3 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 transition-all duration-300 backdrop-blur-xl shadow-[0_0_20px_rgba(16,185,129,0.2)] cursor-pointer gap-2"
-            >
-              <span>✔</span>
-              <span>Check Registration &amp; Verified List</span>
-            </button>
-          </motion.div>
-        </div>
-      </section>
+      {/* Floating Pill-Shaped Glass Navbar (reveals on scroll below Hero) */}
+      <Navbar
+        onOpenRegister={() => handleOpenRegistration("TEXPLORER 2026")}
+        onOpenVerifiedList={() => handleOpenVerifiedList("TEXPLORER 2026")}
+      />
 
       {/* Subtle Studio Accent Divider */}
       <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -567,12 +632,13 @@ export default function Home() {
       </div>
 
       {/* =========================================================================
-          SECTION 2: BENTO-GRID UPCOMING & PAST EVENTS
+          SECTION 2: BENTO-GRID UPCOMING & PAST EVENTS (ASTRO-TEXTILE SPEC)
           ========================================================================= */}
       <section
-        id="events"
-        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10"
+        id="events-section"
+        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20"
       >
+        <div id="events" className="absolute -top-24 pointer-events-none" />
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
           <motion.div
@@ -599,17 +665,17 @@ export default function Home() {
             </p>
 
             {/* Distinct Frosted Glass Tabs & Check Verified List Action */}
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-              <div className="inline-flex p-1.5 rounded-2xl glass-pill-navbar shadow-[0_15px_35px_rgba(0,0,0,0.7)]">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full">
+              <div className="grid grid-cols-2 w-full max-w-md p-1 sm:p-1.5 rounded-2xl glass-pill-navbar shadow-[0_15px_35px_rgba(0,0,0,0.7)]">
                 <button
                   onClick={() => setEventTab("upcoming")}
-                  className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                  className={`min-h-[44px] px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl font-mono text-[11px] sm:text-xs md:text-sm font-bold tracking-wider transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
                     eventTab === "upcoming"
                       ? "bg-gradient-to-r from-violet-600 to-purple-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] border border-white/20"
                       : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
-                  <span>⚡ UPCOMING EVENTS</span>
+                  <span>⚡ UPCOMING<span className="hidden sm:inline"> EVENTS</span></span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full ${
                       eventTab === "upcoming"
@@ -623,13 +689,13 @@ export default function Home() {
 
                 <button
                   onClick={() => setEventTab("past")}
-                  className={`min-h-[44px] px-5 sm:px-6 py-2.5 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+                  className={`min-h-[44px] px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl font-mono text-[11px] sm:text-xs md:text-sm font-bold tracking-wider transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
                     eventTab === "past"
                       ? "bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white shadow-[0_0_20px_rgba(192,38,211,0.5)] border border-white/20"
                       : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
-                  <span>📸 PAST GALLERIES</span>
+                  <span>📸 PAST<span className="hidden sm:inline"> GALLERIES</span></span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full ${
                       eventTab === "past"
@@ -644,15 +710,15 @@ export default function Home() {
 
               <button
                 onClick={() => handleOpenVerifiedList()}
-                className="min-h-[48px] px-5 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center gap-2.5 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 hover:border-emerald-400 text-emerald-400 hover:text-emerald-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_10px_25px_rgba(16,185,129,0.25)] cursor-pointer backdrop-blur-2xl"
+                className="w-full sm:w-auto min-h-[44px] sm:min-h-[48px] px-4 sm:px-6 py-2.5 rounded-2xl font-mono text-xs sm:text-sm font-bold tracking-wider transition-all flex items-center justify-center gap-2 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 hover:border-emerald-400 text-emerald-400 hover:text-emerald-300 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2),0_10px_25px_rgba(16,185,129,0.25)] cursor-pointer backdrop-blur-2xl"
               >
                 <span>✔ CHECK REGISTRATION LIST</span>
-                <span className="inline-flex items-center gap-1.5 text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
+                <span className="inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
                   </span>
-                  <span>LIVE STATUS</span>
+                  <span>LIVE</span>
                 </span>
               </button>
             </div>
@@ -1015,20 +1081,20 @@ export default function Home() {
                           </div>
 
                           {/* Footer Action Bar */}
-                          <div className="mt-4 pt-3 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                          <div className="mt-4 pt-3 border-t border-white/[0.08] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono">
                             <span className="text-zinc-400 text-[11px] flex items-center gap-1.5">
                               <span className="text-emerald-400">✓</span>
                               <span>Concluded • Documented in SGGSIE&amp;T archival records</span>
                             </span>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setSelectedEvent(event);
                                   setModalInitialMode("verifiedList");
                                 }}
-                                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 transition-all flex items-center gap-1.5 cursor-pointer text-[11px]"
+                                className="min-h-[42px] px-3.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:text-emerald-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer text-[11px] w-full sm:w-auto"
                               >
                                 <span>✔ Attendee Registry</span>
                               </button>
@@ -1039,7 +1105,7 @@ export default function Home() {
                                   setSelectedEvent(event);
                                   setModalInitialMode("detail");
                                 }}
-                                className="min-h-[44px] px-4 sm:px-5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-purple-400 text-purple-300 hover:text-white transition-all flex items-center gap-2 cursor-pointer text-xs"
+                                className="min-h-[42px] px-4 sm:px-5 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 hover:border-purple-400 text-purple-300 hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer text-xs w-full sm:w-auto"
                               >
                                 <span>View Full Conclave Dossier</span>
                                 <span>🔍</span>
@@ -1063,12 +1129,87 @@ export default function Home() {
       </div>
 
       {/* =========================================================================
-          SECTION 3: BENTO-GRID TESA TEAM SECTION
+          SECTION 3: PUBLIC VERIFICATION & REGISTRATION DOSSIER
           ========================================================================= */}
       <section
-        id="team"
-        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10"
+        id="verified-section"
+        className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20"
       >
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
+            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true, margin: "-40px" }}
+            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
+            className="care-label-box p-8 sm:p-12 relative overflow-hidden"
+          >
+            {/* Ambient Selvedge Accent */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-950/40 text-[11px] font-mono text-emerald-400 mb-4 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span>SGGSIE&amp;T TESA • REGISTRATION VERIFICATION PROTOCOL</span>
+                </div>
+                <h2 className="text-2xl sm:text-4xl font-black uppercase tracking-tight text-white mb-3">
+                  PUBLIC REGISTRATION &amp; VERIFICATION DOSSIER
+                </h2>
+                <p className="text-sm text-zinc-300 font-normal leading-relaxed">
+                  Real-time participant validation synchronized with Firestore. Query authorized student credentials, competition track allocations, and verified event badge statuses.
+                </p>
+
+                {/* Garment Care-Label Spec Attributes */}
+                <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-3 font-mono text-[10px] text-zinc-400">
+                  <div className="p-3 rounded-lg bg-white/[0.03] border border-white/10">
+                    <span className="text-zinc-500 block">PROTOCOL:</span>
+                    <span className="text-white font-bold">SHA-256 REG ID</span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white/[0.03] border border-white/10">
+                    <span className="text-zinc-500 block">LEDGER STATUS:</span>
+                    <span className="text-emerald-400 font-bold">LIVE FIRESTORE SYNC</span>
+                  </div>
+                  <div className="p-3 rounded-lg bg-white/[0.03] border border-white/10 col-span-2 sm:col-span-1">
+                    <span className="text-zinc-500 block">CERTIFICATION:</span>
+                    <span className="text-purple-300 font-bold">DIGITAL BADGE</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
+                <button
+                  onClick={() => handleOpenVerifiedList("TEXPLORER 2026")}
+                  className="px-8 py-4 rounded-xl font-mono text-xs font-bold tracking-wider uppercase bg-emerald-500 hover:bg-emerald-400 text-black transition-all shadow-[0_0_25px_rgba(16,185,129,0.4)] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>✔ Open Live Registry</span>
+                  <span>→</span>
+                </button>
+
+                <button
+                  onClick={() => handleOpenRegistration("TEXPLORER 2026")}
+                  className="px-6 py-3.5 rounded-xl font-mono text-xs font-bold tracking-wider uppercase bg-white/[0.05] hover:bg-white/[0.1] border border-white/20 text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Register Participant</span>
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Subtle Studio Accent Divider */}
+      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+      </div>
+
+      {/* =========================================================================
+          SECTION 4: BENTO-GRID TESA TEAM SECTION
+          ========================================================================= */}
+      <section
+        id="team-section"
+        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20"
+      >
+        <div id="team" className="absolute -top-24 pointer-events-none" />
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
           <motion.div
@@ -1095,7 +1236,7 @@ export default function Home() {
             </p>
 
             {/* Interactive Category Filter Pills */}
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 text-xs font-mono">
+            <div className="mt-7 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 text-xs font-mono">
               {[
                 { id: "all", label: "ALL MEMBERS" },
                 { id: "core", label: "CORE COUNCIL" },
@@ -1106,7 +1247,7 @@ export default function Home() {
                 <button
                   key={tab.id}
                   onClick={() => setTeamCategoryFilter(tab.id)}
-                  className={`min-h-[42px] inline-flex items-center justify-center px-4 py-2 rounded-xl border transition-all duration-200 cursor-pointer ${
+                  className={`min-h-[38px] sm:min-h-[42px] inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border text-[11px] sm:text-xs transition-all duration-200 cursor-pointer ${
                     teamCategoryFilter === tab.id
                       ? "bg-purple-600 text-white border-purple-400 font-bold shadow-[0_0_20px_rgba(168,85,247,0.45)]"
                       : "bg-white/[0.02] text-zinc-300 border-white/10 hover:border-purple-500/40 hover:text-white"
@@ -1120,14 +1261,14 @@ export default function Home() {
 
           {/* Staggered Bento Team Grid or Pulsing Skeleton */}
           {isDataLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
-              {[1, 2, 3, 4].map((n) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 justify-items-center">
+              {[1, 2, 3].map((n) => (
                 <div
                   key={`team-skel-${n}`}
-                  className="bento-card relative flex flex-col justify-between rounded-3xl p-5 overflow-hidden animate-pulse min-h-[440px]"
+                  className="bento-card relative flex flex-col justify-between rounded-3xl p-5 overflow-hidden animate-pulse min-h-[440px] w-full max-w-sm"
                 >
                   <div>
-                    <div className="w-full h-52 sm:h-56 mb-4 rounded-2xl bg-white/5" />
+                    <div className="relative w-full aspect-[4/5] sm:h-80 mb-4 rounded-2xl bg-zinc-900 overflow-hidden" />
                     <div className="h-4 w-20 rounded bg-white/5 mb-2" />
                     <div className="h-5 w-36 rounded bg-white/10 mb-2" />
                     <div className="h-3.5 w-28 rounded bg-white/5 mb-3" />
@@ -1138,13 +1279,34 @@ export default function Home() {
                 </div>
               ))}
             </div>
+          ) : filteredTeam.length === 0 ? (
+            <div className="py-16 px-6 text-center rounded-3xl border border-white/10 bg-[#0b0c10]/70 backdrop-blur-xl shadow-2xl max-w-xl mx-auto">
+              <div className="w-14 h-14 mx-auto mb-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl text-purple-300">
+                👥
+              </div>
+              <h3 className="text-lg font-mono font-bold text-white mb-1.5">
+                No Members Found in this Category
+              </h3>
+              <p className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md mx-auto mb-5">
+                There are currently no council members listed in this category.
+              </p>
+              <button
+                onClick={() => setTeamCategoryFilter("all")}
+                className="px-5 py-2.5 rounded-full text-xs font-mono font-semibold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] cursor-pointer inline-flex items-center gap-2"
+              >
+                <span>← View All Members</span>
+                <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px]">
+                  {teamList.length}
+                </span>
+              </button>
+            </div>
           ) : (
             <motion.div
               variants={containerVariants}
               initial="hidden"
               whileInView="visible"
               viewport={{ once: true, margin: "-30px" }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 justify-items-center"
             >
               <AnimatePresence mode="popLayout">
                 {filteredTeam.map((member) => (
@@ -1153,23 +1315,22 @@ export default function Home() {
                     variants={cardSlideUpVariants}
                     layout
                     onClick={() => setSelectedMember(member)}
-                    className="bento-card group relative flex flex-col justify-between rounded-3xl p-5 sm:p-6 overflow-hidden cursor-pointer"
+                    className="bento-card group relative flex flex-col justify-between rounded-3xl p-5 sm:p-6 overflow-hidden cursor-pointer w-full max-w-sm"
                   >
                     {/* Top-Right Ambient Glow on Hover */}
                     <div className="bento-glow" />
 
                     <div className="relative z-10 flex flex-col justify-between h-full">
                       <div>
-                        {/* Member Portrait Frame */}
-                        <div className="relative w-full h-52 sm:h-56 mb-4 rounded-2xl border border-white/10 bg-[#050508] overflow-hidden group-hover:border-purple-500/50 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                        {/* Member Portrait Frame with aspect-[4/5] portrait ratio & object-top */}
+                        <div className="relative w-full aspect-[4/5] sm:h-80 mb-4 rounded-2xl border border-white/10 bg-zinc-900 overflow-hidden group-hover:border-purple-500/50 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
                           {member.photoUrl ? (
                             <div className="relative w-full h-full">
-                              <Image
-                                src={member.photoUrl}
+                              <img
+                                src={getOptimizedAvatarUrl(member.photoUrl)}
                                 alt={member.name}
-                                fill
-                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                                className="object-cover contrast-105 group-hover:scale-105 transition-all duration-700 ease-out"
+                                className="w-full h-full object-cover object-top contrast-105 group-hover:scale-105 transition-all duration-700 ease-out"
+                                loading="lazy"
                               />
                               <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-transparent to-transparent pointer-events-none" />
                               <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
@@ -1197,13 +1358,13 @@ export default function Home() {
                         {/* Name & Role Designation */}
                         <div className="mb-2.5">
                           <div className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-[9px] font-mono text-purple-300 uppercase tracking-wider mb-1.5">
-                            {member.role}
+                            {(member.role || "").replace(/coordianator/gi, "Coordinator")}
                           </div>
                           <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-purple-300 transition-colors tracking-tight">
                             {member.name}
                           </h3>
                           <p className="text-[11px] font-mono text-zinc-400 mt-0.5 truncate">
-                            {member.designation}
+                            {(member.designation || "").replace(/coordianator/gi, "Coordinator")}
                           </p>
                         </div>
 
@@ -1263,17 +1424,19 @@ export default function Home() {
               className="relative z-10 max-w-5xl w-full max-h-[90vh] flex flex-col items-center"
             >
               {/* Top Bar with Title & Close Button */}
-              <div className="w-full flex items-center justify-between pb-4 font-mono text-xs text-zinc-400">
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-purple-400" />
-                  <span className="text-white font-bold">{lightboxImage.title}</span>
-                  <span>• Archival Photo #{lightboxImage.index}</span>
+              <div className="w-full flex items-center justify-between pb-3 sm:pb-4 font-mono text-xs text-zinc-400 gap-2">
+                <div className="flex items-center gap-2 min-w-0 pr-2">
+                  <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+                  <span className="text-white font-bold truncate max-w-[150px] sm:max-w-md">
+                    {lightboxImage.title}
+                  </span>
+                  <span className="hidden sm:inline shrink-0">• Archival Photo #{lightboxImage.index}</span>
                 </div>
                 <button
                   onClick={() => setLightboxImage(null)}
-                  className="px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white transition-colors cursor-pointer"
+                  className="shrink-0 px-3 sm:px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white transition-colors cursor-pointer text-xs"
                 >
-                  ✕ Close (Esc)
+                  ✕ Close
                 </button>
               </div>
 
@@ -1337,16 +1500,19 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-6 text-zinc-300">
-            <a href="#hero" className="min-h-[44px] inline-flex items-center px-2 hover:text-purple-300 transition-colors cursor-pointer">
-              Home
+            <a href="#hero-experience" className="min-h-[44px] inline-flex items-center px-2 hover:text-white transition-colors cursor-pointer">
+              Atelier
             </a>
-            <a href="#events" className="min-h-[44px] inline-flex items-center px-2 hover:text-purple-300 transition-colors cursor-pointer">
+            <a href="#events-section" className="min-h-[44px] inline-flex items-center px-2 hover:text-white transition-colors cursor-pointer">
               Events
             </a>
-            <a href="#team" className="min-h-[44px] inline-flex items-center px-2 hover:text-purple-300 transition-colors cursor-pointer">
+            <a href="#verified-section" className="min-h-[44px] inline-flex items-center px-2 hover:text-white transition-colors cursor-pointer">
+              Verified Registry
+            </a>
+            <a href="#team-section" className="min-h-[44px] inline-flex items-center px-2 hover:text-white transition-colors cursor-pointer">
               TESA Team
             </a>
-            <Link href="/admin" className="min-h-[44px] inline-flex items-center px-3 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-purple-400 text-purple-300 hover:text-white transition-all cursor-pointer">
+            <Link href="/admin" className="min-h-[44px] inline-flex items-center px-3 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-white text-zinc-200 hover:text-white transition-all cursor-pointer">
               Admin Portal →
             </Link>
           </div>

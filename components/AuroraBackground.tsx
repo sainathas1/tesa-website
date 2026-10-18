@@ -4,32 +4,56 @@ import React, { useEffect, useState } from "react";
 
 export default function AuroraBackground() {
   const [mousePos, setMousePos] = useState({ x: -1000, y: -1000 });
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
 
   useEffect(() => {
+    // Initialize spotlight center for mobile devices
+    if (typeof window !== "undefined") {
+      const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+      setIsTouchDevice(isTouch);
+      setMousePos({ x: window.innerWidth / 2, y: 320 });
+    }
+
     const handleMouseMove = (e: MouseEvent) => {
       setMousePos({ x: e.clientX, y: e.clientY });
     };
 
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches && e.touches[0]) {
+        setMousePos({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      }
+    };
+
     window.addEventListener("mousemove", handleMouseMove, { passive: true });
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener("touchstart", handleTouchMove, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: true });
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("touchstart", handleTouchMove);
+      window.removeEventListener("touchmove", handleTouchMove);
+    };
   }, []);
+
+  const spotlightRadius = isTouchDevice ? 160 : 250;
+  const spotlightDiameter = spotlightRadius * 2;
 
   return (
     <div
-      className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none bg-[#050508]"
+      className="fixed inset-0 z-0 pointer-events-none overflow-hidden select-none bg-[#050508] max-w-full"
       aria-hidden="true"
     >
       {/* 1. Micro-Dot Mesh Grid with subtle contrast */}
-      <div className="absolute inset-0 studio-dot-grid opacity-20" />
+      <div className="absolute inset-0 studio-dot-grid opacity-20 pointer-events-none" />
 
-      {/* 2. Interactive Real-Time Mouse Spotlight (Illuminates glass from underneath) */}
+      {/* 2. Interactive Real-Time Touch / Mouse Spotlight (Illuminates glass from underneath) */}
       <div
-        className="absolute pointer-events-none transition-opacity duration-300 rounded-full blur-[90px] mix-blend-screen opacity-70"
+        className="absolute pointer-events-none transition-opacity duration-300 rounded-full blur-[80px] sm:blur-[90px] mix-blend-screen opacity-70"
         style={{
-          width: 500,
-          height: 500,
-          left: mousePos.x - 250,
-          top: mousePos.y - 250,
+          width: spotlightDiameter,
+          height: spotlightDiameter,
+          left: mousePos.x - spotlightRadius,
+          top: mousePos.y - spotlightRadius,
           background:
             "radial-gradient(circle, rgba(168, 85, 247, 0.45) 0%, rgba(6, 182, 212, 0.25) 45%, transparent 75%)",
           willChange: "transform, left, top",

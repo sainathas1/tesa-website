@@ -138,7 +138,15 @@ export default function TesaTeamSection() {
       if (cached) {
         const parsed = JSON.parse(cached);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setTeamList(parsed);
+          const hasCore = parsed.some((m: any) =>
+            (m.category || "").toLowerCase().includes("core") ||
+            (m.role || "").toLowerCase().includes("president") ||
+            (m.role || "").toLowerCase().includes("secretary")
+          );
+          const validated = hasCore
+            ? parsed
+            : [...parsed, ...TEAM_MEMBERS.filter((m) => !parsed.some((p: any) => p.id === m.id))];
+          setTeamList(validated);
         }
       }
     } catch (e) {
@@ -164,10 +172,43 @@ export default function TesaTeamSection() {
   const rotateX = useTransform(smoothProgress, [0, 0.5, 1], [8, 0, -8]);
   const scale = useTransform(smoothProgress, [0, 0.5, 1], [0.96, 1, 0.96]);
 
+  const isMatchCategory = (m: TeamMember, cat: string) => {
+    if (cat === "all") return true;
+    const memberCat = (m.category || "").toLowerCase().trim();
+    const filterCat = cat.toLowerCase().trim();
+    if (memberCat === filterCat) return true;
+    if (filterCat === "core") {
+      const role = (m.role || "").toLowerCase();
+      const designation = (m.designation || "").toLowerCase();
+      return (
+        memberCat.includes("core") ||
+        memberCat.includes("council") ||
+        role.includes("president") ||
+        role.includes("secretary") ||
+        role.includes("treasurer") ||
+        designation.includes("council") ||
+        designation.includes("executive")
+      );
+    }
+    if (filterCat === "technical") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("tech") || memberCat.includes("research") || role.includes("tech");
+    }
+    if (filterCat === "events") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("event") || memberCat.includes("hack") || role.includes("event");
+    }
+    if (filterCat === "outreach") {
+      const role = (m.role || "").toLowerCase();
+      return memberCat.includes("outreach") || memberCat.includes("pr") || memberCat.includes("media") || memberCat.includes("alumni") || role.includes("outreach");
+    }
+    return false;
+  };
+
   const filteredMembers =
     activeCategory === "all"
       ? teamList
-      : teamList.filter((m) => m.category === activeCategory);
+      : teamList.filter((m) => isMatchCategory(m, activeCategory));
 
 
   return (

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { getOptimizedAvatarUrl } from "@/lib/cloudinary";
 
 export interface TeamMember {
   id: string;
@@ -45,7 +46,7 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
   return (
     <AnimatePresence>
       {member && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain flex justify-center items-start sm:items-center p-2 sm:p-6">
           {/* Dark Glassmorphic Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -67,7 +68,7 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
             role="dialog"
             aria-modal="true"
             aria-labelledby="team-modal-name"
-            className="relative z-50 w-full max-w-2xl rounded-3xl glass-modal-panel p-6 sm:p-8 overflow-hidden my-8 group"
+            className="relative z-50 w-full max-w-2xl rounded-3xl glass-modal-panel p-5 sm:p-8 overflow-hidden my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto group"
           >
             {/* Ambient Aurora Glow in Corner */}
             <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-violet-600/20 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" />
@@ -102,15 +103,16 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
             {/* Main Content Layout: Two-column on tablet/desktop */}
             <div className="flex flex-col sm:flex-row gap-6 items-start">
               {/* Large Rectangular Portrait Photo */}
-              <div className="relative w-full sm:w-52 h-64 sm:h-72 rounded-2xl border border-white/10 bg-[#050508] overflow-hidden shrink-0 shadow-[0_15px_35px_rgba(0,0,0,0.85)] group">
+              <div className="relative w-full sm:w-60 aspect-[4/5] sm:h-80 rounded-2xl border border-white/10 bg-zinc-900 overflow-hidden shrink-0 shadow-[0_15px_35px_rgba(0,0,0,0.85)] group">
                 {member.photoUrl ? (
                   <div className="relative w-full h-full">
                     <Image
-                      src={member.photoUrl}
+                      src={getOptimizedAvatarUrl(member.photoUrl)}
                       alt={member.name}
                       fill
-                      sizes="(max-width: 640px) 100vw, 208px"
-                      className="object-cover contrast-105 hover:scale-105 transition-all duration-500"
+                      sizes="(max-width: 640px) 100vw, 240px"
+                      className="w-full h-full object-cover object-top contrast-105 hover:scale-105 transition-all duration-500"
+                      unoptimized={member.photoUrl.includes("res.cloudinary.com") || member.photoUrl.startsWith("data:")}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/20 to-transparent pointer-events-none" />
                     <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
@@ -141,7 +143,7 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
                 {/* Role Pill & Category */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="inline-block px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider shadow-[0_0_12px_rgba(168,85,247,0.2)]">
-                    {member.role}
+                    {(member.role || "").replace(/coordianator/gi, "Coordinator")}
                   </span>
                   <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-white/[0.03] text-zinc-400 border border-white/10 uppercase">
                     {member.category}

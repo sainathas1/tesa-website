@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { collection, addDoc, getDocs, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, getDocs, onSnapshot, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 
@@ -32,6 +32,8 @@ export interface EventItem {
   status: "open" | "upcoming" | "closed";
   eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
+  paymentQrUrl?: string;
+  qrCodeUrl?: string;
   summary: string;
   highlights?: string;
   galleryUrls?: string[];
@@ -97,6 +99,24 @@ export default function EventDetailModal({
   const [errorMessage, setErrorMessage] = useState("");
   const [submittedRegId, setSubmittedRegId] = useState("");
 
+  // Payment QR Code Fallback State
+  const [localPaymentQr, setLocalPaymentQr] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("tesa_payment_qr");
+        if (stored) setLocalPaymentQr(stored);
+      }
+    } catch {}
+  }, []);
+
+  const activePaymentQrUrl =
+    event?.paymentQrUrl ||
+    event?.qrCodeUrl ||
+    localPaymentQr ||
+    "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR";
+
   // Verified / Registered Attendees List State
   const [registeredParticipants, setRegisteredParticipants] = useState<RegistrationRecord[]>([]);
   const [isFetchingParticipants, setIsFetchingParticipants] = useState(false);
@@ -105,27 +125,61 @@ export default function EventDetailModal({
 
   // Sync state whenever active event or initialMode changes
   useEffect(() => {
-    if (event) {
-      setViewMode(initialMode || "detail");
-      setFullName("");
-      setPrn("");
-      setYear("Second Year B.Tech");
-      setContactNumber("");
-      setPresentationFile(null);
-      setPaymentFile(null);
-      setPreviewUrl(null);
-      setCustomAnswers({});
-      setCustomFiles({});
-      setErrorMessage("");
-      setIsSubmitting(false);
-      setSubmittingStep("");
-      setSubmittedRegId("");
-      setActiveDossierReg(null);
-      setParticipantSearch("");
+    if (!event) return;
 
-      // Fetch participants for this event
-      fetchRegisteredParticipants(event);
-    }
+    setViewMode(initialMode || "detail");
+    setFullName("");
+    setPrn("");
+    setYear("Second Year B.Tech");
+    setContactNumber("");
+    setPresentationFile(null);
+    setPaymentFile(null);
+    setPreviewUrl(null);
+    setCustomAnswers({});
+    setCustomFiles({});
+    setErrorMessage("");
+    setIsSubmitting(false);
+    setSubmittingStep("");
+    setSubmittedRegId("");
+    setActiveDossierReg(null);
+    setParticipantSearch("");
+
+    // Live Real-Time Listener on 'event_registrations'
+    setIsFetchingParticipants(true);
+    const unsubscribe = onSnapshot(
+      collection(db, "event_registrations"),
+      (snap) => {
+        const records: RegistrationRecord[] = [];
+        snap.forEach((d) => {
+          const data = d.data() as any;
+          if (data.eventId === event.id || data.eventTitle === event.title || !data.eventId) {
+            records.push({
+              id: d.id,
+              registrationId: data.registrationId || `REG-${d.id.slice(-6)}`,
+              eventId: data.eventId,
+              eventTitle: data.eventTitle || event.title,
+              fullName: data.fullName || data.studentName || "Registered Delegate",
+              prn: data.prn || "N/A",
+              year: data.year || "B.Tech",
+              status: data.status || (data.verified ? "verified" : "pending"),
+              submissionFileUrl: data.submissionFileUrl,
+              customAnswers: data.customAnswers || {},
+              registeredAt: data.registeredAt ? data.registeredAt.slice(0, 10) : "2026-04-01",
+            });
+          }
+        });
+        setRegisteredParticipants(records);
+        setIsFetchingParticipants(false);
+      },
+      (err) => {
+        console.warn("Firestore event_registrations onSnapshot error:", err);
+        setIsFetchingParticipants(false);
+      }
+    );
+
+    return () => {
+      unsubscribe();
+    };
   }, [event, initialMode]);
 
   // Listen for Escape key to close modal smoothly
@@ -208,39 +262,7 @@ export default function EventDetailModal({
         }
       } catch (lsErr) {}
 
-      // Fallback seed entries for immediate visual feedback if no live records yet
-      if (records.length === 0) {
-        records.push(
-          {
-            registrationId: "REG-948210",
-            eventTitle: ev.title,
-            fullName: "Aditya Deshmukh",
-            prn: "2023BTE042",
-            year: "Third Year B.Tech",
-            status: "verified",
-            registeredAt: "2026-04-02",
-            submissionFileUrl: "https://api.cloudinary.com/v1_1/cc0vold0/auto/upload",
-            customAnswers: {
-              "Team Name": "Smart Loom Innovators",
-              "Abstract Title": "Conductive Yarn Integration in Smart Electronic Rapier Looms",
-            },
-          },
-          {
-            registrationId: "REG-712394",
-            eventTitle: ev.title,
-            fullName: "Priyanka Joshi",
-            prn: "2024BTE019",
-            year: "Second Year B.Tech",
-            status: "pending",
-            registeredAt: "2026-04-05",
-            customAnswers: {
-              "Team Name": "NanoWeave Tech",
-              "Abstract Title": "Polymeric Electrospun Nanofiber Filters for Medical Geotextiles",
-            },
-          }
-        );
-      }
-
+      // No dummy fallback seed records - display actual registered delegates or empty state
       setRegisteredParticipants(records);
     } finally {
       setIsFetchingParticipants(false);
@@ -346,21 +368,18 @@ export default function EventDetailModal({
       return;
     }
 
-    // Validate required custom form fields
+    // Validate required custom form fields (Media/File uploads PPT/PDF are always optional)
     if (event.customFormFields && event.customFormFields.length > 0) {
       for (const field of event.customFormFields) {
+        if (field.fieldType === "File Upload (PPT/PDF/Image)") {
+          // PPT/PDF/Image media uploads are always optional per requirements
+          continue;
+        }
         if (field.required) {
-          if (field.fieldType === "File Upload (PPT/PDF/Image)") {
-            if (!customFiles[field.questionTitle]) {
-              setErrorMessage(`Please upload a file for required question: "${field.questionTitle}"`);
-              return;
-            }
-          } else {
-            const val = customAnswers[field.questionTitle];
-            if (!val || !val.trim()) {
-              setErrorMessage(`Please fill out required question: "${field.questionTitle}"`);
-              return;
-            }
+          const val = customAnswers[field.questionTitle];
+          if (!val || !val.trim()) {
+            setErrorMessage(`Please fill out required question: "${field.questionTitle}"`);
+            return;
           }
         }
       }
@@ -488,7 +507,7 @@ export default function EventDetailModal({
   return (
     <AnimatePresence>
       {event && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain flex justify-center items-start sm:items-center p-2 sm:p-6">
           {/* Dark Glassmorphic Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -510,7 +529,7 @@ export default function EventDetailModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-modal-title"
-            className="relative z-50 w-full max-w-2xl rounded-3xl glass-modal-panel p-6 sm:p-8 overflow-hidden my-8 group"
+            className="relative z-50 w-full max-w-2xl rounded-3xl glass-modal-panel p-5 sm:p-8 overflow-hidden my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto group"
           >
             {/* Ambient Aurora Glow in Corners */}
             <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-violet-600/20 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" />
@@ -812,7 +831,7 @@ export default function EventDetailModal({
                           disabled={isSubmitting}
                           value={year}
                           onChange={(e) => setYear(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-xs disabled:opacity-50 cursor-pointer"
+                          className="w-full px-4 py-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 transition-all text-base sm:text-xs disabled:opacity-50 cursor-pointer"
                         >
                           <option value="First Year B.Tech">First Year B.Tech</option>
                           <option value="Second Year B.Tech">Second Year B.Tech</option>
@@ -839,14 +858,15 @@ export default function EventDetailModal({
                       </div>
                     </div>
 
-                    {/* Dedicated Media Upload Field: PPT, PDF, or Image */}
+                    {/* Dedicated Media Upload Field: PPT, PDF, or Image (Optional) */}
                     <div className="p-4 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-xs text-purple-300 block font-semibold">
-                          Upload Project Media / Presentation (PPT, PDF, or Image)
+                        <label className="text-xs text-purple-300 block font-semibold flex items-center gap-1.5">
+                          <span>Upload Presentation / Media</span>
+                          <span className="text-zinc-500 text-[10px] font-normal font-mono">(Optional)</span>
                         </label>
                         <span className="text-[10px] text-zinc-500 font-mono">
-                          .ppt, .pptx, .pdf, images
+                          PPT, PPTX, PDF, or Images (Optional)
                         </span>
                       </div>
 
@@ -902,7 +922,13 @@ export default function EventDetailModal({
                           <div key={field.id} className="space-y-1">
                             <label className="text-[11px] text-zinc-300 block font-semibold">
                               {field.questionTitle}{" "}
-                              {field.required && <span className="text-red-400">*</span>}
+                              {field.fieldType === "File Upload (PPT/PDF/Image)" ? (
+                                <span className="text-zinc-500 text-[10px] font-normal font-mono">(Optional)</span>
+                              ) : field.required ? (
+                                <span className="text-red-400">*</span>
+                              ) : (
+                                <span className="text-zinc-500 text-[10px] font-normal font-mono">(Optional)</span>
+                              )}
                             </label>
 
                             {field.fieldType === "Short Text" && (
@@ -935,7 +961,7 @@ export default function EventDetailModal({
                                   }))
                                 }
                                 placeholder={`Provide details for ${field.questionTitle.toLowerCase()}...`}
-                                className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-xs font-sans disabled:opacity-50 transition-all"
+                                className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/10 text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-base sm:text-xs font-sans disabled:opacity-50 transition-all"
                               />
                             )}
 
@@ -950,7 +976,7 @@ export default function EventDetailModal({
                                     [field.questionTitle]: e.target.value,
                                   }))
                                 }
-                                className="w-full px-4 py-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-xs cursor-pointer font-sans disabled:opacity-50 transition-all"
+                                className="w-full px-4 py-3 rounded-xl bg-[#0b0c10] border border-white/10 text-white focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 text-base sm:text-xs cursor-pointer font-sans disabled:opacity-50 transition-all"
                               >
                                 <option value="">-- Select an option --</option>
                                 {field.options
@@ -969,7 +995,7 @@ export default function EventDetailModal({
                               <div className="p-3.5 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all">
                                 <input
                                   type="file"
-                                  required={field.required && !customFiles[field.questionTitle]}
+                                  required={false}
                                   accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,.webp"
                                   disabled={isSubmitting}
                                   onChange={(e) =>
@@ -1001,13 +1027,70 @@ export default function EventDetailModal({
                       </div>
                     )}
 
-                    {/* Payment Instruction Pill */}
-                    <div className="p-3.5 rounded-xl bg-purple-950/20 border border-purple-500/25 flex items-center justify-between gap-3 text-[11px]">
-                      <div className="flex items-center gap-2 text-purple-300">
-                        <span className="text-purple-400 text-sm">💳</span>
-                        <span>Fee: ₹150 / ₹250 (UPI ID: <span className="font-bold text-white">tesa@sggs</span>)</span>
+                    {/* Payment QR Code & UPI Instructions */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-950/40 via-[#0d0e15] to-[#07080c] border border-purple-500/30 shadow-[0_0_30px_rgba(168,85,247,0.15)] flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
+                      {/* Payment QR Code Image Container */}
+                      <div className="flex flex-col items-center shrink-0">
+                        <div className="relative w-36 h-36 sm:w-40 sm:h-40 rounded-2xl bg-white p-2 border-2 border-purple-400/50 shadow-xl overflow-hidden group/qr">
+                          <Image
+                            src={activePaymentQrUrl}
+                            alt="Event Payment QR Code"
+                            width={160}
+                            height={160}
+                            unoptimized
+                            className="w-full h-full object-contain rounded-xl"
+                          />
+                          <a
+                            href={activePaymentQrUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="absolute inset-0 bg-black/60 opacity-0 group-hover/qr:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-mono font-bold"
+                          >
+                            🔍 Tap to Enlarge
+                          </a>
+                        </div>
+                        <span className="text-[9px] font-mono text-purple-300 mt-1.5 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                          SCAN TO PAY
+                        </span>
                       </div>
-                      <span className="text-[10px] text-zinc-400">Scan &amp; Pay via GPay/PhonePe</span>
+
+                      {/* Payment Details & Steps */}
+                      <div className="flex-1 w-full space-y-2 text-left">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold">
+                            STEP 1: SCAN &amp; PAY
+                          </span>
+                          <span className="text-[10px] font-mono text-zinc-400">
+                            Instant UPI Verification
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm sm:text-base font-bold text-white tracking-tight">
+                          Event Registration Fee
+                        </h4>
+
+                        <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs font-mono">
+                          <div className="flex items-center justify-between">
+                            <span className="text-zinc-400">UPI ID:</span>
+                            <span className="font-bold text-white bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30 select-all">
+                              tesa@sggs
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-zinc-400">Participation Fee:</span>
+                            <span className="text-emerald-400 font-bold">₹150 / ₹250</span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-zinc-400">Accepted Apps:</span>
+                            <span className="text-purple-300">GPay • PhonePe • Paytm • BHIM</span>
+                          </div>
+                        </div>
+
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                          Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.
+                        </p>
+                      </div>
                     </div>
 
                     {/* Payment Screenshot File Input */}

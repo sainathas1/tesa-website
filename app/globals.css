@@ -1,27 +1,60 @@
 @import "tailwindcss";
 
+/* ============================================================================
+   ASTRO-TEXTILE & SMART GARMENT EDITION: GLOBAL FONTS & TOKENS
+   ============================================================================ */
+
+@font-face {
+  font-family: "SF Pro";
+  font-weight: 400;
+  src: local("SF Pro Text"), local("SF Pro Display"), local("SF Pro");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SF Pro";
+  font-weight: 700;
+  src: local("SF Pro Text Bold"), local("SF Pro Display Bold"), local("SF Pro Bold");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SF Pro Thin";
+  font-weight: 100;
+  src: local("SF Pro Text Thin"), local("SF Pro Display Thin"), local("SF Pro Thin");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Aalto";
+  font-weight: 400;
+  src: local("Aalto"), local("Arial Narrow"), local("Impact");
+  font-display: swap;
+}
+
 :root {
-  --background: #050508;
-  --foreground: #f4f4f5;
+  --background: #090807;
+  --foreground: #ffffff;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "SF Pro", Arial, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
 html,
 body {
-  background: #050508;
-  color: #f4f4f5;
-  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #090807;
+  color: #fff;
+  font-family: "SF Pro", Arial, sans-serif;
   overflow-x: hidden;
+  overflow-y: auto;
   max-width: 100vw;
   width: 100%;
-  selection-background-color: rgba(124, 58, 237, 0.35);
-  selection-color: #f5f3ff;
+  selection-background-color: rgba(255, 255, 255, 0.25);
+  selection-color: #ffffff;
 }
 
 /* ============================================================================
@@ -287,9 +320,607 @@ body {
   background: #050508;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(124, 58, 237, 0.4);
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.8);
+  background: rgba(255, 255, 255, 0.5);
 }
+
+/* ============================================================================
+   PLANET JUMPING: ASTRO-TEXTILE & SMART GARMENT EDITION (HERO SECTION CSS)
+   ============================================================================ */
+
+.experience {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 600px;
+  overflow: hidden;
+  background: #0a0908;
+}
+
+.backgrounds,
+.background,
+.shade,
+.transition-layer,
+.transition-layer video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.background {
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  pointer-events: none;
+}
+
+.background.is-visible {
+  opacity: 1;
+}
+
+.preloader {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0a0908;
+  transition: opacity 0.7s ease, visibility 0.7s ease;
+}
+
+.preloader.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#preloader-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.preloader-shade {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at center, transparent 30%, rgba(9, 8, 7, 0.85) 100%);
+}
+
+.floating-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 72px;
+  height: 72px;
+  z-index: 60;
+  transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.3));
+}
+
+.floating-logo.is-docked {
+  top: 24px;
+  left: 32px;
+  transform: translate(0, 0) scale(0.65);
+  transform-origin: top left;
+  z-index: 25;
+}
+
+.preloader-count {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  z-index: 60;
+  font-family: "SF Pro Thin", "SF Pro", Arial, sans-serif;
+  font-size: 56px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  transition: opacity 0.4s ease;
+  user-select: none;
+}
+
+.preloader-count.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.preloader-count .percent {
+  font-size: 24px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.scene-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.portal-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.shade {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent 52%, rgba(9, 8, 7, 0.95) 100%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 4px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.025) 0px, rgba(255, 255, 255, 0.025) 1px, transparent 1px, transparent 4px);
+}
+
+.chrome {
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.chrome.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 20;
+  pointer-events: auto;
+}
+
+.header-brand-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 140px;
+  height: 48px;
+  margin-left: 64px;
+}
+
+.header-brand-text {
+  font-family: "SF Pro", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(14, 13, 12, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 4px 6px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nav a {
+  font-family: "SF Pro", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 8px 14px;
+  border-radius: 9999px;
+  transition: all 0.25s ease;
+  text-decoration: none;
+}
+
+.nav a:hover,
+.nav a.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.menu {
+  font-family: "SF Pro", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #0a0908;
+  background: #fff;
+  border: 1px solid #fff;
+  border-radius: 9999px;
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.25);
+}
+
+.menu:hover {
+  background: transparent;
+  color: #fff;
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.5);
+}
+
+.planet-list {
+  position: absolute;
+  left: 32px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.planet-item,
+.planet-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: "SF Pro", Arial, sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.35);
+  transition: all 0.3s ease;
+}
+
+.planet-item.is-active,
+.planet-list-item.is-active {
+  color: #fff;
+  font-weight: 700;
+}
+
+.planet-pip,
+.planet-list-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.planet-item.is-active .planet-pip,
+.planet-list-item.is-active .planet-list-dot {
+  background: #fff;
+  transform: scale(1.6);
+  box-shadow: 0 0 10px #fff;
+}
+
+.portal-wrap {
+  position: absolute;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.portal-heading {
+  font-family: "SF Pro", Arial, sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.65);
+  display: flex;
+  gap: 8px;
+}
+
+.portal-heading strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.portal {
+  position: relative;
+  width: 160px;
+  height: 230px;
+  border-radius: 20px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: auto;
+}
+
+#portal-video,
+#portal-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.planet-content {
+  position: absolute;
+  left: 140px;
+  bottom: 50px;
+  max-width: 620px;
+  z-index: 15;
+  pointer-events: auto;
+}
+
+#planet-title {
+  font-family: "Aalto", "Arial Narrow", Impact, sans-serif;
+  font-size: clamp(64px, 10vw, 130px);
+  line-height: 0.88;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #fff;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+}
+
+.tesa-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.68);
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.planet-content dl {
+  background: rgba(12, 11, 10, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-left: 3px solid #fff;
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planet-content .fact-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  font-size: 11px;
+  line-height: 1.5;
+  font-family: "SF Pro", Arial, sans-serif;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.42);
+}
+
+.planet-content .fact-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.planet-content dt {
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.planet-content dd {
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0;
+}
+
+.transition-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.transition-layer.is-active {
+  opacity: 1;
+}
+
+#transition-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 45;
+  font-family: "SF Pro", Arial, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(9, 8, 7, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 20px;
+  border-radius: 9999px;
+  border: 1px dashed rgba(255, 255, 255, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+}
+
+.loading.is-visible {
+  opacity: 1;
+}
+
+.custom-cursor {
+  position: fixed;
+  width: 36px;
+  height: 36px;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.2s ease;
+}
+
+.cursor-orbit {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed rgba(255, 255, 255, 0.65);
+  border-radius: 50%;
+  animation: orbit-spin 6s linear infinite;
+}
+
+.cursor-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #fff;
+}
+
+.cursor-label {
+  position: absolute;
+  top: 42px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "SF Pro", Arial, sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+}
+
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   ASTRO-TEXTILE LOWER SECTIONS: WOVEN GRID & LOCKSTITCH THEME TOKENS
+   ============================================================================ */
+
+.astro-section {
+  background: #090807;
+  color: #fff;
+  position: relative;
+}
+
+.astro-grid-overlay {
+  background-image: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 12px),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 1px, transparent 1px, transparent 12px);
+}
+
+.lockstitch-border {
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+}
+
+.lockstitch-border:hover {
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 0 25px rgba(255, 255, 255, 0.08);
+}
+
+.care-label-box {
+  background: rgba(12, 11, 10, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px dashed rgba(255, 255, 255, 0.22);
+  border-left: 3px solid #fff;
+  border-radius: 12px;
+}
+
+/* Responsive Overrides */
+@media (max-width: 900px) {
+  .planet-list {
+    display: none;
+  }
+  .planet-content {
+    left: 20px;
+    bottom: 24px;
+    right: 20px;
+    max-width: calc(100% - 40px);
+  }
+  .portal-wrap {
+    right: 20px;
+    top: auto;
+    bottom: 330px;
+    transform: none;
+  }
+  .portal {
+    width: 120px;
+    height: 170px;
+  }
+  .header {
+    padding: 0 16px;
+  }
+  .header-brand-slot {
+    margin-left: 48px;
+  }
+  .floating-logo.is-docked {
+    top: 18px;
+    left: 16px;
+    transform: scale(0.55);
+  }
+  #planet-title {
+    font-size: clamp(48px, 12vw, 80px);
+    margin-bottom: 12px;
+  }
+  .planet-content .fact-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
+

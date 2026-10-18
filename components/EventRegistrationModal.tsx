@@ -14,7 +14,7 @@ interface RegistrationModalProps {
 export default function EventRegistrationModal({
   isOpen,
   onClose,
-  defaultEventTitle = "TEX-CONCLAVE 2026",
+  defaultEventTitle = "TEXPLORER 2026 (Mega National Event)",
   onSuccess,
 }: RegistrationModalProps) {
   const [formData, setFormData] = useState({
@@ -55,8 +55,10 @@ export default function EventRegistrationModal({
 
     // 1. Try to save to Firestore
     try {
-      await addDoc(collection(db, "registrations"), {
+      await addDoc(collection(db, "event_registrations"), {
         ...newReg,
+        fullName: formData.studentName,
+        contactNumber: formData.email,
         createdAt: serverTimestamp(),
       });
     } catch (err: any) {
@@ -185,10 +187,13 @@ export default function EventRegistrationModal({
                   onChange={(e) => setFormData({ ...formData, eventTitle: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg bg-black/60 border border-white/15 focus:border-cyan-400 focus:outline-none text-white text-xs font-mono"
                 >
-                  <option value="TEX-CONCLAVE 2026">TEX-CONCLAVE 2026 (National Symposium)</option>
-                  <option value="SMART WEAVES HACKATHON 2026">SMART WEAVES HACKATHON 2026 (36-Hour Challenge)</option>
-                  <option value="NANOFIBER & ELECTROSPINNING WORKSHOP">Nanofiber &amp; Electrospinning Workshop</option>
-                  <option value="INDUSTRY 4.0 TEXTILE EXPO">Industry 4.0 Technical Textile Expo</option>
+                  <option value="TEXPLORER 2026 (Mega National Event)">TEXPLORER 2026 (Mega National Event - All Tracks)</option>
+                  <option value="TEXPLORER: Tex-Paper (Research Presentation)">TEXPLORER: Tex-Paper (Research &amp; Paper Presentation)</option>
+                  <option value="TEXPLORER: Tex-Hack (Smart Weaves Hackathon)">TEXPLORER: Tex-Hack (Smart Weaves 36-Hr Hackathon)</option>
+                  <option value="TEXPLORER: Tex-Design (CAD Fabric Mania)">TEXPLORER: Tex-Design (CAD &amp; Digital Jacquard Mania)</option>
+                  <option value="TEXPLORER: Tex-Quiz (National Textile Quiz)">TEXPLORER: Tex-Quiz (National Textile Brain Quest)</option>
+                  <option value="TEXPLORER: Tex-Exhibit (Working Model &amp; Poster)">TEXPLORER: Tex-Exhibit (Working Model &amp; Prototype Expo)</option>
+                  <option value="TEXPLORER: Nanofiber Lab Workshop">TEXPLORER: Nanofiber &amp; Electrospinning Lab Workshop</option>
                 </select>
               </div>
 
