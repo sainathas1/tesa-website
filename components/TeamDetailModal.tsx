@@ -53,7 +53,7 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
   return (
     <AnimatePresence>
       {member && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-hidden">
           {/* Dark Glassmorphic Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -61,7 +61,7 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-40"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md z-40"
             aria-hidden="true"
           />
 
@@ -75,7 +75,7 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
             role="dialog"
             aria-modal="true"
             aria-labelledby="team-modal-name"
-            className="relative z-50 w-full max-w-2xl max-h-[90vh] rounded-3xl glass-modal-panel p-5 sm:p-8 overflow-y-auto my-auto custom-scrollbar group"
+            className="relative z-50 w-full max-w-2xl max-h-[85vh] rounded-2xl bg-[#0b0c10] border border-white/15 p-5 sm:p-8 overflow-y-auto my-auto custom-scrollbar group shadow-2xl"
           >
             {/* Ambient Aurora Glow in Corner */}
             <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-violet-600/20 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" />

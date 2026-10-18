@@ -54,7 +54,7 @@ export function isConcludedEvent(event: any): boolean {
   if (!event) return false;
   if (event._isPast || event.isPastSection) return true;
   const evStatus = String(event.eventStatus || event.status || "").trim().toLowerCase();
-  if (evStatus === "concluded" || evStatus === "past" || evStatus === "closed") {
+  if (["concluded", "past", "completed", "closed"].includes(evStatus)) {
     return true;
   }
   const deadline = String(event.deadline || "").trim();
@@ -63,6 +63,8 @@ export function isConcludedEvent(event: any): boolean {
   }
   return false;
 }
+
+export const isPastEvent = isConcludedEvent;
 
 export interface RegistrationRecord {
   id?: string;
@@ -613,7 +615,7 @@ export default function EventDetailModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-modal-title"
-            className="relative z-50 w-full max-w-5xl max-h-[86vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden group"
+            className="relative z-50 w-full max-w-4xl max-h-[85vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden group"
           >
             {/* Ambient Aurora Glow in Corners */}
             <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-violet-600/20 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" />

@@ -3006,16 +3006,16 @@ export default function AdminDashboardPage() {
                 MODAL: STUDENT FORM RESPONSES & VERIFICATION INSPECTOR
                 ============================================================= */}
             {selectedRegForAnswers && (
-              <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl overflow-y-auto overscroll-contain">
-                <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-5 sm:p-7 text-xs my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto">
-                  {/* Top Modal Header */}
-                  <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
+              <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-hidden">
+                <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden text-xs">
+                  {/* Sticky Top Header */}
+                  <div className="shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016]">
                     <div>
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 text-[10px] font-mono text-purple-300 mb-1.5">
+                      <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full border border-purple-500/30 bg-purple-950/40 text-[10px] font-mono text-purple-300 mb-1">
                         <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
                         <span>REGISTRATION DOSSIER • SUBMISSION DETAILS</span>
                       </div>
-                      <h3 className="text-xl font-bold text-white">
+                      <h3 className="text-lg font-bold text-white">
                         {selectedRegForAnswers.studentName}
                       </h3>
                       <span className="text-xs text-zinc-400">
@@ -3025,11 +3025,14 @@ export default function AdminDashboardPage() {
 
                     <button
                       onClick={() => setSelectedRegForAnswers(null)}
-                      className="w-9 h-9 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
                     >
                       ✕
                     </button>
                   </div>
+
+                  {/* Scrollable Body */}
+                  <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-5">
 
                   {/* Delegate Summary Box */}
                   <div className="p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
@@ -3161,68 +3164,73 @@ export default function AdminDashboardPage() {
                       </div>
                     )}
                   </div>
+                </div>
 
-                  {/* Modal Action Buttons */}
-                  <div className="flex items-center justify-between pt-4 border-t border-white/[0.08]">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRegForAnswers(null)}
-                      className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer"
-                    >
-                      Close Window
-                    </button>
+                {/* Sticky Bottom Action Bar */}
+                <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRegForAnswers(null)}
+                    className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer text-xs"
+                  >
+                    Close Window
+                  </button>
 
-                    <div className="flex items-center gap-2">
-                      {selectedRegForAnswers.status !== "verified" && selectedRegForAnswers.status !== "approved" ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            handleUpdateRegStatus(selectedRegForAnswers.id, "verified");
-                            setSelectedRegForAnswers(null);
-                          }}
-                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs tracking-wide transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer flex items-center gap-1.5"
-                        >
-                          <span>✔</span>
-                          <span>Verify Registration Now</span>
-                        </button>
-                      ) : (
-                        <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1">
-                          <span>✔ Already Verified</span>
-                        </span>
-                      )}
-                    </div>
+                  <div className="flex items-center gap-2">
+                    {selectedRegForAnswers.status !== "verified" && selectedRegForAnswers.status !== "approved" ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleUpdateRegStatus(selectedRegForAnswers.id, "verified");
+                          setSelectedRegForAnswers(null);
+                        }}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold text-xs tracking-wide transition-all shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer flex items-center gap-1.5"
+                      >
+                        <span>✔</span>
+                        <span>Verify Registration Now</span>
+                      </button>
+                    ) : (
+                      <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1">
+                        <span>✔ Already Verified</span>
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            </div>
+          )}
           </section>
         )}
       </main>
 
       {/* =======================================================================
-          MODAL: ADD / EDIT COUNCIL MEMBER (With Sleek Portrait Frame Preview)
+          MODAL: ADD / EDIT COUNCIL MEMBER (Compact Viewport Fit Layout)
           ======================================================================= */}
       {isTeamModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-xl overflow-y-auto overscroll-contain">
-          <div className="relative w-full max-w-2xl glass-modal-panel rounded-3xl p-5 sm:p-7 text-xs my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-white/[0.08] pb-4 mb-5">
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-hidden">
+          <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden text-xs">
+            {/* Sticky Top Header */}
+            <div className="shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016]">
               <div>
                 <span className="text-[10px] text-purple-400 uppercase tracking-widest block font-mono">
                   COUNCIL DIRECTORY
                 </span>
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-base sm:text-lg font-bold text-white">
                   {editingTeamMember ? "Edit Council Member & Portrait" : "Add New Council Member"}
                 </h3>
               </div>
               <button
+                type="button"
                 onClick={() => setIsTeamModalOpen(false)}
-                className="w-9 h-9 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleSaveTeamMember} className="space-y-5">
+            <form onSubmit={handleSaveTeamMember} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-5">
               {/* Image Preview & Upload Section */}
               <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
                 <span className="text-xs font-semibold text-purple-300 uppercase tracking-wide block">
@@ -3417,11 +3425,14 @@ export default function AdminDashboardPage() {
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/[0.08]">
+              </div>
+
+              {/* Sticky Bottom Action Bar */}
+              <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setIsTeamModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer text-xs"
                 >
                   Cancel
                 </button>
@@ -3461,7 +3472,7 @@ export default function AdminDashboardPage() {
           ======================================================================= */}
       {isEventModalOpen && (
         <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-hidden">
-          <div className="relative w-full max-w-5xl max-h-[86vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden">
             {/* Sticky Top Bar (shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016]) */}
             <div className="shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016]">
               <div className="flex items-center gap-2.5">

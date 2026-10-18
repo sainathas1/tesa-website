@@ -47,21 +47,23 @@ export function getMemberInitials(name?: string, placeholder?: string): string {
 }
 
 /**
- * Team Member Portrait Avatar with onError Fallback
+/**
+ * Team Member Portrait Photo with onError Fallback
  * Automatically displays initials on a subtle purple-indigo gradient if photo fails or is empty.
+ * Guarantees object-top portrait framing so heads/hair are never cropped.
  */
-function TeamMemberAvatar({ member }: { member: TeamMember }) {
-  const [imageError, setImageError] = useState(false);
-  const rawUrl = member.photoUrl || member.imageUrl || member.image || "";
+export function TeamMemberPhoto({ member }: { member: TeamMember }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  const src = member.photoUrl || member.imageUrl || member.image || "";
   const initials = getMemberInitials(member.name, member.photoPlaceholder);
 
   useEffect(() => {
-    setImageError(false);
-  }, [rawUrl]);
+    setImgFailed(false);
+  }, [src]);
 
-  if (!rawUrl || imageError) {
+  if (!src || imgFailed) {
     return (
-      <div className="relative w-full h-full bg-gradient-to-br from-purple-900/80 to-indigo-950 flex flex-col items-center justify-center text-4xl font-bold text-white select-none">
+      <div className="relative w-full h-full bg-gradient-to-br from-purple-900/80 via-indigo-950 to-zinc-950 flex flex-col items-center justify-center text-4xl font-bold text-white select-none">
         <span className="tracking-wider drop-shadow-md">{initials}</span>
         <span className="text-[9px] font-mono tracking-widest text-purple-300/80 uppercase mt-2 font-normal">
           PORTRAIT ARCHIVE
@@ -75,9 +77,9 @@ function TeamMemberAvatar({ member }: { member: TeamMember }) {
   return (
     <div className="relative w-full h-full">
       <img
-        src={getOptimizedAvatarUrl(rawUrl)}
+        src={getOptimizedAvatarUrl(src)}
         alt={member.name}
-        onError={() => setImageError(true)}
+        onError={() => setImgFailed(true)}
         className="w-full h-full object-cover object-top contrast-105 group-hover:scale-105 transition-all duration-700 ease-out"
         loading="lazy"
       />
@@ -86,6 +88,9 @@ function TeamMemberAvatar({ member }: { member: TeamMember }) {
     </div>
   );
 }
+
+// Keep TeamMemberAvatar as alias for backwards compatibility
+export const TeamMemberAvatar = TeamMemberPhoto;
 
 // ============================================================================
 // DATA INTERFACES
@@ -790,7 +795,7 @@ export default function Home() {
   const filteredTeam = filteredTeamMembers;
 
   return (
-    <main className="overflow-x-hidden max-w-full w-full bg-[#090807] text-zinc-100 min-h-screen relative selection:bg-white/20 selection:text-white">
+    <main className="overflow-x-hidden max-w-full w-full bg-[#090807] text-zinc-100 min-h-screen relative selection:bg-white/20 selection:text-white pt-20">
       {/* =========================================================================
           SECTION 1: PLANET JUMPING - ASTRO-TEXTILE & SMART GARMENT 3D CANVAS HERO
           ========================================================================= */}
@@ -803,12 +808,11 @@ export default function Home() {
       {/* Deep Obsidian Canvas with Ambient Aurora Light Orbs & Micro-Dot Grid */}
       <AuroraBackground />
 
-      {/* Floating Glass Navbar with High-Opacity Mobile Background */}
+      {/* Docked Glass Navbar with Full-Width Opaque Background */}
       <Navbar
         onOpenRegister={() => handleOpenRegistration("TEXPLORER 2026")}
         onOpenVerifiedList={() => handleOpenVerifiedList("TEXPLORER 2026")}
         onOpenContact={() => setIsContactOpen(true)}
-        className="bg-[#090614]/95 backdrop-blur-2xl border-b border-white/15 shadow-[0_10px_30px_rgba(0,0,0,0.85)]"
       />
 
       {/* Subtle Studio Accent Divider */}
@@ -1299,12 +1303,8 @@ export default function Home() {
         className="relative py-16 sm:py-24 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20"
       >
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
-            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className="care-label-box p-8 sm:p-12 relative overflow-hidden"
+          <div
+            className="care-label-box p-8 sm:p-12 relative overflow-hidden opacity-100 visible"
           >
             {/* Ambient Selvedge Accent */}
             <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -1356,7 +1356,7 @@ export default function Home() {
                 </button>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </section>
 

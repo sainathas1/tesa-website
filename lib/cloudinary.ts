@@ -10,19 +10,24 @@ export const CLOUDINARY_CLOUD_NAME =
   process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "cc0vold0";
 export const CLOUDINARY_UPLOAD_PRESET =
   process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "tesasggs";
-export const CLOUDINARY_ENDPOINT = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/auto/upload`;
+export const CLOUDINARY_BASE_ENDPOINT = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}`;
 
 /**
- * Upload any File (portrait photo, event banner, gallery photo, payment screenshot)
+ * Upload any File (portrait photo, event banner, gallery photo, payment screenshot, PDF, PPT)
  * directly to Cloudinary using the unsigned preset and return its secure_url.
+ * Uses /image/upload for images and /raw/upload for PDFs, PPTs and documents to avoid 401 ACL failure.
  */
 export async function uploadToCloudinary(file: File): Promise<string> {
+  const isImage = file.type ? file.type.startsWith("image/") : /\.(jpg|jpeg|png|webp|gif|svg|avif)$/i.test(file.name);
+  const resourceType = isImage ? "image" : "raw";
+  const endpoint = `${CLOUDINARY_BASE_ENDPOINT}/${resourceType}/upload`;
+
   const formData = new FormData();
   formData.append("file", file);
   formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
   formData.append("cloud_name", CLOUDINARY_CLOUD_NAME);
 
-  const res = await fetch(CLOUDINARY_ENDPOINT, {
+  const res = await fetch(endpoint, {
     method: "POST",
     body: formData,
   });

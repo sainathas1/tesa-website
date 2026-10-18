@@ -173,7 +173,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 overflow-hidden">
           {/* Backdrop Blur */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -191,7 +191,7 @@ export default function ContactModal({ isOpen, onClose }: ContactModalProps) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="relative z-50 w-full max-w-2xl max-h-[92vh] flex flex-col rounded-3xl glass-modal-panel border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_50px_rgba(168,85,247,0.25)] overflow-hidden"
+            className="relative z-50 w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl bg-[#0b0c10] border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_50px_rgba(168,85,247,0.25)] overflow-hidden"
           >
             {/* Ambient Background Glow Effect */}
             <div

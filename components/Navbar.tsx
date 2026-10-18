@@ -68,15 +68,15 @@ export default function Navbar({
 
   return (
     <>
-      {/* Floating Pill-Shaped Glass Navbar with High-Opacity Background */}
+      {/* Full-width docked top bar to prevent background heading text bleed-through */}
       <header
-        className={`fixed top-0 sm:top-4 left-0 sm:left-1/2 sm:-translate-x-1/2 z-50 w-full sm:w-[95%] max-w-5xl sm:rounded-full transition-all duration-300 ease-out bg-[#090614]/95 backdrop-blur-2xl border-b border-white/15 shadow-[0_10px_30px_rgba(0,0,0,0.85)] px-4 sm:px-6 py-2.5 ${className || ""} ${
+        className={`fixed top-0 left-0 right-0 z-50 bg-[#080512]/95 backdrop-blur-xl border-b border-white/10 px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.85)] transition-all duration-300 ease-out ${className || ""} ${
           isScrolled
             ? "opacity-100 pointer-events-auto translate-y-0"
             : "opacity-0 pointer-events-none -translate-y-8"
         }`}
       >
-        <div className="flex flex-wrap items-center justify-between gap-2 w-full">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2 w-full">
           {/* Brand Identity with Official TESA Logo */}
           <Link
             href="/"
