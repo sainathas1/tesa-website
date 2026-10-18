@@ -232,7 +232,15 @@ export default function TesaTeamSection() {
           className="text-center max-w-3xl mx-auto mb-12 sm:mb-16"
         >
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-cyan-500/40 bg-cyan-950/40 text-[11px] sm:text-xs font-mono text-cyan-300 mb-3 shadow-[0_0_15px_rgba(0,240,255,0.25)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shadow-[0_0_8px_#00f0ff]" />
+            <div className="relative w-4 h-4 rounded-full overflow-hidden bg-white shrink-0">
+              <Image
+                src="/tesa-logo.png"
+                alt="TESA Emblem"
+                width={16}
+                height={16}
+                className="w-full h-full object-cover"
+              />
+            </div>
             <span>TESA STUDENT COUNCIL • 2025–2026 TENURE</span>
           </div>
 

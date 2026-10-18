@@ -4,13 +4,18 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import AuroraBackground from "@/components/AuroraBackground";
 import TeamDetailModal from "@/components/TeamDetailModal";
 import EventDetailModal, { CustomFormField } from "@/components/EventDetailModal";
 import TextilePortalHero from "@/components/TextilePortalHero";
+import ContactModal, {
+  GmailLogoIcon,
+  InstagramLogoIcon,
+  LinkedInLogoIcon,
+} from "@/components/ContactModal";
 
 /**
  * Cloudinary Face-Detection Avatar Optimization Helper
@@ -41,11 +46,19 @@ interface EventItem {
   status: "open" | "upcoming" | "closed";
   eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
+  bannerUrl?: string;
+  imageUrl?: string;
+  image?: string;
   paymentQrUrl?: string;
   qrCodeUrl?: string;
+  upiId?: string;
+  registrationFee?: string;
+  paymentInstructions?: string;
+  acceptedPaymentApps?: string;
   summary: string;
   highlights?: string;
   galleryUrls?: string[];
+  gallery?: string[];
   customFormFields?: CustomFormField[];
   createdAt?: any;
 }
@@ -62,6 +75,8 @@ interface TeamMember {
   skills: string[];
   photoPlaceholder: string;
   photoUrl?: string;
+  imageUrl?: string;
+  image?: string;
   accentColor: string;
 }
 
@@ -393,9 +408,9 @@ const cardSlideUpVariants: Variants = {
 };
 
 export default function Home() {
-  // State for events & team data
-  const [eventsList, setEventsList] = useState<EventItem[]>(DEFAULT_EVENTS);
-  const [teamList, setTeamList] = useState<TeamMember[]>(DEFAULT_TEAM);
+  // State for events & team data (Live synchronized from Firestore)
+  const [eventsList, setEventsList] = useState<EventItem[]>([]);
+  const [teamList, setTeamList] = useState<TeamMember[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Filter states
@@ -411,45 +426,65 @@ export default function Home() {
   // Interactive Lightbox Modal State for Past Events Gallery
   const [lightboxImage, setLightboxImage] = useState<{ url: string; title: string; index: number } | null>(null);
 
-  // Fetch data cleanly from Firebase with localStorage caching
+  // Contact Us Modal interactive state
+  const [isContactOpen, setIsContactOpen] = useState(false);
+
+  // Live real-time synchronization with Firestore (collection: 'events', 'team_members')
   useEffect(() => {
-    // 1. Initial cached population
+    // 1. Initial cached population from localStorage for instantaneous first render
     try {
       const cachedEvents = localStorage.getItem("tesa_events");
       if (cachedEvents !== null) {
         const parsed = JSON.parse(cachedEvents);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           setEventsList(parsed);
+          setIsDataLoading(false);
         }
       }
 
-      const cachedTeam = localStorage.getItem("tesa_team");
+      const cachedTeam = localStorage.getItem("tesa_team_members") || localStorage.getItem("tesa_team");
       if (cachedTeam !== null) {
         const parsedTeam = JSON.parse(cachedTeam);
         if (Array.isArray(parsedTeam) && parsedTeam.length > 0) {
-          const hasCore = parsedTeam.some((m: any) =>
-            (m.category || "").toLowerCase().includes("core") ||
-            (m.role || "").toLowerCase().includes("president") ||
-            (m.role || "").toLowerCase().includes("secretary")
-          );
-          const validatedTeam = hasCore
-            ? parsedTeam
-            : [...parsedTeam, ...DEFAULT_TEAM.filter((m) => !parsedTeam.some((p: any) => p.id === m.id))];
-          setTeamList(validatedTeam);
+          setTeamList(parsedTeam);
         }
       }
     } catch {
-      // Local storage fallback handled gracefully
+      // Local storage read error handled gracefully
     }
 
-    // 2. Live sync from Firestore
-    async function syncFirestoreData() {
-      try {
-        const evSnap = await getDocs(collection(db, "events"));
+    // 2. Real-Time Events Listener (collection: 'events')
+    // CRITICAL: Fetch root collection and sort in JS; do NOT use .orderBy('createdAt') in query()
+    const unsubEvents = onSnapshot(
+      collection(db, "events"),
+      (snapshot) => {
         const remoteEvents: EventItem[] = [];
-        evSnap.forEach((doc) => {
-          remoteEvents.push({ ...(doc.data() as EventItem), id: doc.id });
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const cover = data.bannerUrl || data.imageUrl || data.image || data.mediaUrl || "";
+          const gallery = Array.isArray(data.galleryUrls)
+            ? data.galleryUrls
+            : Array.isArray(data.gallery)
+            ? data.gallery
+            : [];
+          const customFormFields = Array.isArray(data.customFormFields)
+            ? data.customFormFields
+            : [];
+
+          remoteEvents.push({
+            ...(data as EventItem),
+            id: doc.id,
+            mediaUrl: cover,
+            bannerUrl: cover,
+            imageUrl: cover,
+            image: cover,
+            galleryUrls: gallery,
+            gallery: gallery,
+            customFormFields,
+          });
         });
+
+        // Robust timestamp sort in JavaScript
         remoteEvents.sort((a: any, b: any) => {
           const getTimestamp = (e: any) => {
             if (e.createdAt?.seconds) return e.createdAt.seconds * 1000;
@@ -466,47 +501,70 @@ export default function Home() {
           };
           return getTimestamp(b) - getTimestamp(a);
         });
+
         setEventsList(remoteEvents);
-        localStorage.setItem("tesa_events", JSON.stringify(remoteEvents));
-
-        const teamSnap = await getDocs(collection(db, "team"));
-        const remoteTeam: TeamMember[] = [];
-        teamSnap.forEach((doc) => {
-          remoteTeam.push({ ...(doc.data() as TeamMember), id: doc.id });
-        });
-
-        if (remoteTeam.length > 0) {
-          const remoteIds = new Set(remoteTeam.map((m) => m.id));
-          const hasCore = remoteTeam.some(
-            (m) =>
-              (m.category || "").toLowerCase() === "core" ||
-              (m.role || "").toLowerCase().includes("president") ||
-              (m.role || "").toLowerCase().includes("secretary")
-          );
-          // If remote only has custom non-core members, merge with default council members so council never vanishes
-          const mergedTeam = hasCore
-            ? remoteTeam
-            : [...remoteTeam, ...DEFAULT_TEAM.filter((m) => !remoteIds.has(m.id))];
-          setTeamList(mergedTeam);
-          localStorage.setItem("tesa_team", JSON.stringify(mergedTeam));
-        } else {
-          setTeamList(DEFAULT_TEAM);
-          localStorage.setItem("tesa_team", JSON.stringify(DEFAULT_TEAM));
-        }
-      } catch (err) {
-        console.warn("Firestore live sync offline, using local cached data:", err);
-      } finally {
+        setIsDataLoading(false);
+        try {
+          localStorage.setItem("tesa_events", JSON.stringify(remoteEvents));
+        } catch {}
+      },
+      (err) => {
+        console.warn("Firestore events onSnapshot error:", err);
         setIsDataLoading(false);
       }
-    }
+    );
 
-    syncFirestoreData();
+    // 3. Real-Time Team Members Listener (collection: 'team_members')
+    const unsubTeam = onSnapshot(
+      collection(db, "team_members"),
+      (snapshot) => {
+        const remoteTeam: TeamMember[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const photo = data.photoUrl || data.imageUrl || data.image || data.photoPlaceholder || "";
+          remoteTeam.push({
+            ...(data as TeamMember),
+            id: doc.id,
+            photoUrl: photo,
+            imageUrl: photo,
+            image: photo,
+          });
+        });
+
+        // Core Council leadership prioritization sort
+        remoteTeam.sort((a: any, b: any) => {
+          const getWeight = (m: any) => {
+            const role = (m.role || "").toLowerCase();
+            const cat = (m.category || "").toLowerCase();
+            if (role.includes("president") && !role.includes("vice")) return 100;
+            if (role.includes("vice president")) return 90;
+            if (role.includes("secretary")) return 80;
+            if (role.includes("treasurer")) return 70;
+            if (cat.includes("core")) return 60;
+            return 10;
+          };
+          return getWeight(b) - getWeight(a);
+        });
+
+        setTeamList(remoteTeam);
+        try {
+          localStorage.setItem("tesa_team_members", JSON.stringify(remoteTeam));
+        } catch {}
+      },
+      (err) => {
+        console.warn("Firestore team_members onSnapshot error:", err);
+      }
+    );
 
     const timeoutId = setTimeout(() => {
       setIsDataLoading(false);
-    }, 1200);
+    }, 1500);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      unsubEvents();
+      unsubTeam();
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Keyboard escape handler for lightbox
@@ -529,8 +587,10 @@ export default function Home() {
       ) ||
       upcomingEvents[0] ||
       eventsList[0];
-    setSelectedEvent(matched);
-    setModalInitialMode("register");
+    if (matched) {
+      setSelectedEvent(matched);
+      setModalInitialMode("register");
+    }
   };
 
   const handleOpenVerifiedList = (eventTitle: string = "TEXPLORER 2026") => {
@@ -542,23 +602,20 @@ export default function Home() {
       ) ||
       upcomingEvents[0] ||
       eventsList[0];
-    setSelectedEvent(matched);
-    setModalInitialMode("verifiedList");
+    if (matched) {
+      setSelectedEvent(matched);
+      setModalInitialMode("verifiedList");
+    }
   };
 
-  // Distinct Upcoming and Concluded / Past Events categorization
-  const isEventUpcoming = (e: EventItem) => {
-    if (e.eventStatus) return e.eventStatus === "Upcoming";
-    return e.status === "open" || e.status === "upcoming";
+  // Distinct Upcoming and Concluded / Past Events categorization (Case-Insensitive normalization)
+  const isPast = (ev: EventItem) => {
+    const status = (ev.eventStatus || ev.status || "Upcoming").toLowerCase();
+    return status === "concluded" || status === "past" || status === "closed";
   };
 
-  const isEventPast = (e: EventItem) => {
-    if (e.eventStatus) return e.eventStatus === "Concluded";
-    return e.status === "closed";
-  };
-
-  const upcomingEvents = eventsList.filter(isEventUpcoming);
-  const pastEvents = eventsList.filter(isEventPast);
+  const upcomingEvents = eventsList.filter((ev) => !isPast(ev));
+  const pastEvents = eventsList.filter((ev) => isPast(ev));
 
   const displayedUpcomingEvents =
     upcomingSubFilter === "all"
@@ -615,6 +672,7 @@ export default function Home() {
       <TextilePortalHero
         onOpenRegister={() => handleOpenRegistration("TEXPLORER 2026")}
         onOpenVerifiedList={() => handleOpenVerifiedList("TEXPLORER 2026")}
+        onOpenContact={() => setIsContactOpen(true)}
       />
 
       {/* Deep Obsidian Canvas with Ambient Aurora Light Orbs & Micro-Dot Grid */}
@@ -624,6 +682,7 @@ export default function Home() {
       <Navbar
         onOpenRegister={() => handleOpenRegistration("TEXPLORER 2026")}
         onOpenVerifiedList={() => handleOpenVerifiedList("TEXPLORER 2026")}
+        onOpenContact={() => setIsContactOpen(true)}
       />
 
       {/* Subtle Studio Accent Divider */}
@@ -842,13 +901,13 @@ export default function Home() {
                           </div>
 
                           {/* Event Media Banner */}
-                          {event.mediaUrl && (
+                          {Boolean(event.bannerUrl || event.imageUrl || event.image || event.mediaUrl) && (
                             <div className="relative w-full h-40 rounded-2xl overflow-hidden mb-4 border border-white/10 group-hover:border-purple-500/40 transition-colors">
                               <Image
-                                src={event.mediaUrl}
+                                src={event.bannerUrl || event.imageUrl || event.image || event.mediaUrl!}
                                 alt={event.title}
                                 fill
-                                unoptimized={event.mediaUrl.startsWith("data:")}
+                                unoptimized={String(event.bannerUrl || event.mediaUrl || "").startsWith("data:")}
                                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                               />
@@ -953,8 +1012,10 @@ export default function Home() {
                     const gallery =
                       event.galleryUrls && event.galleryUrls.length > 0
                         ? event.galleryUrls
-                        : event.mediaUrl
-                        ? [event.mediaUrl]
+                        : event.gallery && event.gallery.length > 0
+                        ? event.gallery
+                        : (event.bannerUrl || event.imageUrl || event.image || event.mediaUrl)
+                        ? [event.bannerUrl || event.imageUrl || event.image || event.mediaUrl!]
                         : [];
 
                     return (
@@ -1324,10 +1385,10 @@ export default function Home() {
                       <div>
                         {/* Member Portrait Frame with aspect-[4/5] portrait ratio & object-top */}
                         <div className="relative w-full aspect-[4/5] sm:h-80 mb-4 rounded-2xl border border-white/10 bg-zinc-900 overflow-hidden group-hover:border-purple-500/50 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
-                          {member.photoUrl ? (
+                          {(member.photoUrl || member.imageUrl || member.image) ? (
                             <div className="relative w-full h-full">
                               <img
-                                src={getOptimizedAvatarUrl(member.photoUrl)}
+                                src={getOptimizedAvatarUrl(member.photoUrl || member.imageUrl || member.image)}
                                 alt={member.name}
                                 className="w-full h-full object-cover object-top contrast-105 group-hover:scale-105 transition-all duration-700 ease-out"
                                 loading="lazy"
@@ -1474,52 +1535,153 @@ export default function Home() {
       />
 
       {/* =========================================================================
-          HYPER-MODERN DARK STUDIO FOOTER
+          INTERACTIVE CONTACT US MODAL (OFFICIAL GMAIL, INSTAGRAM, LINKEDIN)
           ========================================================================= */}
-      <footer className="relative z-20 w-full border-t border-white/10 bg-black/60 backdrop-blur-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6 font-mono text-xs text-zinc-400">
-          <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-6 text-center sm:text-left">
-            <div className="flex items-center gap-2.5">
-              <div className="relative w-7 h-7 rounded-full border border-purple-400/40 p-0.5 overflow-hidden bg-black shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+      <ContactModal
+        isOpen={isContactOpen}
+        onClose={() => setIsContactOpen(false)}
+      />
+
+      {/* =========================================================================
+          HYPER-MODERN DARK STUDIO FOOTER WITH BRAND LOGO BUTTONS
+          ========================================================================= */}
+      <footer className="relative z-20 w-full border-t border-white/10 bg-black/70 backdrop-blur-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-8 font-mono text-xs text-zinc-400">
+          {/* Top Row: Brand Info + Official Logo Buttons + Contact Us Trigger */}
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6 pb-8 border-b border-white/[0.08]">
+            {/* Brand Identity */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-4 text-center sm:text-left">
+              <div className="relative w-10 h-10 rounded-full border border-white/40 p-[1.5px] overflow-hidden bg-white shrink-0 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
                 <Image
                   src="/tesa-logo.png"
                   alt="TESA Logo"
-                  width={28}
-                  height={28}
+                  width={40}
+                  height={40}
                   className="w-full h-full object-cover rounded-full"
                 />
               </div>
-              <span className="text-white font-bold text-sm tracking-wide">
-                TESA • SGGSIE&amp;T NANDED
-              </span>
+              <div className="flex flex-col">
+                <span className="text-white font-bold text-sm sm:text-base tracking-wide">
+                  TESA • SGGSIE&amp;T NANDED
+                </span>
+                <span className="text-[11px] text-zinc-400 font-sans mt-0.5">
+                  Department of Textile Technology • Est. 1987
+                </span>
+              </div>
             </div>
-            <span className="hidden sm:inline text-zinc-600">|</span>
-            <span className="text-[11px] text-zinc-400">
-              Department of Textile Technology • Est. 1987
-            </span>
+
+            {/* Official Logo Buttons Cluster */}
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {/* Gmail Logo Button */}
+              <a
+                href="mailto:tesa@sggs.ac.in"
+                className="group relative flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-red-500/50 transition-all duration-300 shadow-md hover:shadow-[0_0_20px_rgba(234,67,53,0.35)] cursor-pointer"
+                title="Send Email to tesa@sggs.ac.in"
+              >
+                <div className="w-5 h-5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <GmailLogoIcon className="w-5 h-5" />
+                </div>
+                <span className="text-zinc-200 group-hover:text-white text-xs font-mono">
+                  tesa@sggs.ac.in
+                </span>
+              </a>
+
+              {/* Instagram Logo Button 1: TESA Official */}
+              <a
+                href="https://www.instagram.com/tesa_sggs?rpxt=cmpraG52dHZtdWtk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-pink-500/50 transition-all duration-300 shadow-md hover:shadow-[0_0_20px_rgba(214,41,118,0.35)] cursor-pointer"
+                title="Official Instagram: @tesa_sggs"
+              >
+                <div className="w-5 h-5 rounded-md overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <InstagramLogoIcon className="w-5 h-5" />
+                </div>
+                <span className="text-zinc-200 group-hover:text-white text-xs font-mono">
+                  @tesa_sggs
+                </span>
+              </a>
+
+              {/* Instagram Logo Button 2: TEXPLORER */}
+              <a
+                href="https://www.instagram.com/sggs.texplorer?mdxt=cmwwNHN3OWl2NXQz"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-amber-500/50 transition-all duration-300 shadow-md hover:shadow-[0_0_20px_rgba(250,60,76,0.35)] cursor-pointer"
+                title="TEXPLORER National Event: @sggs.texplorer"
+              >
+                <div className="w-5 h-5 rounded-md overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <InstagramLogoIcon className="w-5 h-5" />
+                </div>
+                <span className="text-zinc-200 group-hover:text-white text-xs font-mono">
+                  @sggs.texplorer
+                </span>
+              </a>
+
+              {/* LinkedIn Logo Button */}
+              <a
+                href="https://www.linkedin.com/company/textile-engineering-student-association-sggsie-t-nanded/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-white/[0.04] hover:bg-white/[0.09] border border-white/10 hover:border-sky-500/50 transition-all duration-300 shadow-md hover:shadow-[0_0_20px_rgba(10,102,194,0.35)] cursor-pointer"
+                title="LinkedIn: Textile Engineering Student Association SGGSIE&T"
+              >
+                <div className="w-5 h-5 rounded-md overflow-hidden flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <LinkedInLogoIcon className="w-5 h-5" />
+                </div>
+                <span className="text-zinc-200 group-hover:text-white text-xs font-mono">
+                  LinkedIn
+                </span>
+              </a>
+
+              {/* Contact Us Modal Launcher Button */}
+              <button
+                type="button"
+                onClick={() => setIsContactOpen(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-gradient-to-r from-purple-600/30 to-violet-600/30 hover:from-purple-600/50 hover:to-violet-600/50 border border-purple-500/40 text-purple-200 hover:text-white text-xs font-bold tracking-wide transition-all shadow-[0_0_20px_rgba(168,85,247,0.2)] cursor-pointer"
+              >
+                <svg className="w-3.5 h-3.5 text-purple-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>Contact Us</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-6 text-zinc-300">
-            <a href="#hero-experience" className="min-h-[44px] inline-flex items-center px-2 hover:text-white transition-colors cursor-pointer">
-              Atelier
-            </a>
-            <a href="#events-section" className="min-h-[44px] inline-flex items-center px-2 hover:text-white transition-colors cursor-pointer">
-              Events
-            </a>
-            <a href="#verified-section" className="min-h-[44px] inline-flex items-center px-2 hover:text-white transition-colors cursor-pointer">
-              Verified Registry
-            </a>
-            <a href="#team-section" className="min-h-[44px] inline-flex items-center px-2 hover:text-white transition-colors cursor-pointer">
-              TESA Team
-            </a>
-            <Link href="/admin" className="min-h-[44px] inline-flex items-center px-3 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-white text-zinc-200 hover:text-white transition-all cursor-pointer">
-              Admin Portal →
-            </Link>
-          </div>
-        </div>
+          {/* Bottom Row: Quick Navigation Links + Copyright */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 text-zinc-300">
+            <div className="flex flex-wrap items-center justify-center gap-5 text-zinc-400">
+              <a href="#hero-experience" className="hover:text-white transition-colors cursor-pointer">
+                Atelier
+              </a>
+              <a href="#events-section" className="hover:text-white transition-colors cursor-pointer">
+                Events
+              </a>
+              <a href="#verified-section" className="hover:text-white transition-colors cursor-pointer">
+                Verified Registry
+              </a>
+              <a href="#team-section" className="hover:text-white transition-colors cursor-pointer">
+                TESA Team
+              </a>
+              <button
+                type="button"
+                onClick={() => setIsContactOpen(true)}
+                className="hover:text-purple-300 transition-colors cursor-pointer"
+              >
+                Contact &amp; Outreach
+              </button>
+              <Link
+                href="/admin"
+                className="px-3 py-1 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-white text-zinc-200 hover:text-white transition-all cursor-pointer"
+              >
+                Admin Portal →
+              </Link>
+            </div>
 
-        <div className="border-t border-white/[0.04] py-3.5 text-center text-[10px] font-mono text-zinc-600">
-          © 2026 Textile Engineering Students Association, SGGSIE&amp;T. All rights reserved.
+            <div className="text-center md:text-right text-[11px] text-zinc-500">
+              © 2026 Textile Engineering Students Association, SGGSIE&amp;T. All rights reserved.
+            </div>
+          </div>
         </div>
       </footer>
     </main>

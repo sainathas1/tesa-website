@@ -32,11 +32,19 @@ export interface EventItem {
   status: "open" | "upcoming" | "closed";
   eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
+  bannerUrl?: string;
+  imageUrl?: string;
+  image?: string;
   paymentQrUrl?: string;
   qrCodeUrl?: string;
+  upiId?: string;
+  registrationFee?: string;
+  paymentInstructions?: string;
+  acceptedPaymentApps?: string;
   summary: string;
   highlights?: string;
   galleryUrls?: string[];
+  gallery?: string[];
   customFormFields?: CustomFormField[];
 }
 
@@ -51,6 +59,8 @@ export interface RegistrationRecord {
   contactNumber?: string;
   email?: string;
   status: "pending" | "verified" | "approved" | "rejected";
+  bannerUrl?: string;
+  posterUrl?: string;
   paymentScreenshotUrl?: string;
   submissionFileUrl?: string;
   customAnswers?: Record<string, any>;
@@ -79,6 +89,11 @@ export default function EventDetailModal({
   const [prn, setPrn] = useState("");
   const [year, setYear] = useState("Second Year B.Tech");
   const [contactNumber, setContactNumber] = useState("");
+
+  // Dedicated Banner / Poster File (PNG, JPG, WEBP)
+  const [bannerFile, setBannerFile] = useState<File | null>(null);
+  const [bannerPreviewUrl, setBannerPreviewUrl] = useState<string | null>(null);
+  const bannerInputRef = useRef<HTMLInputElement>(null);
 
   // Dedicated Project Media / Presentation File (PPT, PDF, Image)
   const [presentationFile, setPresentationFile] = useState<File | null>(null);
@@ -111,11 +126,35 @@ export default function EventDetailModal({
     } catch {}
   }, []);
 
+  const eventMediaCover =
+    event?.bannerUrl || event?.imageUrl || event?.image || event?.mediaUrl || "";
+
+  // Dynamic Event-Customizable UPI & Payment Settings
+  const [copiedUpi, setCopiedUpi] = useState(false);
+  const activeUpiId = event?.upiId?.trim() || "tesa@sggs";
+  const activeFee = event?.registrationFee?.trim() || "₹150 / ₹250";
+  const activeInstructions =
+    event?.paymentInstructions?.trim() ||
+    "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.";
+  const activeAcceptedApps =
+    event?.acceptedPaymentApps?.trim() || "GPay • PhonePe • Paytm • BHIM";
+
+  const dynamicDefaultQr = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=${encodeURIComponent(
+    activeUpiId
+  )}%26pn=${encodeURIComponent(event?.title || "TESA SGGSIET")}%26cu=INR`;
+
   const activePaymentQrUrl =
     event?.paymentQrUrl ||
     event?.qrCodeUrl ||
     localPaymentQr ||
-    "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR";
+    dynamicDefaultQr;
+
+  const handleCopyUpi = () => {
+    if (!activeUpiId) return;
+    navigator.clipboard.writeText(activeUpiId);
+    setCopiedUpi(true);
+    setTimeout(() => setCopiedUpi(false), 2000);
+  };
 
   // Verified / Registered Attendees List State
   const [registeredParticipants, setRegisteredParticipants] = useState<RegistrationRecord[]>([]);
@@ -132,6 +171,8 @@ export default function EventDetailModal({
     setPrn("");
     setYear("Second Year B.Tech");
     setContactNumber("");
+    setBannerFile(null);
+    setBannerPreviewUrl(null);
     setPresentationFile(null);
     setPaymentFile(null);
     setPreviewUrl(null);
@@ -162,6 +203,7 @@ export default function EventDetailModal({
               prn: data.prn || "N/A",
               year: data.year || "B.Tech",
               status: data.status || (data.verified ? "verified" : "pending"),
+              bannerUrl: data.bannerUrl || data.posterUrl || "",
               submissionFileUrl: data.submissionFileUrl,
               customAnswers: data.customAnswers || {},
               registeredAt: data.registeredAt ? data.registeredAt.slice(0, 10) : "2026-04-01",
@@ -221,6 +263,7 @@ export default function EventDetailModal({
                 prn: data.prn || "N/A",
                 year: data.year || "B.Tech",
                 status: data.status || "pending",
+                bannerUrl: data.bannerUrl || data.posterUrl || "",
                 submissionFileUrl: data.submissionFileUrl,
                 customAnswers: data.customAnswers || {},
                 registeredAt: data.registeredAt ? data.registeredAt.slice(0, 10) : "2026-04-01",
@@ -252,6 +295,7 @@ export default function EventDetailModal({
                   prn: item.prn || "N/A",
                   year: item.year || "B.Tech",
                   status: item.status || "pending",
+                  bannerUrl: item.bannerUrl || item.posterUrl || "",
                   submissionFileUrl: item.submissionFileUrl,
                   customAnswers: item.customAnswers || {},
                   registeredAt: item.registeredAt ? item.registeredAt.slice(0, 10) : "2026-04-01",
@@ -273,6 +317,9 @@ export default function EventDetailModal({
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
     }
+    if (bannerPreviewUrl) {
+      URL.revokeObjectURL(bannerPreviewUrl);
+    }
     setViewMode("detail");
     onClose();
   };
@@ -280,6 +327,38 @@ export default function EventDetailModal({
   const isConcluded = event?.eventStatus === "Concluded" || event?.status === "closed";
   const isOpen = !isConcluded && event?.status === "open";
   const isUpcoming = !isConcluded && event?.status === "upcoming";
+
+  // Dedicated Event Poster / Banner File Change (accept=".png,.jpg,.jpeg,.webp")
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("Please select a valid image file (PNG, JPG, JPEG, WEBP) for the banner/poster.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setErrorMessage("Banner image exceeds 10MB limit. Please upload a smaller image.");
+      return;
+    }
+
+    setErrorMessage("");
+    setBannerFile(file);
+    const objUrl = URL.createObjectURL(file);
+    setBannerPreviewUrl(objUrl);
+  };
+
+  const handleRemoveBannerFile = () => {
+    setBannerFile(null);
+    if (bannerPreviewUrl) {
+      URL.revokeObjectURL(bannerPreviewUrl);
+      setBannerPreviewUrl(null);
+    }
+    if (bannerInputRef.current) {
+      bannerInputRef.current.value = "";
+    }
+  };
 
   // Dedicated Presentation File Change (accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,.webp")
   const handlePresentationFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -389,14 +468,21 @@ export default function EventDetailModal({
     setSubmittingStep("Uploading files to Cloudinary...");
 
     try {
-      // 1. Upload Dedicated Project Media / Presentation if selected
+      // 1. Upload Dedicated Event Banner / Poster if selected
+      let bannerUrl = "";
+      if (bannerFile) {
+        setSubmittingStep("Uploading Banner / Poster to Cloudinary...");
+        bannerUrl = await uploadToCloudinary(bannerFile);
+      }
+
+      // 2. Upload Dedicated Project Media / Presentation if selected
       let submissionFileUrl = "";
       if (presentationFile) {
         setSubmittingStep("Uploading Presentation (PPT, PDF, or Image) to Cloudinary...");
         submissionFileUrl = await uploadToCloudinary(presentationFile);
       }
 
-      // 2. Upload any Custom Question File Uploads
+      // 3. Upload any Custom Question File Uploads
       const finalCustomAnswers: Record<string, any> = { ...customAnswers };
       for (const [qTitle, cFile] of Object.entries(customFiles)) {
         setSubmittingStep(`Uploading custom file for "${qTitle}" to Cloudinary...`);
@@ -404,11 +490,11 @@ export default function EventDetailModal({
         finalCustomAnswers[qTitle] = cUrl;
       }
 
-      // 3. Upload Payment Screenshot to Cloudinary
+      // 4. Upload Payment Screenshot to Cloudinary
       setSubmittingStep("Uploading Payment Screenshot to Cloudinary...");
       const paymentScreenshotUrl = await uploadToCloudinary(paymentFile);
 
-      // 4. Save to Firestore collection "event_registrations"
+      // 5. Save to Firestore collection "event_registrations"
       setSubmittingStep("Recording registration details in Firestore...");
       const regId = `REG-${Date.now().toString().slice(-6)}`;
       const regPayload = {
@@ -418,6 +504,7 @@ export default function EventDetailModal({
         prn: prn.trim().toUpperCase(),
         year,
         contactNumber: contactNumber.trim(),
+        bannerUrl: bannerUrl || "",
         submissionFileUrl: submissionFileUrl || "",
         paymentScreenshotUrl,
         customAnswers: finalCustomAnswers,
@@ -454,6 +541,7 @@ export default function EventDetailModal({
           eventId: event.id,
           registeredAt: new Date().toISOString().slice(0, 10),
           status: "pending",
+          bannerUrl: bannerUrl || "",
           paymentScreenshotUrl,
           submissionFileUrl,
           customAnswers: finalCustomAnswers,
@@ -473,6 +561,7 @@ export default function EventDetailModal({
           year,
           status: "pending",
           registeredAt: new Date().toISOString().slice(0, 10),
+          bannerUrl: bannerUrl || "",
           submissionFileUrl,
           paymentScreenshotUrl,
           customAnswers: finalCustomAnswers,
@@ -507,7 +596,7 @@ export default function EventDetailModal({
   return (
     <AnimatePresence>
       {event && (
-        <div className="fixed inset-0 z-50 overflow-y-auto overscroll-contain flex justify-center items-start sm:items-center p-2 sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden">
           {/* Dark Glassmorphic Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -515,70 +604,150 @@ export default function EventDetailModal({
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
             onClick={!isSubmitting ? handleModalClose : undefined}
-            className="fixed inset-0 bg-black/80 backdrop-blur-md z-40"
+            className="fixed inset-0 bg-black/85 backdrop-blur-md z-40"
             aria-hidden="true"
           />
 
-          {/* Modal Container: Command Center Aesthetic */}
+          {/* Modal Container: Command Center Aesthetic with Strict Viewport Fit */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 15 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, scale: 0.95, y: 15 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="event-modal-title"
-            className="relative z-50 w-full max-w-2xl rounded-3xl glass-modal-panel p-5 sm:p-8 overflow-hidden my-auto sm:my-8 max-h-[94vh] sm:max-h-none overflow-y-auto group"
+            className="relative z-50 w-full max-w-2xl rounded-3xl glass-modal-panel overflow-hidden max-h-[90vh] sm:max-h-[90vh] flex flex-col shadow-2xl border border-white/10 group"
           >
             {/* Ambient Aurora Glow in Corners */}
             <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 bg-gradient-to-br from-violet-600/20 via-fuchsia-600/10 to-transparent blur-3xl rounded-full" />
             <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-gradient-to-tr from-indigo-600/15 via-purple-600/10 to-transparent blur-3xl rounded-full" />
 
-            {/* Top Close (X) Button (Minimum 44x44px touch target) */}
-            <button
-              onClick={handleModalClose}
-              disabled={isSubmitting}
-              aria-label="Close modal"
-              className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 min-w-[44px] min-h-[44px] w-11 h-11 rounded-full bg-white/[0.04] hover:bg-white/[0.1] border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xl shadow-lg disabled:opacity-40"
-            >
-              <svg
-                className="w-4 h-4"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+            {/* =================================================================
+                PINNED STICKY HEADER & TABS BAR (NEVER SCROLLS OFF SCREEN)
+                ================================================================= */}
+            <div className="relative z-30 shrink-0 px-4 sm:px-6 py-3.5 bg-[#09080c]/95 backdrop-blur-xl border-b border-white/[0.08] flex items-center justify-between gap-2 sm:gap-3">
+              {/* Left: TESA Emblem & Event Info */}
+              <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                <div className="relative w-8 h-8 rounded-full border border-white/30 p-[1.5px] overflow-hidden bg-white shrink-0 shadow-[0_0_15px_rgba(124,58,237,0.35)]">
+                  <Image
+                    src="/tesa-logo.png"
+                    alt="TESA Logo"
+                    width={32}
+                    height={32}
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 sm:gap-2">
+                    <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300 border border-purple-500/30 uppercase tracking-wider shrink-0">
+                      {event.category}
+                    </span>
+                    <span className="text-xs font-bold text-white truncate max-w-[110px] sm:max-w-[200px]">
+                      {event.title}
+                    </span>
+                  </div>
+                </div>
+              </div>
 
-            {/* Content Switcher based on viewMode */}
-            <AnimatePresence mode="wait">
-              {viewMode === "detail" ? (
-                /* =============================================================
-                   VIEW 1: EVENT DOSSIER & BRIEFING
-                   ============================================================= */
-                <motion.div
-                  key="view-detail"
-                  initial={{ opacity: 0, x: -15 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -15 }}
-                  transition={{ duration: 0.25 }}
+              {/* Center / Navigation Tabs: Overview | Register | Verified */}
+              <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-xl border border-white/10 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setViewMode("detail")}
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer ${
+                    viewMode === "detail"
+                      ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.4)]"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                  }`}
                 >
-                  {/* Event Media / Banner */}
-                  {event.mediaUrl ? (
-                    <div className="relative w-full h-48 sm:h-56 rounded-2xl overflow-hidden border border-white/10 mb-6 shadow-xl">
-                      <Image
-                        src={event.mediaUrl}
-                        alt={event.title}
-                        fill
-                        sizes="(max-width: 640px) 100vw, 680px"
-                        className="object-cover"
-                      />
+                  <span className="sm:hidden">Info</span>
+                  <span className="hidden sm:inline">Overview</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode("register")}
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                    viewMode === "register"
+                      ? "bg-purple-600 text-white shadow-[0_0_12px_rgba(147,51,234,0.4)]"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span>Register</span>
+                  {(isOpen || isUpcoming) && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode("verifiedList")}
+                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-xs font-mono font-semibold transition-all cursor-pointer flex items-center gap-1 ${
+                    viewMode === "verifiedList"
+                      ? "bg-emerald-600 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <span>Verified</span>
+                  {registeredParticipants.length > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-white/20 text-[10px]">
+                      {registeredParticipants.length}
+                    </span>
+                  )}
+                </button>
+              </div>
+
+              {/* Right: Close (X) Button (always visible, always clickable) */}
+              <button
+                onClick={handleModalClose}
+                disabled={isSubmitting}
+                aria-label="Close modal"
+                className="shrink-0 min-w-[38px] min-h-[38px] w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-zinc-300 hover:text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-xl shadow-lg disabled:opacity-40"
+              >
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            {/* =================================================================
+                SCROLLABLE MODAL VIEW BODY (ONLY CONTENT SCROLLS)
+                ================================================================= */}
+            <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-7 custom-scrollbar">
+              {/* Content Switcher based on viewMode */}
+              <AnimatePresence mode="wait">
+                {viewMode === "detail" ? (
+                  /* =============================================================
+                     VIEW 1: EVENT DOSSIER & BRIEFING
+                     ============================================================= */
+                  <motion.div
+                    key="view-detail"
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -15 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    {/* Event Media / Banner */}
+                    {eventMediaCover ? (
+                      <div className="relative w-full h-48 sm:h-56 rounded-2xl overflow-hidden border border-white/10 mb-6 shadow-xl">
+                        <Image
+                          src={eventMediaCover}
+                          alt={event.title}
+                          fill
+                          sizes="(max-width: 640px) 100vw, 680px"
+                          className="object-cover"
+                        />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-[#0b0c10]/30 to-transparent pointer-events-none" />
 
                       {/* Overlaid Badges */}
@@ -742,39 +911,55 @@ export default function EventDetailModal({
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.25 }}
                 >
-                  {/* Top Navigation Row */}
-                  <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-white/[0.08]">
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("detail")}
-                      disabled={isSubmitting}
-                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-xs font-mono text-purple-300 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
-                    >
-                      <span>←</span>
-                      <span>Event Briefing</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setViewMode("verifiedList")}
-                      disabled={isSubmitting}
-                      className="min-h-[36px] px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40"
-                    >
-                      <span>📋 Check Verified List</span>
-                    </button>
-                  </div>
+                  {/* Event Media Banner Preview */}
+                  {eventMediaCover && (
+                    <div className="relative w-full h-32 sm:h-40 rounded-2xl overflow-hidden border border-white/10 mb-5 shadow-lg">
+                      <Image
+                        src={eventMediaCover}
+                        alt={event.title}
+                        fill
+                        sizes="(max-width: 640px) 100vw, 680px"
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0b0c10] via-[#0b0c10]/40 to-transparent pointer-events-none" />
+                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-black/70 text-purple-300 border border-purple-500/30 uppercase tracking-wider font-semibold">
+                            {event.category}
+                          </span>
+                          <h4 className="text-sm sm:text-base font-bold text-white tracking-tight mt-1 truncate">
+                            {event.title}
+                          </h4>
+                        </div>
+                        <span className="text-[10px] font-mono text-emerald-400 bg-black/70 px-2.5 py-1 rounded-full border border-emerald-500/30 shrink-0 font-semibold shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+                          ● Registration Open
+                        </span>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Header Title */}
-                  <div className="mb-5">
-                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
-                      <span>Delegate Registration</span>
-                      <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                        VERIFICATION STEP
-                      </span>
-                    </h3>
-                    <p className="text-xs text-zinc-300 mt-1 font-sans leading-relaxed">
-                      Please enter your credentials, attach your presentation / media file, and provide your payment screenshot for verification.
-                    </p>
+                  <div className="mb-5 flex items-start gap-3">
+                    <div className="relative w-9 h-9 mt-0.5 rounded-full border border-white/30 p-[1.5px] overflow-hidden bg-white shrink-0 shadow-[0_0_15px_rgba(124,58,237,0.35)]">
+                      <Image
+                        src="/tesa-logo.png"
+                        alt="TESA Logo"
+                        width={36}
+                        height={36}
+                        className="w-full h-full object-cover rounded-full"
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+                        <span>Delegate Registration</span>
+                        <span className="text-xs font-mono font-normal px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                          VERIFICATION STEP
+                        </span>
+                      </h3>
+                      <p className="text-xs text-zinc-300 mt-1 font-sans leading-relaxed">
+                        Please enter your delegate details, upload your poster / banner (optional), attach presentation slides (optional), and complete fee verification.
+                      </p>
+                    </div>
                   </div>
 
                   {/* Error Notification */}
@@ -858,7 +1043,64 @@ export default function EventDetailModal({
                       </div>
                     </div>
 
-                    {/* Dedicated Media Upload Field: PPT, PDF, or Image (Optional) */}
+                    {/* Dedicated Banner / Poster Upload Field (PNG, JPG, WEBP) */}
+                    <div className="p-4 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs text-purple-300 block font-semibold flex items-center gap-1.5">
+                          <span>Upload Event Banner / Poster</span>
+                          <span className="text-zinc-500 text-[10px] font-normal font-mono">(Optional)</span>
+                        </label>
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                          PNG, JPG, JPEG, or WEBP (Optional)
+                        </span>
+                      </div>
+
+                      <input
+                        ref={bannerInputRef}
+                        type="file"
+                        accept=".png,.jpg,.jpeg,.webp"
+                        disabled={isSubmitting}
+                        onChange={handleBannerFileChange}
+                        className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer disabled:opacity-50"
+                      />
+
+                      {bannerFile ? (
+                        <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-purple-500/30 text-xs">
+                          <div className="flex items-center gap-2.5 text-white truncate min-w-0">
+                            {bannerPreviewUrl && (
+                              <div className="relative w-12 h-10 rounded-lg overflow-hidden border border-purple-400/40 shrink-0 bg-black">
+                                <Image
+                                  src={bannerPreviewUrl}
+                                  alt="Banner preview"
+                                  fill
+                                  unoptimized
+                                  className="object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="truncate">
+                              <span className="truncate block font-semibold">{bannerFile.name}</span>
+                              <span className="text-zinc-400 text-[10px]">
+                                ({(bannerFile.size / (1024 * 1024)).toFixed(2)} MB) • Ready to upload
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={handleRemoveBannerFile}
+                            className="text-red-400 hover:text-red-300 text-[10px] px-2.5 py-1 rounded bg-red-950/60 border border-red-500/30 transition-colors shrink-0 cursor-pointer"
+                          >
+                            ✕ Remove
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-zinc-400 font-sans">
+                          Attach your event poster banner, creative graphic design, or project poster (PNG, JPG, WEBP up to 10MB). Uploaded directly to Cloudinary.
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Dedicated Media Upload Field: PPT, PDF (Optional) */}
                     <div className="p-4 rounded-2xl border-2 border-dashed border-white/15 hover:border-purple-500/60 bg-white/[0.02] transition-all space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-xs text-purple-300 block font-semibold flex items-center gap-1.5">
@@ -866,14 +1108,14 @@ export default function EventDetailModal({
                           <span className="text-zinc-500 text-[10px] font-normal font-mono">(Optional)</span>
                         </label>
                         <span className="text-[10px] text-zinc-500 font-mono">
-                          PPT, PPTX, PDF, or Images (Optional)
+                          PPT, PPTX, or PDF (Optional)
                         </span>
                       </div>
 
                       <input
                         ref={presentationInputRef}
                         type="file"
-                        accept=".ppt,.pptx,.pdf,.png,.jpg,.jpeg,.webp"
+                        accept=".ppt,.pptx,.pdf"
                         disabled={isSubmitting}
                         onChange={handlePresentationFileChange}
                         className="w-full text-xs text-zinc-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-mono file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500 file:cursor-pointer cursor-pointer disabled:opacity-50"
@@ -881,9 +1123,9 @@ export default function EventDetailModal({
 
                       {presentationFile ? (
                         <div className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.04] border border-purple-500/30 text-xs">
-                          <div className="flex items-center gap-2 text-white truncate">
+                          <div className="flex items-center gap-2 text-white truncate min-w-0">
                             <span>📄</span>
-                            <span className="truncate">{presentationFile.name}</span>
+                            <span className="truncate block font-semibold">{presentationFile.name}</span>
                             <span className="text-zinc-400 text-[10px]">
                               ({(presentationFile.size / (1024 * 1024)).toFixed(2)} MB)
                             </span>
@@ -894,14 +1136,14 @@ export default function EventDetailModal({
                               setPresentationFile(null);
                               if (presentationInputRef.current) presentationInputRef.current.value = "";
                             }}
-                            className="text-red-400 hover:text-red-300 text-[10px] px-2.5 py-1 rounded bg-red-950/60 border border-red-500/30 transition-colors"
+                            className="text-red-400 hover:text-red-300 text-[10px] px-2.5 py-1 rounded bg-red-950/60 border border-red-500/30 transition-colors shrink-0 cursor-pointer"
                           >
                             ✕ Remove
                           </button>
                         </div>
                       ) : (
                         <p className="text-[10px] text-zinc-400 font-sans">
-                          Attach your slide deck (PPTX/PPT), research summary document (PDF), or poster banner (Image). Uploaded to Cloudinary (/auto/upload).
+                          Attach your slide deck (PPTX/PPT) or research summary document (PDF). Uploaded to Cloudinary (/auto/upload).
                         </p>
                       )}
                     </div>
@@ -1073,22 +1315,32 @@ export default function EventDetailModal({
                         <div className="space-y-1.5 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs font-mono">
                           <div className="flex items-center justify-between">
                             <span className="text-zinc-400">UPI ID:</span>
-                            <span className="font-bold text-white bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30 select-all">
-                              tesa@sggs
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-white bg-purple-950/60 px-2 py-0.5 rounded border border-purple-500/30 select-all font-mono">
+                                {activeUpiId}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={handleCopyUpi}
+                                className="px-2 py-0.5 rounded bg-white/[0.08] hover:bg-white/[0.15] text-[10px] text-purple-300 hover:text-white transition-colors cursor-pointer font-mono"
+                                title="Copy UPI ID"
+                              >
+                                {copiedUpi ? "✓ Copied" : "Copy"}
+                              </button>
+                            </div>
                           </div>
                           <div className="flex items-center justify-between">
                             <span className="text-zinc-400">Participation Fee:</span>
-                            <span className="text-emerald-400 font-bold">₹150 / ₹250</span>
+                            <span className="text-emerald-400 font-bold">{activeFee}</span>
                           </div>
                           <div className="flex items-center justify-between text-[11px]">
                             <span className="text-zinc-400">Accepted Apps:</span>
-                            <span className="text-purple-300">GPay • PhonePe • Paytm • BHIM</span>
+                            <span className="text-purple-300">{activeAcceptedApps}</span>
                           </div>
                         </div>
 
-                        <p className="text-[11px] text-zinc-400 leading-relaxed">
-                          Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.
+                        <p className="text-[11px] text-zinc-400 leading-relaxed whitespace-pre-line">
+                          {activeInstructions}
                         </p>
                       </div>
                     </div>
@@ -1276,7 +1528,7 @@ export default function EventDetailModal({
                       </div>
                     ) : filteredParticipants.length > 0 ? (
                       filteredParticipants.map((p, idx) => {
-                        const isVerified = p.status === "verified" || p.status === "approved";
+                        const isVerified = p.status === "verified" || p.status === "approved" || (p as any).verified === true;
                         const isPending = p.status === "pending";
 
                         return (
@@ -1323,6 +1575,17 @@ export default function EventDetailModal({
                                     {isVerified ? "✔ Fee Verified" : "⏳ Review Pending"}
                                   </strong>
                                 </span>
+
+                                {p.bannerUrl && (
+                                  <a
+                                    href={p.bannerUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-pink-300 hover:text-pink-200 underline flex items-center gap-1 font-semibold"
+                                  >
+                                    <span>🎨 Poster Banner ↗</span>
+                                  </a>
+                                )}
 
                                 {p.submissionFileUrl && (
                                   <a
@@ -1394,6 +1657,20 @@ export default function EventDetailModal({
                           <span className="text-purple-300 font-mono">{activeDossierReg.registrationId}</span>
                         </div>
 
+                        {activeDossierReg.bannerUrl && (
+                          <div className="flex justify-between py-1 border-b border-white/5 items-center">
+                            <span className="text-zinc-400">Uploaded Poster / Banner:</span>
+                            <a
+                              href={activeDossierReg.bannerUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-pink-300 hover:text-white underline font-semibold flex items-center gap-1"
+                            >
+                              <span>Open Uploaded Banner (Image) ↗</span>
+                            </a>
+                          </div>
+                        )}
+
                         {activeDossierReg.submissionFileUrl && (
                           <div className="flex justify-between py-1 border-b border-white/5 items-center">
                             <span className="text-zinc-400">Project Presentation / Media:</span>
@@ -1403,7 +1680,7 @@ export default function EventDetailModal({
                               rel="noopener noreferrer"
                               className="text-purple-300 hover:text-white underline font-semibold flex items-center gap-1"
                             >
-                              <span>Open Uploaded File (PPT/PDF/Image) ↗</span>
+                              <span>Open Uploaded File (PPT/PDF) ↗</span>
                             </a>
                           </div>
                         )}
@@ -1496,6 +1773,24 @@ export default function EventDetailModal({
                       <span className="text-purple-300 font-semibold">{prn.toUpperCase()}</span>
                     </div>
 
+                    {bannerFile && (
+                      <div className="flex justify-between items-center text-zinc-400">
+                        <span>POSTER / BANNER:</span>
+                        <span className="text-pink-300 font-semibold flex items-center gap-1.5">
+                          <span>✓ Cloudinary Uploaded</span>
+                        </span>
+                      </div>
+                    )}
+
+                    {presentationFile && (
+                      <div className="flex justify-between items-center text-zinc-400">
+                        <span>PRESENTATION:</span>
+                        <span className="text-purple-300 font-semibold flex items-center gap-1.5">
+                          <span>✓ Cloudinary Uploaded</span>
+                        </span>
+                      </div>
+                    )}
+
                     <div className="flex justify-between items-center text-zinc-400 pt-1.5 border-t border-white/5">
                       <span>PAYMENT PROOF:</span>
                       <span className="text-emerald-400 font-semibold flex items-center gap-1.5">
@@ -1524,8 +1819,9 @@ export default function EventDetailModal({
                 </motion.div>
               )}
             </AnimatePresence>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
+      </div>
       )}
     </AnimatePresence>
   );

@@ -402,17 +402,28 @@ body {
   transform: translate(-50%, -50%);
   width: 72px;
   height: 72px;
+  border-radius: 9999px;
+  object-fit: cover;
+  background-color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 30px rgba(124, 58, 237, 0.4), 0 0 12px rgba(255, 255, 255, 0.6);
   z-index: 60;
   transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
-  filter: drop-shadow(0 0 25px rgba(255, 255, 255, 0.3));
 }
 
 .floating-logo.is-docked {
-  top: 24px;
+  top: 20px;
   left: 32px;
   transform: translate(0, 0) scale(0.65);
   transform-origin: top left;
   z-index: 25;
+  box-shadow: 0 0 20px rgba(124, 58, 237, 0.35);
+  cursor: pointer;
+}
+
+.floating-logo.is-docked:hover {
+  transform: translate(0, 0) scale(0.7);
+  box-shadow: 0 0 28px rgba(168, 85, 247, 0.6), 0 0 10px rgba(255, 255, 255, 0.7);
 }
 
 .preloader-count {
@@ -922,5 +933,25 @@ body {
     grid-template-columns: 1fr;
     gap: 2px;
   }
+}
+
+/* Elegant Custom Scrollbar for Glass Modals */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 85, 247, 0.5);
 }
 

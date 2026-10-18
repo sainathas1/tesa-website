@@ -19,8 +19,8 @@ import {
   setDoc,
   serverTimestamp,
   query,
-  orderBy,
   limit,
+  onSnapshot,
 } from "firebase/firestore";
 import { auth, googleProvider, db, isFirebaseConfigured } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
@@ -43,6 +43,8 @@ export interface TeamMember {
   skills: string[];
   photoPlaceholder: string;
   photoUrl?: string;
+  imageUrl?: string;
+  image?: string;
   accentColor: string;
 }
 
@@ -71,11 +73,19 @@ export interface EventItem {
   status: "open" | "upcoming" | "closed";
   eventStatus?: "Upcoming" | "Concluded";
   mediaUrl?: string;
+  bannerUrl?: string;
+  imageUrl?: string;
+  image?: string;
   paymentQrUrl?: string;
   qrCodeUrl?: string;
+  upiId?: string;
+  registrationFee?: string;
+  paymentInstructions?: string;
+  acceptedPaymentApps?: string;
   summary: string;
   highlights?: string;
   galleryUrls?: string[];
+  gallery?: string[];
   customFormFields?: CustomFormField[];
   createdAt?: any;
 }
@@ -93,6 +103,7 @@ export interface Registration {
   status: "pending" | "approved" | "verified" | "rejected";
   paymentScreenshotUrl?: string;
   submissionFileUrl?: string;
+  bannerUrl?: string;
   customAnswers?: Record<string, any>;
 }
 
@@ -227,6 +238,10 @@ const INITIAL_EVENTS: EventItem[] = [
     status: "open",
     eventStatus: "Upcoming",
     mediaUrl: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&auto=format&fit=crop&q=60",
+    upiId: "tesa@sggs",
+    registrationFee: "₹150 / ₹250",
+    paymentInstructions: "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.",
+    acceptedPaymentApps: "GPay • PhonePe • Paytm • BHIM",
     summary: "SGGSIE&T TESA's premier annual mega national technical symposium uniting 40+ engineering colleges. Features 6 competitive tracks: Technical Research Presentations, Smart Weaves Hackathon, CAD Fabric Design, National Textile Quiz, Working Models, and Live Machinery Workshops.",
     highlights: "₹2,00,000+ Prize Pool • 6 Concurrent Tracks • National IEEE / TESA Certification",
     customFormFields: [
@@ -468,6 +483,10 @@ export default function AdminDashboardPage() {
     mediaUrl: "",
     paymentQrUrl: "",
     qrCodeUrl: "",
+    upiId: "tesa@sggs",
+    registrationFee: "₹150 / ₹250",
+    paymentInstructions: "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.",
+    acceptedPaymentApps: "GPay • PhonePe • Paytm • BHIM",
     summary: "",
     highlights: "",
     galleryUrls: [],
@@ -478,11 +497,17 @@ export default function AdminDashboardPage() {
   const eventQrFileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingQr, setIsUploadingQr] = useState<boolean>(false);
 
-  // Dedicated Payment QR Code configuration for Event Registration tab
+  // Dedicated Payment QR Code & UPI Gateway configuration for Event Registration tab
   const [registrationQrUrl, setRegistrationQrUrl] = useState<string>("");
   const [selectedQrEventId, setSelectedQrEventId] = useState<string>("all");
   const [isUploadingRegQr, setIsUploadingRegQr] = useState<boolean>(false);
   const regQrFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Customizable UPI ID & Payment text state for Gateway management card
+  const [regUpiId, setRegUpiId] = useState<string>("tesa@sggs");
+  const [regFee, setRegFee] = useState<string>("₹150 / ₹250");
+  const [regInstructions, setRegInstructions] = useState<string>("Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.");
+  const [regAcceptedApps, setRegAcceptedApps] = useState<string>("GPay • PhonePe • Paytm • BHIM");
 
   // --------------------------------------------------------------------------
   // 3. STATE: REGISTRATIONS & EXCEL EXPORT
@@ -675,6 +700,15 @@ export default function AdminDashboardPage() {
         const defaultQr = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR";
         setRegistrationQrUrl(defaultQr);
       }
+
+      const storedUpi = localStorage.getItem("tesa_payment_upi");
+      if (storedUpi) setRegUpiId(storedUpi);
+      const storedFee = localStorage.getItem("tesa_payment_fee");
+      if (storedFee) setRegFee(storedFee);
+      const storedInst = localStorage.getItem("tesa_payment_instructions");
+      if (storedInst) setRegInstructions(storedInst);
+      const storedApps = localStorage.getItem("tesa_payment_apps");
+      if (storedApps) setRegAcceptedApps(storedApps);
     } catch (err) {
       console.warn("localStorage note:", err);
     }
@@ -714,38 +748,217 @@ export default function AdminDashboardPage() {
     return () => unsubscribe();
   }, []);
 
+  // Real-time synchronization with Firestore ('events', 'team_members', 'event_registrations')
+  useEffect(() => {
+    if (!isFirebaseConfigured) return;
+
+    // 1. Live Events Listener (collection: 'events')
+    // CRITICAL: Fetch root collection and sort in JS; do NOT use .orderBy('createdAt') in query()
+    const unsubEvents = onSnapshot(
+      collection(db, "events"),
+      (snapshot) => {
+        const remoteEvents: EventItem[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data();
+          const cover = data.bannerUrl || data.imageUrl || data.image || data.mediaUrl || "";
+          const gallery = Array.isArray(data.galleryUrls)
+            ? data.galleryUrls
+            : Array.isArray(data.gallery)
+            ? data.gallery
+            : [];
+          remoteEvents.push({
+            ...(data as EventItem),
+            id: d.id,
+            mediaUrl: cover,
+            bannerUrl: cover,
+            imageUrl: cover,
+            image: cover,
+            galleryUrls: gallery,
+            gallery: gallery,
+            customFormFields: data.customFormFields || [],
+          });
+        });
+
+        // Robust timestamp sort in JavaScript
+        remoteEvents.sort((a: any, b: any) => {
+          const getTimestamp = (e: any) => {
+            if (e.createdAt?.seconds) return e.createdAt.seconds * 1000;
+            if (e.updatedAt?.seconds) return e.updatedAt.seconds * 1000;
+            if (e.createdAt) {
+              const p = new Date(e.createdAt).getTime();
+              if (!isNaN(p)) return p;
+            }
+            if (e.date) {
+              const p = new Date(e.date).getTime();
+              if (!isNaN(p)) return p;
+            }
+            return 0;
+          };
+          return getTimestamp(b) - getTimestamp(a);
+        });
+
+        setEventsList(remoteEvents);
+        try { localStorage.setItem("tesa_events", JSON.stringify(remoteEvents)); } catch {}
+        setFirestoreStatus("connected");
+      },
+      (err) => {
+        console.warn("Live events listener error:", err);
+      }
+    );
+
+    // 2. Live Team Members Listener (collection: 'team_members')
+    const unsubTeam = onSnapshot(
+      collection(db, "team_members"),
+      async (snapshot) => {
+        if (snapshot.empty) {
+          // Check if legacy 'team' collection has docs to migrate
+          try {
+            const legacySnap = await getDocs(collection(db, "team"));
+            if (!legacySnap.empty) {
+              console.log("Migrating legacy team documents to team_members...");
+              const migrated: TeamMember[] = [];
+              for (const docSnap of legacySnap.docs) {
+                const data = docSnap.data();
+                await setDoc(doc(db, "team_members", docSnap.id), data, { merge: true });
+                migrated.push({ ...(data as TeamMember), id: docSnap.id });
+              }
+              setTeamList(migrated);
+              return;
+            }
+          } catch {}
+          setTeamList([]);
+          return;
+        }
+
+        const remoteTeam: TeamMember[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data();
+          const photo = data.photoUrl || data.imageUrl || data.image || data.photoPlaceholder || "";
+          remoteTeam.push({
+            ...(data as TeamMember),
+            id: d.id,
+            photoUrl: photo,
+            imageUrl: photo,
+            image: photo,
+          });
+        });
+
+        // Core Council leadership prioritization sort
+        remoteTeam.sort((a: any, b: any) => {
+          const getWeight = (m: any) => {
+            const role = (m.role || "").toLowerCase();
+            const cat = (m.category || "").toLowerCase();
+            if (role.includes("president") && !role.includes("vice")) return 100;
+            if (role.includes("vice president")) return 90;
+            if (role.includes("secretary")) return 80;
+            if (role.includes("treasurer")) return 70;
+            if (cat.includes("core")) return 60;
+            return 10;
+          };
+          return getWeight(b) - getWeight(a);
+        });
+
+        setTeamList(remoteTeam);
+        try { localStorage.setItem("tesa_team", JSON.stringify(remoteTeam)); } catch {}
+      },
+      (err) => {
+        console.warn("Live team_members listener error:", err);
+      }
+    );
+
+    // 3. Live Registrations Listener (collection: 'event_registrations')
+    const unsubRegs = onSnapshot(
+      collection(db, "event_registrations"),
+      (snapshot) => {
+        const itemsRegs: Registration[] = [];
+        snapshot.forEach((d) => {
+          const data = d.data();
+          itemsRegs.push({
+            id: d.id,
+            studentName: data.fullName || data.studentName || "Student",
+            prn: data.prn || "N/A",
+            email: data.contactNumber || data.email || "",
+            department: "Textile Technology",
+            year: data.year || "B.Tech",
+            eventTitle: data.eventTitle || "Conclave",
+            eventId: data.eventId,
+            registeredAt: data.registeredAt ? data.registeredAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+            status: data.status || (data.verified ? "verified" : "pending"),
+            paymentScreenshotUrl: data.paymentScreenshotUrl,
+            submissionFileUrl: data.submissionFileUrl,
+            bannerUrl: data.bannerUrl || data.posterUrl || "",
+            customAnswers: data.customAnswers || {},
+          });
+        });
+
+        const cleanItemsRegs = itemsRegs.filter(
+          (r) =>
+            r.id !== "reg-1" &&
+            r.id !== "reg-2" &&
+            r.id !== "reg-3" &&
+            r.studentName !== "Aditya Deshmukh" &&
+            r.studentName !== "Priyanka Joshi" &&
+            r.studentName !== "Kunal Shinde"
+        );
+        setRegistrations(cleanItemsRegs);
+        try { localStorage.setItem("tesa_registrations", JSON.stringify(cleanItemsRegs)); } catch {}
+      },
+      (err) => {
+        console.warn("Live event_registrations listener error:", err);
+      }
+    );
+
+    return () => {
+      unsubEvents();
+      unsubTeam();
+      unsubRegs();
+    };
+  }, []);
+
   const syncFromFirestore = async () => {
     if (!isFirebaseConfigured) {
       setFirestoreStatus("missing_env");
       return;
     }
     try {
-      // 1. Team sync
-      const teamSnap = await getDocs(collection(db, "team"));
-      const itemsTeam: TeamMember[] = [];
-      teamSnap.forEach((d) => itemsTeam.push({ ...(d.data() as TeamMember), id: d.id }));
-      if (itemsTeam.length > 0) {
-        const remoteIds = new Set(itemsTeam.map((m) => m.id));
-        const hasCore = itemsTeam.some(
-          (m) =>
-            (m.category || "").toLowerCase() === "core" ||
-            (m.role || "").toLowerCase().includes("president") ||
-            (m.role || "").toLowerCase().includes("secretary")
-        );
-        const mergedTeam = hasCore
-          ? itemsTeam
-          : [...itemsTeam, ...INITIAL_TEAM.filter((m) => !remoteIds.has(m.id))];
-        setTeamList(mergedTeam);
-        localStorage.setItem("tesa_team", JSON.stringify(mergedTeam));
+      // 1. Team sync (read from 'team_members', fallback to 'team')
+      let itemsTeam: TeamMember[] = [];
+      const teamSnap = await getDocs(collection(db, "team_members"));
+      if (!teamSnap.empty) {
+        teamSnap.forEach((d) => {
+          const data = d.data();
+          const photo = data.photoUrl || data.imageUrl || data.image || data.photoPlaceholder || "";
+          itemsTeam.push({ ...(data as TeamMember), id: d.id, photoUrl: photo, imageUrl: photo, image: photo });
+        });
       } else {
-        setTeamList(INITIAL_TEAM);
-        localStorage.setItem("tesa_team", JSON.stringify(INITIAL_TEAM));
+        const legacySnap = await getDocs(collection(db, "team"));
+        legacySnap.forEach((d) => {
+          const data = d.data();
+          itemsTeam.push({ ...(data as TeamMember), id: d.id });
+        });
       }
+      setTeamList(itemsTeam);
+      localStorage.setItem("tesa_team", JSON.stringify(itemsTeam));
 
-      // 2. Events sync
+      // 2. Events sync (read from 'events')
       const evSnap = await getDocs(collection(db, "events"));
       const itemsEvents: EventItem[] = [];
-      evSnap.forEach((d) => itemsEvents.push({ ...(d.data() as EventItem), id: d.id }));
+      evSnap.forEach((d) => {
+        const data = d.data();
+        const cover = data.bannerUrl || data.imageUrl || data.image || data.mediaUrl || "";
+        const gallery = Array.isArray(data.galleryUrls) ? data.galleryUrls : Array.isArray(data.gallery) ? data.gallery : [];
+        itemsEvents.push({
+          ...(data as EventItem),
+          id: d.id,
+          mediaUrl: cover,
+          bannerUrl: cover,
+          imageUrl: cover,
+          image: cover,
+          galleryUrls: gallery,
+          gallery: gallery,
+          customFormFields: data.customFormFields || [],
+        });
+      });
       itemsEvents.sort((a: any, b: any) => {
         const getTimestamp = (e: any) => {
           if (e.createdAt?.seconds) return e.createdAt.seconds * 1000;
@@ -765,43 +978,28 @@ export default function AdminDashboardPage() {
       setEventsList(itemsEvents);
       localStorage.setItem("tesa_events", JSON.stringify(itemsEvents));
 
-      // 3. Registrations sync (both event_registrations and registrations collections)
+      // 3. Registrations sync ('event_registrations')
       const itemsRegs: Registration[] = [];
-
-      try {
-        const evRegSnap = await getDocs(collection(db, "event_registrations"));
-        if (!evRegSnap.empty) {
-          evRegSnap.forEach((d) => {
-            const data = d.data();
-            itemsRegs.push({
-              id: d.id,
-              studentName: data.fullName || data.studentName || "Student",
-              prn: data.prn || "N/A",
-              email: data.contactNumber || data.email || "",
-              department: "Textile Technology",
-              year: data.year || "B.Tech",
-              eventTitle: data.eventTitle || "Conclave",
-              eventId: data.eventId,
-              registeredAt: data.registeredAt ? data.registeredAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
-              status: data.status || "pending",
-              paymentScreenshotUrl: data.paymentScreenshotUrl,
-              submissionFileUrl: data.submissionFileUrl,
-              customAnswers: data.customAnswers || {},
-            });
-          });
-        }
-      } catch (e) {
-        console.warn("event_registrations sync fallback:", e);
-      }
-
-      try {
-        const regSnap = await getDocs(collection(db, "registrations"));
-        if (!regSnap.empty) {
-          regSnap.forEach((d) => itemsRegs.push({ ...(d.data() as Registration), id: d.id }));
-        }
-      } catch (e) {
-        console.warn("registrations sync fallback:", e);
-      }
+      const evRegSnap = await getDocs(collection(db, "event_registrations"));
+      evRegSnap.forEach((d) => {
+        const data = d.data();
+        itemsRegs.push({
+          id: d.id,
+          studentName: data.fullName || data.studentName || "Student",
+          prn: data.prn || "N/A",
+          email: data.contactNumber || data.email || "",
+          department: "Textile Technology",
+          year: data.year || "B.Tech",
+          eventTitle: data.eventTitle || "Conclave",
+          eventId: data.eventId,
+          registeredAt: data.registeredAt ? data.registeredAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+          status: data.status || (data.verified ? "verified" : "pending"),
+          paymentScreenshotUrl: data.paymentScreenshotUrl,
+          submissionFileUrl: data.submissionFileUrl,
+          bannerUrl: data.bannerUrl || data.posterUrl || "",
+          customAnswers: data.customAnswers || {},
+        });
+      });
 
       const cleanItemsRegs = itemsRegs.filter(
         (r) =>
@@ -823,6 +1021,47 @@ export default function AdminDashboardPage() {
       } else {
         console.warn("Firestore sync status:", msg);
       }
+    }
+  };
+
+  const handleSeedDefaultData = async () => {
+    if (!isFirebaseConfigured) {
+      showToast("Cannot seed data: Firebase is not configured.", "error");
+      return;
+    }
+    if (!confirm("Seed default TESA Events and Council Members into Firestore collections 'events' and 'team_members'? This will create permanent documents.")) return;
+
+    try {
+      showToast("Seeding events and team to Firestore...", "info");
+      for (const ev of INITIAL_EVENTS) {
+        await setDoc(doc(db, "events", ev.id), {
+          ...ev,
+          bannerUrl: ev.mediaUrl,
+          imageUrl: ev.mediaUrl,
+          image: ev.mediaUrl,
+          galleryUrls: ev.galleryUrls || (ev.mediaUrl ? [ev.mediaUrl] : []),
+          gallery: ev.galleryUrls || (ev.mediaUrl ? [ev.mediaUrl] : []),
+          customFormFields: ev.customFormFields || [],
+          createdAt: serverTimestamp(),
+          authorEmail: user?.email || "admin",
+        }, { merge: true });
+      }
+
+      for (const member of INITIAL_TEAM) {
+        await setDoc(doc(db, "team_members", member.id), {
+          ...member,
+          photoUrl: member.photoUrl,
+          imageUrl: member.photoUrl,
+          image: member.photoUrl,
+          createdAt: serverTimestamp(),
+          addedBy: user?.email || "admin",
+        }, { merge: true });
+      }
+
+      showToast("Successfully seeded real documents to Firestore! Both portals synchronized.", "success");
+    } catch (err: any) {
+      console.error("Seed error:", err);
+      showToast("Seed error: " + (err?.message || "Check Firestore rules"), "error");
     }
   };
 
@@ -935,8 +1174,12 @@ export default function AdminDashboardPage() {
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
 
+    const photo = teamForm.photoUrl || (teamForm as any).imageUrl || (teamForm as any).image || "";
     const payload: TeamMember = {
       ...teamForm,
+      photoUrl: photo,
+      imageUrl: photo,
+      image: photo,
       photoPlaceholder: initials,
       skills: parsedSkills.length > 0 ? parsedSkills : ["Leadership", "Textile Tech"],
     };
@@ -949,7 +1192,7 @@ export default function AdminDashboardPage() {
       localStorage.setItem("tesa_team", JSON.stringify(updated));
 
       try {
-        await setDoc(doc(db, "team", editingTeamMember.id), payload, { merge: true });
+        await setDoc(doc(db, "team_members", editingTeamMember.id), payload, { merge: true });
       } catch (e) {
         console.warn("Saved to localStorage; Firestore sync will retry.");
       }
@@ -963,7 +1206,7 @@ export default function AdminDashboardPage() {
       localStorage.setItem("tesa_team", JSON.stringify(updated));
 
       try {
-        const docRef = await addDoc(collection(db, "team"), {
+        const docRef = await addDoc(collection(db, "team_members"), {
           ...newMember,
           createdAt: serverTimestamp(),
           addedBy: user?.email || "admin",
@@ -987,7 +1230,10 @@ export default function AdminDashboardPage() {
     localStorage.setItem("tesa_team", JSON.stringify(filtered));
 
     try {
-      await deleteDoc(doc(db, "team", id));
+      await deleteDoc(doc(db, "team_members", id));
+      try {
+        await deleteDoc(doc(db, "team", id));
+      } catch {}
     } catch (e) {}
 
     showToast(`Removed council member ${name}.`);
@@ -1046,6 +1292,10 @@ export default function AdminDashboardPage() {
       mediaUrl: "",
       paymentQrUrl: registrationQrUrl || "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR",
       qrCodeUrl: registrationQrUrl || "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR",
+      upiId: regUpiId || "tesa@sggs",
+      registrationFee: regFee || "₹150 / ₹250",
+      paymentInstructions: regInstructions || "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.",
+      acceptedPaymentApps: regAcceptedApps || "GPay • PhonePe • Paytm • BHIM",
       summary: "",
       highlights: "",
       galleryUrls: [],
@@ -1060,12 +1310,23 @@ export default function AdminDashboardPage() {
     const resolvedStatus: "Upcoming" | "Concluded" =
       ev.eventStatus || (ev.status === "closed" ? "Concluded" : "Upcoming");
     const resolvedQr = ev.paymentQrUrl || ev.qrCodeUrl || registrationQrUrl || "";
+    const cover = ev.bannerUrl || ev.imageUrl || ev.image || ev.mediaUrl || "";
+    const gallery = (ev.galleryUrls && ev.galleryUrls.length > 0) ? ev.galleryUrls : (ev.gallery || []);
     setEventForm({
       ...ev,
+      mediaUrl: cover,
+      bannerUrl: cover,
+      imageUrl: cover,
+      image: cover,
       eventStatus: resolvedStatus,
       paymentQrUrl: resolvedQr,
       qrCodeUrl: resolvedQr,
-      galleryUrls: ev.galleryUrls || [],
+      upiId: ev.upiId || regUpiId || "tesa@sggs",
+      registrationFee: ev.registrationFee || regFee || "₹150 / ₹250",
+      paymentInstructions: ev.paymentInstructions || regInstructions || "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.",
+      acceptedPaymentApps: ev.acceptedPaymentApps || regAcceptedApps || "GPay • PhonePe • Paytm • BHIM",
+      galleryUrls: gallery,
+      gallery: gallery,
       customFormFields: ev.customFormFields ? JSON.parse(JSON.stringify(ev.customFormFields)) : [],
     });
     setIsEventModalOpen(true);
@@ -1225,35 +1486,44 @@ export default function AdminDashboardPage() {
   };
 
   const handleSaveRegQrUrl = async () => {
-    if (!registrationQrUrl.trim()) {
-      showToast("Please provide a valid QR Code image URL or upload an image.", "error");
-      return;
-    }
-    localStorage.setItem("tesa_payment_qr", registrationQrUrl);
+    const paymentUpdates = {
+      paymentQrUrl: registrationQrUrl.trim(),
+      qrCodeUrl: registrationQrUrl.trim(),
+      upiId: regUpiId.trim() || "tesa@sggs",
+      registrationFee: regFee.trim() || "₹150 / ₹250",
+      paymentInstructions: regInstructions.trim() || "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.",
+      acceptedPaymentApps: regAcceptedApps.trim() || "GPay • PhonePe • Paytm • BHIM",
+    };
+
+    localStorage.setItem("tesa_payment_qr", paymentUpdates.paymentQrUrl);
+    localStorage.setItem("tesa_payment_upi", paymentUpdates.upiId);
+    localStorage.setItem("tesa_payment_fee", paymentUpdates.registrationFee);
+    localStorage.setItem("tesa_payment_instructions", paymentUpdates.paymentInstructions);
+    localStorage.setItem("tesa_payment_apps", paymentUpdates.acceptedPaymentApps);
+
     if (selectedQrEventId === "all") {
       const updated = eventsList.map((ev) => ({
         ...ev,
-        paymentQrUrl: registrationQrUrl,
-        qrCodeUrl: registrationQrUrl,
+        ...paymentUpdates,
       }));
       setEventsList(updated);
       localStorage.setItem("tesa_events", JSON.stringify(updated));
       for (const ev of updated) {
         try {
-          await setDoc(doc(db, "events", ev.id), { paymentQrUrl: registrationQrUrl, qrCodeUrl: registrationQrUrl }, { merge: true });
+          await setDoc(doc(db, "events", ev.id), paymentUpdates, { merge: true });
         } catch {}
       }
-      showToast("Payment QR Code URL saved for all events!");
+      showToast("UPI ID, Fee & Payment settings updated for ALL events!");
     } else {
       const updated = eventsList.map((ev) =>
-        ev.id === selectedQrEventId ? { ...ev, paymentQrUrl: registrationQrUrl, qrCodeUrl: registrationQrUrl } : ev
+        ev.id === selectedQrEventId ? { ...ev, ...paymentUpdates } : ev
       );
       setEventsList(updated);
       localStorage.setItem("tesa_events", JSON.stringify(updated));
       try {
-        await setDoc(doc(db, "events", selectedQrEventId), { paymentQrUrl: registrationQrUrl, qrCodeUrl: registrationQrUrl }, { merge: true });
+        await setDoc(doc(db, "events", selectedQrEventId), paymentUpdates, { merge: true });
       } catch {}
-      showToast("Payment QR Code URL saved for selected event!");
+      showToast("UPI ID, Fee & Payment settings updated for selected event!");
     }
   };
 
@@ -1291,7 +1561,9 @@ export default function AdminDashboardPage() {
         }
       }
 
-      const isConcluded = eventForm.eventStatus === "Concluded";
+      const finalCover = eventForm.bannerUrl || eventForm.imageUrl || eventForm.image || eventForm.mediaUrl || "";
+      const isConcluded = (eventForm.eventStatus || "").toLowerCase() === "concluded" || (eventForm.status || "").toLowerCase() === "closed";
+      const resolvedEventStatus: "Upcoming" | "Concluded" = isConcluded ? "Concluded" : "Upcoming";
       const mappedStatus: "open" | "upcoming" | "closed" = isConcluded
         ? "closed"
         : eventForm.status === "closed"
@@ -1300,9 +1572,14 @@ export default function AdminDashboardPage() {
 
       const eventPayload: EventItem = {
         ...eventForm,
-        eventStatus: eventForm.eventStatus || (isConcluded ? "Concluded" : "Upcoming"),
+        eventStatus: resolvedEventStatus,
         status: mappedStatus,
+        mediaUrl: finalCover,
+        bannerUrl: finalCover,
+        imageUrl: finalCover,
+        image: finalCover,
         galleryUrls: finalGalleryUrls,
+        gallery: finalGalleryUrls,
         customFormFields: eventForm.customFormFields || [],
       };
 
@@ -1314,6 +1591,12 @@ export default function AdminDashboardPage() {
         localStorage.setItem("tesa_events", JSON.stringify(updatedEvents));
 
         try {
+          await updateDoc(doc(db, "events", editingEventId), {
+            ...eventPayload,
+            updatedAt: serverTimestamp(),
+            updatedBy: user?.email || "admin",
+          });
+        } catch {
           await setDoc(
             doc(db, "events", editingEventId),
             {
@@ -1323,7 +1606,7 @@ export default function AdminDashboardPage() {
             },
             { merge: true }
           );
-        } catch (err) {}
+        }
 
         showToast("Event updated successfully!");
       } else {
@@ -1380,6 +1663,7 @@ export default function AdminDashboardPage() {
     regId: string,
     newStatus: "verified" | "approved" | "rejected" | "pending"
   ) => {
+    const isVerified = newStatus === "verified" || newStatus === "approved";
     const updated = registrations.map((r) =>
       r.id === regId ? { ...r, status: newStatus } : r
     );
@@ -1387,10 +1671,16 @@ export default function AdminDashboardPage() {
     localStorage.setItem("tesa_registrations", JSON.stringify(updated));
 
     try {
-      await updateDoc(doc(db, "event_registrations", regId), { status: newStatus });
+      await updateDoc(doc(db, "event_registrations", regId), {
+        status: newStatus,
+        verified: isVerified,
+      });
     } catch {
       try {
-        await updateDoc(doc(db, "registrations", regId), { status: newStatus });
+        await updateDoc(doc(db, "registrations", regId), {
+          status: newStatus,
+          verified: isVerified,
+        });
       } catch (err) {}
     }
 
@@ -1458,6 +1748,7 @@ export default function AdminDashboardPage() {
       "Registered Event": r.eventTitle,
       "Registration Date": r.registeredAt,
       Status: (r.status === "verified" || r.status === "approved" ? "VERIFIED" : r.status.toUpperCase()),
+      "Uploaded Poster / Banner URL": r.bannerUrl || "N/A",
       "Presentation Media / PPT / PDF URL": r.submissionFileUrl || "N/A",
       "Payment Proof URL": r.paymentScreenshotUrl || "N/A",
     }));
@@ -1536,11 +1827,15 @@ export default function AdminDashboardPage() {
             <div className="bento-glow" />
 
             <div className="relative z-10">
-              <div className="w-16 h-16 rounded-2xl bg-purple-950/60 border border-purple-500/40 flex items-center justify-center mx-auto mb-6 shadow-[0_0_25px_rgba(168,85,247,0.3)]">
-                <svg className="w-8 h-8 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                </svg>
+              <div className="relative w-20 h-20 rounded-full border border-white/40 p-1 overflow-hidden bg-white mx-auto mb-6 shadow-[0_0_35px_rgba(168,85,247,0.45)]">
+                <Image
+                  src="/tesa-logo.png"
+                  alt="TESA Official Emblem"
+                  width={80}
+                  height={80}
+                  className="w-full h-full object-cover rounded-full"
+                  priority
+                />
               </div>
               <h1 className="text-xl font-mono font-bold text-white mb-2 uppercase tracking-wider">
                 TESA Administrative Access
@@ -1650,13 +1945,14 @@ export default function AdminDashboardPage() {
             </Link>
             <div className="h-4 w-px bg-white/10 hidden sm:block" />
             <div className="flex items-center gap-2">
-              <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-purple-400/40 p-0.5 overflow-hidden bg-black shrink-0 shadow-[0_0_15px_rgba(168,85,247,0.3)]">
+              <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-white/40 p-[1.5px] overflow-hidden bg-white shrink-0 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
                 <Image
                   src="/tesa-logo.png"
                   alt="TESA Logo"
-                  width={32}
-                  height={32}
+                  width={36}
+                  height={36}
                   className="w-full h-full object-cover rounded-full"
+                  priority
                 />
               </div>
               <div>
@@ -1739,7 +2035,7 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          <div className="text-xs font-mono text-zinc-400 flex items-center gap-2">
+          <div className="text-xs font-mono text-zinc-400 flex flex-wrap items-center gap-2">
             <span>DATA ENGINE:</span>
             {firestoreStatus === "connected" ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-bold shadow-[0_0_12px_rgba(16,185,129,0.2)]">
@@ -1757,6 +2053,14 @@ export default function AdminDashboardPage() {
                 LOCAL STORE RESILIENT
               </span>
             )}
+
+            <button
+              onClick={handleSeedDefaultData}
+              className="px-3 py-1 rounded-xl bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 hover:text-white border border-purple-500/40 text-[11px] font-mono transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="Seed default TESA Events & Council Members into Firestore ('events' & 'team_members')"
+            >
+              <span>🌱 Seed Default Data</span>
+            </button>
           </div>
         </div>
 
@@ -1988,8 +2292,35 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Events Cards Grid: Dark Bento Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {eventsList.map((ev) => (
+            {eventsList.length === 0 ? (
+              <div className="py-14 px-6 text-center rounded-3xl border border-white/10 bg-[#0b0c10]/70 backdrop-blur-xl shadow-2xl max-w-xl mx-auto">
+                <div className="w-14 h-14 mx-auto mb-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl text-purple-300">
+                  📅
+                </div>
+                <h3 className="text-lg font-mono font-bold text-white mb-1.5">
+                  No Events in Archive
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md mx-auto mb-5">
+                  There are currently no events published to Firestore. You can publish a new event or seed default events below.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    onClick={handleOpenAddEventModal}
+                    className="px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-[0_0_15px_rgba(168,85,247,0.4)] cursor-pointer"
+                  >
+                    + Publish New Event
+                  </button>
+                  <button
+                    onClick={handleSeedDefaultData}
+                    className="px-4 py-2 rounded-xl text-xs font-mono font-semibold bg-white/10 hover:bg-white/20 text-white transition-all cursor-pointer"
+                  >
+                    🌱 Seed Default Events
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {eventsList.map((ev) => (
                 <div
                   key={ev.id}
                   className="bento-card group rounded-3xl overflow-hidden flex flex-col justify-between hover:border-purple-500/40 transition-all hover:-translate-y-1.5 duration-300 relative"
@@ -2087,7 +2418,8 @@ export default function AdminDashboardPage() {
                 </div>
               ))}
             </div>
-          </section>
+          )}
+        </section>
         )}
 
         {/* SECTION DIVIDER: EVENTS -> REGISTRATIONS */}
@@ -2193,10 +2525,22 @@ export default function AdminDashboardPage() {
                       if (selectedId === "all") {
                         const stored = localStorage.getItem("tesa_payment_qr");
                         if (stored) setRegistrationQrUrl(stored);
+                        const storedUpi = localStorage.getItem("tesa_payment_upi");
+                        setRegUpiId(storedUpi || "tesa@sggs");
+                        const storedFee = localStorage.getItem("tesa_payment_fee");
+                        setRegFee(storedFee || "₹150 / ₹250");
+                        const storedInst = localStorage.getItem("tesa_payment_instructions");
+                        setRegInstructions(storedInst || "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.");
+                        const storedApps = localStorage.getItem("tesa_payment_apps");
+                        setRegAcceptedApps(storedApps || "GPay • PhonePe • Paytm • BHIM");
                       } else {
                         const targetEv = eventsList.find((ev) => ev.id === selectedId);
-                        if (targetEv?.paymentQrUrl || targetEv?.qrCodeUrl) {
+                        if (targetEv) {
                           setRegistrationQrUrl(targetEv.paymentQrUrl || targetEv.qrCodeUrl || "");
+                          setRegUpiId(targetEv.upiId || "tesa@sggs");
+                          setRegFee(targetEv.registrationFee || "₹150 / ₹250");
+                          setRegInstructions(targetEv.paymentInstructions || "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.");
+                          setRegAcceptedApps(targetEv.acceptedPaymentApps || "GPay • PhonePe • Paytm • BHIM");
                         }
                       }
                     }}
@@ -2220,7 +2564,7 @@ export default function AdminDashboardPage() {
                     <Image
                       src={
                         registrationQrUrl ||
-                        "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR"
+                        `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=${encodeURIComponent(regUpiId)}%26pn=TESA%20SGGSIET%26cu=INR`
                       }
                       alt="Payment QR Code"
                       width={128}
@@ -2231,7 +2575,7 @@ export default function AdminDashboardPage() {
                     <a
                       href={
                         registrationQrUrl ||
-                        "https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR"
+                        `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=upi://pay?pa=${encodeURIComponent(regUpiId)}%26pn=TESA%20SGGSIET%26cu=INR`
                       }
                       target="_blank"
                       rel="noopener noreferrer"
@@ -2246,8 +2590,8 @@ export default function AdminDashboardPage() {
                       </div>
                     )}
                   </div>
-                  <span className="text-[10px] font-mono text-purple-300 mt-1.5">
-                    UPI: tesa@sggs
+                  <span className="text-[10px] font-mono text-purple-300 mt-1.5 font-bold">
+                    UPI: {regUpiId || "tesa@sggs"}
                   </span>
                 </div>
 
@@ -2294,7 +2638,15 @@ export default function AdminDashboardPage() {
                         onClick={() => {
                           const def = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=upi://pay?pa=tesa@sggs%26pn=TESA%20SGGSIET%26cu=INR";
                           setRegistrationQrUrl(def);
+                          setRegUpiId("tesa@sggs");
+                          setRegFee("₹150 / ₹250");
+                          setRegInstructions("Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.");
+                          setRegAcceptedApps("GPay • PhonePe • Paytm • BHIM");
                           localStorage.setItem("tesa_payment_qr", def);
+                          localStorage.setItem("tesa_payment_upi", "tesa@sggs");
+                          localStorage.setItem("tesa_payment_fee", "₹150 / ₹250");
+                          localStorage.setItem("tesa_payment_instructions", "Scan the QR code above with any UPI app. After payment, attach your payment screenshot below as proof of registration.");
+                          localStorage.setItem("tesa_payment_apps", "GPay • PhonePe • Paytm • BHIM");
                           showToast("Reset to official dynamic UPI QR code!");
                         }}
                         className="px-3 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 border border-white/10 text-zinc-300 text-xs shrink-0 cursor-pointer"
@@ -2302,6 +2654,61 @@ export default function AdminDashboardPage() {
                       >
                         Reset Default
                       </button>
+                    </div>
+                  </div>
+
+                  {/* Customizable UPI ID & Payment Text Form */}
+                  <div className="pt-3 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs font-medium text-zinc-300 block mb-1">
+                        Custom UPI ID (VPA):
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. tesa@sggs or your-event@upi"
+                        value={regUpiId}
+                        onChange={(e) => setRegUpiId(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-zinc-300 block mb-1">
+                        Registration Fee Text:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. ₹150 / ₹250 or ₹100 per person or Free"
+                        value={regFee}
+                        onChange={(e) => setRegFee(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-zinc-300 block mb-1">
+                        Accepted UPI Apps:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. GPay • PhonePe • Paytm • BHIM"
+                        value={regAcceptedApps}
+                        onChange={(e) => setRegAcceptedApps(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-medium text-zinc-300 block mb-1">
+                        Payment Instructions Note:
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Instructions displayed on registration form..."
+                        value={regInstructions}
+                        onChange={(e) => setRegInstructions(e.target.value)}
+                        className="w-full px-3 py-1.5 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                      />
                     </div>
                   </div>
                 </div>
@@ -2378,7 +2785,7 @@ export default function AdminDashboardPage() {
                       <th className="py-3.5 px-4">Student &amp; PRN</th>
                       <th className="py-3.5 px-4">Event Title</th>
                       <th className="py-3.5 px-4">Year &amp; Contact</th>
-                      <th className="py-3.5 px-4">Presentation / Media</th>
+                      <th className="py-3.5 px-4">Uploaded Media / Banner</th>
                       <th className="py-3.5 px-4">Payment Proof</th>
                       <th className="py-3.5 px-4">Form Answers</th>
                       <th className="py-3.5 px-4">Status</th>
@@ -2415,23 +2822,39 @@ export default function AdminDashboardPage() {
                               <span className="text-[11px] text-zinc-500">{reg.email}</span>
                             </td>
 
-                            {/* Uploaded Presentation / Media (PPT/PDF/Image) */}
+                            {/* Uploaded Files: Poster Banner & Presentation */}
                             <td className="py-3.5 px-4">
-                              {reg.submissionFileUrl ? (
-                                <a
-                                  href={reg.submissionFileUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/30 text-[11px] font-medium transition-all hover:scale-105 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
-                                  title="Open presentation/media uploaded to Cloudinary"
-                                >
-                                  <span>📄</span>
-                                  <span>View Media</span>
-                                  <span className="text-[9px] opacity-70">↗</span>
-                                </a>
-                              ) : (
-                                <span className="text-[11px] text-zinc-500 italic">None attached</span>
-                              )}
+                              <div className="flex flex-col gap-1 items-start">
+                                {reg.bannerUrl && (
+                                  <a
+                                    href={reg.bannerUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-pink-950/40 hover:bg-pink-900/60 text-pink-300 border border-pink-500/30 text-[11px] font-medium transition-all hover:scale-105 shadow-[0_0_12px_rgba(236,72,153,0.15)]"
+                                    title="Open uploaded poster banner on Cloudinary"
+                                  >
+                                    <span>🎨</span>
+                                    <span>Poster Banner</span>
+                                    <span className="text-[9px] opacity-70">↗</span>
+                                  </a>
+                                )}
+                                {reg.submissionFileUrl && (
+                                  <a
+                                    href={reg.submissionFileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/30 text-[11px] font-medium transition-all hover:scale-105 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
+                                    title="Open presentation/media uploaded to Cloudinary"
+                                  >
+                                    <span>📄</span>
+                                    <span>Presentation</span>
+                                    <span className="text-[9px] opacity-70">↗</span>
+                                  </a>
+                                )}
+                                {!reg.bannerUrl && !reg.submissionFileUrl && (
+                                  <span className="text-[11px] text-zinc-500 italic">None attached</span>
+                                )}
+                              </div>
                             </td>
 
                             {/* Payment Proof Screenshot */}
@@ -2619,11 +3042,30 @@ export default function AdminDashboardPage() {
                       Uploaded Files &amp; Media Attachments
                     </span>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Uploaded Poster / Banner */}
+                      <div className="p-3.5 rounded-xl bg-black/50 border border-white/[0.08] flex flex-col justify-between">
+                        <div>
+                          <span className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">Event Poster / Banner:</span>
+                          {selectedRegForAnswers.bannerUrl ? (
+                            <a
+                              href={selectedRegForAnswers.bannerUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-950/40 hover:bg-pink-900/60 border border-pink-500/30 text-pink-300 font-semibold text-xs mt-1 transition-all hover:scale-105 shadow-[0_0_12px_rgba(236,72,153,0.15)]"
+                            >
+                              <span>🎨 Open Banner (Image) ↗</span>
+                            </a>
+                          ) : (
+                            <span className="text-zinc-500 text-xs italic">No banner attached</span>
+                          )}
+                        </div>
+                      </div>
+
                       {/* Presentation / Media File */}
                       <div className="p-3.5 rounded-xl bg-black/50 border border-white/[0.08] flex flex-col justify-between">
                         <div>
-                          <span className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">Project Media / Presentation:</span>
+                          <span className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">Project Presentation / Media:</span>
                           {selectedRegForAnswers.submissionFileUrl ? (
                             <a
                               href={selectedRegForAnswers.submissionFileUrl}
@@ -2631,7 +3073,7 @@ export default function AdminDashboardPage() {
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/30 text-purple-300 font-semibold text-xs mt-1 transition-all hover:scale-105 shadow-[0_0_12px_rgba(139,92,246,0.15)]"
                             >
-                              <span>📄 Open Presentation (PPT/PDF/Image) ↗</span>
+                              <span>📄 Open Presentation (PPT/PDF) ↗</span>
                             </a>
                           ) : (
                             <span className="text-zinc-500 text-xs italic">No presentation file attached</span>
@@ -3127,6 +3569,67 @@ export default function AdminDashboardPage() {
                         </button>
                       )}
                     </div>
+                  </div>
+                </div>
+
+                {/* Event UPI ID, Fee & Payment Instructions Customization */}
+                <div className="pt-3 border-t border-white/[0.08] grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="text-xs font-medium text-zinc-300 block mb-1">
+                      Event UPI ID (e.g. tesa@sggs)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. tesa@sggs or your-event@upi"
+                      value={eventForm.upiId || ""}
+                      onChange={(e) => setEventForm({ ...eventForm, upiId: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
+                    />
+                    <span className="text-[10px] text-zinc-400 block mt-1">
+                      Auto-encodes into dynamic QR if no custom QR image is uploaded
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-zinc-300 block mb-1">
+                      Registration Fee Text
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. ₹150 / ₹250 or ₹100 per team or Free"
+                      value={eventForm.registrationFee || ""}
+                      onChange={(e) => setEventForm({ ...eventForm, registrationFee: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs font-mono placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
+                    />
+                    <span className="text-[10px] text-zinc-400 block mt-1">
+                      Displayed on the registration form to students
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-zinc-300 block mb-1">
+                      Accepted Payment Apps
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. GPay • PhonePe • Paytm • BHIM"
+                      value={eventForm.acceptedPaymentApps || ""}
+                      onChange={(e) => setEventForm({ ...eventForm, acceptedPaymentApps: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-zinc-300 block mb-1">
+                      Payment Instructions Note
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Instructions displayed below the QR code..."
+                      value={eventForm.paymentInstructions || ""}
+                      onChange={(e) => setEventForm({ ...eventForm, paymentInstructions: e.target.value })}
+                      className="w-full px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/10 text-white text-xs placeholder-zinc-500 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50"
+                    />
                   </div>
                 </div>
               </div>

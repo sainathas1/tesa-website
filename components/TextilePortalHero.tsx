@@ -16,7 +16,7 @@ const ASSETS = {
   TO_VENUS: `${BASE}/b30f64d9-1637-477a-83df-d0fc6461a422.mp4`,
   TO_MARS: `${BASE}/5fc5651c-3b5d-4171-b507-87f7e635d1b4.mp4`,
   MERCURY: `${BASE}/d6fb8b6b-c15e-4aaa-9cf7-45bbb5e33372.jpg`,
-  LOGO: `${BASE}/eb7e0f53-50cd-4af5-abc4-8b9a52cdc01b.svg`,
+  LOGO: "/tesa-logo.png",
 };
 
 // ============================================================================
@@ -90,11 +90,13 @@ const STATES: Record<PlanetKey, PlanetConfig> = {
 interface TextilePortalHeroProps {
   onOpenRegister?: () => void;
   onOpenVerifiedList?: () => void;
+  onOpenContact?: () => void;
 }
 
 export default function TextilePortalHero({
   onOpenRegister,
   onOpenVerifiedList,
+  onOpenContact,
 }: TextilePortalHeroProps) {
   const [currentPlanet, setCurrentPlanet] = useState<PlanetKey>("mars");
   const [isPreloaded, setIsPreloaded] = useState(false);
@@ -161,11 +163,11 @@ export default function TextilePortalHero({
     preloaderVideo.addEventListener("timeupdate", handleTimeUpdate);
     preloaderVideo.addEventListener("ended", finishPreloader);
 
+    fallbackTimer = setTimeout(finishPreloader, 3600);
+
     preloaderVideo
       .play()
-      .then(() => {
-        fallbackTimer = setTimeout(finishPreloader, 3600);
-      })
+      .then(() => {})
       .catch(() => {
         // Autoplay policy fallback: advance preloader smoothly
         let count = 0;
@@ -613,15 +615,20 @@ export default function TextilePortalHero({
         <div className="preloader-shade" />
       </div>
 
-      {/* Center Floating Logo -> Docks to Header */}
+      {/* Center Floating Logo -> Docks to Header at top-left branding slot */}
       <Image
         id="floating-logo"
         className={`floating-logo ${isLogoDocked ? "is-docked" : ""}`}
         src={ASSETS.LOGO}
-        alt="TESA SGGSIE&T"
+        alt="TESA SGGSIE&T Crest"
         width={72}
         height={72}
         priority
+        onClick={() => {
+          if (isLogoDocked) {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          }
+        }}
       />
 
       <div
@@ -645,9 +652,12 @@ export default function TextilePortalHero({
       <header className={`header chrome ${isChromeVisible ? "is-visible" : ""}`}>
         <div className="header-brand-slot">
           {isLogoDocked && (
-            <span className="header-brand-text">
+            <a
+              href="#hero-experience"
+              className="header-brand-text hover:text-purple-300 transition-colors cursor-pointer"
+            >
               TESA • SGGSIE&amp;T
-            </span>
+            </a>
           )}
         </div>
 
@@ -665,6 +675,20 @@ export default function TextilePortalHero({
           <div className="scale-90 origin-right">
             <LoginButton />
           </div>
+
+          {/* Contact Us Modal Launcher */}
+          {onOpenContact && (
+            <button
+              type="button"
+              onClick={onOpenContact}
+              className="hidden lg:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/20 text-zinc-200 hover:text-white font-mono text-[10px] tracking-wider uppercase transition-all cursor-pointer"
+            >
+              <svg className="w-3 h-3 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              <span>Contact Us</span>
+            </button>
+          )}
 
           {/* Admin Direct Quicklink */}
           <Link

@@ -23,6 +23,11 @@ export const metadata: Metadata = {
   title: "TESA | Textile Engineering Students Association • SGGSIE&T",
   description:
     "Official hyper-modern portal of the Textile Engineering Students Association (TESA) at SGGSIE&T Nanded. Pioneering smart technical textiles, electrospun nanofibers, and automated loom research.",
+  icons: {
+    icon: "/tesa-logo.png",
+    shortcut: "/tesa-logo.png",
+    apple: "/tesa-logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -102,10 +103,18 @@ export default function EventRegistrationModal({
       <div className="relative w-full max-w-lg rounded-2xl border border-cyan-500/30 bg-[#090b10] text-slate-100 shadow-[0_0_50px_rgba(6,182,212,0.25)] overflow-hidden">
         {/* Modal Top Header Bar */}
         <div className="px-6 py-4 border-b border-white/10 bg-cyan-950/30 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-            <span className="font-mono text-xs text-cyan-300 uppercase tracking-wider">
-              OFFICIAL EVENT REGISTRATION PORTAL
+          <div className="flex items-center gap-2.5">
+            <div className="relative w-7 h-7 rounded-full border border-white/30 p-[1px] overflow-hidden bg-white shrink-0 shadow-[0_0_12px_rgba(6,182,212,0.3)]">
+              <Image
+                src="/tesa-logo.png"
+                alt="TESA Logo"
+                width={28}
+                height={28}
+                className="w-full h-full object-cover rounded-full"
+              />
+            </div>
+            <span className="font-mono text-xs text-cyan-300 uppercase tracking-wider font-semibold">
+              TESA • EVENT REGISTRATION
             </span>
           </div>
           <button
@@ -121,10 +130,14 @@ export default function EventRegistrationModal({
         <div className="p-6">
           {submittedSuccess ? (
             <div className="text-center py-6">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto mb-4 shadow-[0_0_20px_rgba(16,185,129,0.3)]">
-                <svg className="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12" />
-                </svg>
+              <div className="relative w-16 h-16 rounded-full border-2 border-emerald-400/50 p-1 overflow-hidden bg-white mx-auto mb-4 shadow-[0_0_25px_rgba(16,185,129,0.4)]">
+                <Image
+                  src="/tesa-logo.png"
+                  alt="TESA Logo"
+                  width={64}
+                  height={64}
+                  className="w-full h-full object-cover rounded-full"
+                />
               </div>
 
               <span className="inline-block px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold mb-2">

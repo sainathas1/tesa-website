@@ -9,11 +9,13 @@ import LoginButton from "./LoginButton";
 interface NavbarProps {
   onOpenRegister: () => void;
   onOpenVerifiedList?: () => void;
+  onOpenContact?: () => void;
 }
 
 export default function Navbar({
   onOpenRegister,
   onOpenVerifiedList,
+  onOpenContact,
 }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -77,14 +79,14 @@ export default function Navbar({
           <Link
             href="/"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 group shrink-0 min-h-[38px]"
+            className="flex items-center gap-2.5 group shrink-0 min-h-[38px]"
           >
-            <div className="relative w-7 h-7 sm:w-8 sm:h-8 rounded-full border border-white/20 p-0.5 overflow-hidden bg-black/60 group-hover:scale-105 group-hover:border-purple-400 transition-all shadow-[0_0_15px_rgba(124,58,237,0.25)] shrink-0">
+            <div className="relative w-8 h-8 sm:w-9 sm:h-9 rounded-full border border-white/40 p-[1.5px] overflow-hidden bg-white group-hover:scale-105 group-hover:border-purple-300 transition-all shadow-[0_0_20px_rgba(124,58,237,0.35)] shrink-0">
               <Image
                 src="/tesa-logo.png"
                 alt="TESA Logo"
-                width={32}
-                height={32}
+                width={36}
+                height={36}
                 className="w-full h-full object-cover rounded-full"
                 priority
               />
@@ -145,6 +147,20 @@ export default function Navbar({
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="hidden 2xl:inline">CHECK REGISTRATION LIST • LIVE</span>
                 <span className="2xl:hidden">LIVE LIST</span>
+              </button>
+            )}
+
+            {onOpenContact && (
+              <button
+                type="button"
+                onClick={onOpenContact}
+                className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium text-zinc-300 hover:text-white bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-purple-400/40 transition-all cursor-pointer shrink-0"
+                title="Contact TESA"
+              >
+                <svg className="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                </svg>
+                <span>Contact Us</span>
               </button>
             )}
 
@@ -213,9 +229,25 @@ export default function Navbar({
               className="fixed top-20 left-4 right-4 z-50 md:hidden rounded-3xl glass-modal-panel p-5 shadow-[0_25px_50px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.35)]"
             >
               <div className="flex flex-col gap-2">
-                <span className="text-[10px] uppercase text-zinc-500 font-mono tracking-widest px-2 mb-1">
-                  Directory
-                </span>
+                <div className="flex items-center gap-3 px-2 py-1 mb-1 pb-3 border-b border-white/10">
+                  <div className="relative w-8 h-8 rounded-full border border-white/30 p-[1px] overflow-hidden bg-white shrink-0 shadow-[0_0_15px_rgba(124,58,237,0.35)]">
+                    <Image
+                      src="/tesa-logo.png"
+                      alt="TESA Logo"
+                      width={32}
+                      height={32}
+                      className="w-full h-full object-cover rounded-full"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs text-white tracking-wide">
+                      TESA • SGGSIE&amp;T
+                    </span>
+                    <span className="text-[9px] font-mono text-zinc-400">
+                      Directory Navigation
+                    </span>
+                  </div>
+                </div>
                 {navLinks.map((link) => (
                   <button
                     key={link.id}
@@ -254,6 +286,21 @@ export default function Navbar({
                       className="w-full py-2.5 px-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>✔ CHECK REGISTRATION LIST • LIVE</span>
+                    </button>
+                  )}
+
+                  {onOpenContact && (
+                    <button
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        onOpenContact();
+                      }}
+                      className="w-full py-2.5 px-4 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/15 text-zinc-200 hover:text-white text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-pointer transition-all"
+                    >
+                      <svg className="w-3.5 h-3.5 text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                      </svg>
+                      <span>CONTACT US • GMAIL &amp; SOCIALS</span>
                     </button>
                   )}
                 </div>
