@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
@@ -29,6 +29,62 @@ export function getOptimizedAvatarUrl(url?: string): string {
     return url.replace("/image/upload/", "/image/upload/c_fill,g_face,w_800,h_1000,q_auto/");
   }
   return url;
+}
+
+/**
+ * Extract Member Initials (e.g., "Sakshi Selokar" -> "SS")
+ */
+export function getMemberInitials(name?: string, placeholder?: string): string {
+  if (placeholder && placeholder.trim() && placeholder.trim().length <= 3 && !placeholder.includes("http")) {
+    return placeholder.trim().toUpperCase();
+  }
+  if (!name || !name.trim()) return "TE";
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.trim().slice(0, 2).toUpperCase();
+}
+
+/**
+ * Team Member Portrait Avatar with onError Fallback
+ * Automatically displays initials on a subtle purple-indigo gradient if photo fails or is empty.
+ */
+function TeamMemberAvatar({ member }: { member: TeamMember }) {
+  const [imageError, setImageError] = useState(false);
+  const rawUrl = member.photoUrl || member.imageUrl || member.image || "";
+  const initials = getMemberInitials(member.name, member.photoPlaceholder);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [rawUrl]);
+
+  if (!rawUrl || imageError) {
+    return (
+      <div className="relative w-full h-full bg-gradient-to-br from-purple-900/80 to-indigo-950 flex flex-col items-center justify-center text-4xl font-bold text-white select-none">
+        <span className="tracking-wider drop-shadow-md">{initials}</span>
+        <span className="text-[9px] font-mono tracking-widest text-purple-300/80 uppercase mt-2 font-normal">
+          PORTRAIT ARCHIVE
+        </span>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050508]/80 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full">
+      <img
+        src={getOptimizedAvatarUrl(rawUrl)}
+        alt={member.name}
+        onError={() => setImageError(true)}
+        className="w-full h-full object-cover object-top contrast-105 group-hover:scale-105 transition-all duration-700 ease-out"
+        loading="lazy"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-transparent to-transparent pointer-events-none" />
+      <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
+    </div>
+  );
 }
 
 // ============================================================================
@@ -71,7 +127,7 @@ interface TeamMember {
   role: string;
   designation: string;
   year: string;
-  category: "core" | "technical" | "events" | "outreach";
+  category: "core" | "technical" | "events" | "outreach" | string;
   bio: string;
   specialization: string;
   skills: string[];
@@ -80,6 +136,9 @@ interface TeamMember {
   imageUrl?: string;
   image?: string;
   accentColor: string;
+  position?: string;
+  focus?: string;
+  [key: string]: any;
 }
 
 // ============================================================================
@@ -412,7 +471,9 @@ const cardSlideUpVariants: Variants = {
 export default function Home() {
   // State for events & team data (Live synchronized from Firestore)
   const [eventsList, setEventsList] = useState<EventItem[]>([]);
-  const [teamList, setTeamList] = useState<TeamMember[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const teamList = teamMembers;
+  const setTeamList = setTeamMembers;
   const [isDataLoading, setIsDataLoading] = useState(true);
 
   // Filter states
@@ -448,7 +509,7 @@ export default function Home() {
       if (cachedTeam !== null) {
         const parsedTeam = JSON.parse(cachedTeam);
         if (Array.isArray(parsedTeam) && parsedTeam.length > 0) {
-          setTeamList(parsedTeam);
+          setTeamMembers(parsedTeam);
         }
       }
     } catch {
@@ -548,7 +609,11 @@ export default function Home() {
           return getWeight(b) - getWeight(a);
         });
 
-        setTeamList(remoteTeam);
+        if (remoteTeam.length > 0) {
+          setTeamMembers(remoteTeam);
+        } else {
+          setTeamMembers(DEFAULT_TEAM);
+        }
         try {
           localStorage.setItem("tesa_team_members", JSON.stringify(remoteTeam));
         } catch {}
@@ -560,6 +625,8 @@ export default function Home() {
 
     const timeoutId = setTimeout(() => {
       setIsDataLoading(false);
+      setTeamMembers((prev) => (prev.length > 0 ? prev : DEFAULT_TEAM));
+      setEventsList((prev) => (prev.length > 0 ? prev : DEFAULT_EVENTS));
     }, 1500);
 
     return () => {
@@ -626,47 +693,101 @@ export default function Home() {
       ? upcomingEvents
       : upcomingEvents.filter((e) => e.status === upcomingSubFilter);
 
+  // Smart Category + Role Keyword Filtering
   const isMatchCategory = (m: TeamMember, cat: string) => {
-    if (cat === "all") return true;
-    const memberCat = (m.category || "").toLowerCase().trim();
-    const filterCat = cat.toLowerCase().trim();
-    if (memberCat === filterCat) return true;
+    if (!cat || cat === "all" || cat.toLowerCase() === "all members") return true;
 
-    // Core Council includes explicit "core", or council leadership titles (President, Vice President, General Secretary, Treasurer, Head)
-    if (filterCat === "core") {
-      const role = (m.role || "").toLowerCase();
-      const designation = (m.designation || "").toLowerCase();
-      return (
-        memberCat.includes("core") ||
-        memberCat.includes("council") ||
-        role.includes("president") ||
-        role.includes("secretary") ||
-        role.includes("treasurer") ||
-        role.includes("head") ||
-        role.includes("lead") ||
-        designation.includes("council") ||
-        designation.includes("executive")
-      );
+    const filter = cat.toLowerCase().trim();
+    const memberCat = (m.category || "").toLowerCase().trim();
+    const roleFields = `${m.role || ""} ${(m as any).position || ""} ${(m as any).focus || ""} ${m.designation || ""} ${m.specialization || ""}`.toLowerCase();
+
+    // 1. CORE COUNCIL: Matches if category is Core Council OR role contains president, vice-president, secretary, treasurer, or council.
+    if (filter === "core" || filter.includes("core") || filter.includes("council")) {
+      const isCatMatch = memberCat.includes("core") || memberCat.includes("council");
+      const isRoleMatch =
+        roleFields.includes("president") ||
+        roleFields.includes("vice-president") ||
+        roleFields.includes("vice president") ||
+        roleFields.includes("secretary") ||
+        roleFields.includes("treasurer") ||
+        roleFields.includes("council");
+      return isCatMatch || isRoleMatch;
     }
-    if (filterCat === "technical") {
-      const role = (m.role || "").toLowerCase();
-      return memberCat.includes("tech") || memberCat.includes("research") || role.includes("tech");
+
+    // 2. EVENTS & HACKATHONS: Matches if category is Events & Hackathons OR role contains event, logistics, operation, decoration, cultural, sports, discipline, or hackathon.
+    if (filter === "events" || filter.includes("event") || filter.includes("hackathon") || filter.includes("hack")) {
+      const isCatMatch =
+        memberCat.includes("event") ||
+        memberCat.includes("hackathon") ||
+        memberCat.includes("hack");
+      const isRoleMatch =
+        roleFields.includes("event") ||
+        roleFields.includes("logistics") ||
+        roleFields.includes("operation") ||
+        roleFields.includes("decoration") ||
+        roleFields.includes("cultural") ||
+        roleFields.includes("sports") ||
+        roleFields.includes("discipline") ||
+        roleFields.includes("hackathon");
+      return isCatMatch || isRoleMatch;
     }
-    if (filterCat === "events") {
-      const role = (m.role || "").toLowerCase();
-      return memberCat.includes("event") || memberCat.includes("hack") || role.includes("event");
+
+    // 3. PUBLIC RELATIONS: Matches if category is Public Relations OR role contains public, relation, sponsorship, alumni, media, pr, marketing, or outreach.
+    if (
+      filter === "outreach" ||
+      filter === "pr" ||
+      filter.includes("public") ||
+      filter.includes("relation") ||
+      filter.includes("outreach")
+    ) {
+      const isCatMatch =
+        memberCat.includes("public") ||
+        memberCat.includes("relation") ||
+        memberCat.includes("outreach") ||
+        memberCat.includes("pr") ||
+        memberCat.includes("media") ||
+        memberCat.includes("sponsorship") ||
+        memberCat.includes("alumni");
+      const isRoleMatch =
+        roleFields.includes("public") ||
+        roleFields.includes("relation") ||
+        roleFields.includes("sponsorship") ||
+        roleFields.includes("alumni") ||
+        roleFields.includes("media") ||
+        roleFields.includes("pr") ||
+        roleFields.includes("marketing") ||
+        roleFields.includes("outreach");
+      return isCatMatch || isRoleMatch;
     }
-    if (filterCat === "outreach") {
-      const role = (m.role || "").toLowerCase();
-      return memberCat.includes("outreach") || memberCat.includes("pr") || memberCat.includes("media") || memberCat.includes("alumni") || role.includes("outreach");
+
+    // 4. TECHNICAL & RESEARCH: Matches if category is Technical & Research OR role contains technical, research, tech, web, developer, design, or innovation.
+    if (filter === "technical" || filter.includes("tech") || filter.includes("research")) {
+      const isCatMatch =
+        memberCat.includes("technical") ||
+        memberCat.includes("research") ||
+        memberCat.includes("tech");
+      const isRoleMatch =
+        roleFields.includes("technical") ||
+        roleFields.includes("research") ||
+        roleFields.includes("tech") ||
+        roleFields.includes("web") ||
+        roleFields.includes("developer") ||
+        roleFields.includes("design") ||
+        roleFields.includes("innovation");
+      return isCatMatch || isRoleMatch;
     }
-    return false;
+
+    return memberCat === filter || roleFields.includes(filter);
   };
 
-  const filteredTeam =
-    teamCategoryFilter === "all"
-      ? teamList
-      : teamList.filter((m) => isMatchCategory(m, teamCategoryFilter));
+  const filteredTeamMembers = useMemo(() => {
+    if (!teamCategoryFilter || teamCategoryFilter === "all" || teamCategoryFilter.toLowerCase() === "all members") {
+      return teamMembers;
+    }
+    return teamMembers.filter((m) => isMatchCategory(m, teamCategoryFilter));
+  }, [teamMembers, teamCategoryFilter]);
+
+  const filteredTeam = filteredTeamMembers;
 
   return (
     <main className="overflow-x-hidden max-w-full w-full bg-[#090807] text-zinc-100 min-h-screen relative selection:bg-white/20 selection:text-white">
@@ -682,11 +803,12 @@ export default function Home() {
       {/* Deep Obsidian Canvas with Ambient Aurora Light Orbs & Micro-Dot Grid */}
       <AuroraBackground />
 
-      {/* Floating Pill-Shaped Glass Navbar (reveals on scroll below Hero) */}
+      {/* Floating Glass Navbar with High-Opacity Mobile Background */}
       <Navbar
         onOpenRegister={() => handleOpenRegistration("TEXPLORER 2026")}
         onOpenVerifiedList={() => handleOpenVerifiedList("TEXPLORER 2026")}
         onOpenContact={() => setIsContactOpen(true)}
+        className="bg-[#090614]/95 backdrop-blur-2xl border-b border-white/15 shadow-[0_10px_30px_rgba(0,0,0,0.85)]"
       />
 
       {/* Subtle Studio Accent Divider */}
@@ -699,18 +821,12 @@ export default function Home() {
           ========================================================================= */}
       <section
         id="events-section"
-        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20"
+        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20 opacity-100 visible"
       >
         <div id="events" className="absolute -top-24 pointer-events-none" />
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
-            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center max-w-3xl mx-auto mb-14"
-          >
+          <div className="text-center max-w-3xl mx-auto mb-14 opacity-100 visible">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-950/30 text-[11px] sm:text-xs font-mono text-purple-300 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
               <span>EXPERIENCE &amp; INNOVATE</span>
@@ -808,7 +924,7 @@ export default function Home() {
                 ))}
               </div>
             )}
-          </motion.div>
+          </div>
 
           {/* Bento-Grid Events Layout or Skeleton */}
           {isDataLoading ? (
@@ -849,28 +965,20 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7"
-              >
-                <AnimatePresence mode="popLayout">
-                  {displayedUpcomingEvents.map((event) => {
-                    const isOpen = event.status === "open";
-                    const isUpcoming = event.status === "upcoming";
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 opacity-100 visible">
+                {displayedUpcomingEvents.map((event) => {
+                  const isOpen = event.status === "open";
+                  const isUpcoming = event.status === "upcoming";
 
-                    return (
-                      <motion.div
-                        key={event.id}
-                        variants={cardSlideUpVariants}
-                        layout
-                        onClick={() => {
-                          setSelectedEvent(event);
-                          setModalInitialMode("detail");
-                        }}
-                        className="bento-card group relative flex flex-col justify-between rounded-3xl p-6 sm:p-7 overflow-hidden cursor-pointer"
-                      >
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={() => {
+                        setSelectedEvent(event);
+                        setModalInitialMode("detail");
+                      }}
+                      className="bento-card group relative flex flex-col justify-between rounded-3xl p-6 sm:p-7 overflow-hidden cursor-pointer opacity-100 visible transform-none transition-all duration-300"
+                    >
                         {/* Top-Right Ambient Radial Glow on Hover */}
                         <div className="bento-glow" />
 
@@ -988,11 +1096,10 @@ export default function Home() {
                             <span>✔ Status</span>
                           </button>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
-                </AnimatePresence>
-              </motion.div>
+              </div>
             )
           ) : (
             /* ================= TAB 2: PAST EVENTS & BENTO FILMSTRIP ================= */
@@ -1005,34 +1112,26 @@ export default function Home() {
                 </p>
               </div>
             ) : (
-              <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                className="space-y-8 sm:space-y-10"
-              >
-                <AnimatePresence mode="popLayout">
-                  {pastEvents.map((event) => {
-                    const gallery =
-                      event.galleryUrls && event.galleryUrls.length > 0
-                        ? event.galleryUrls
-                        : event.gallery && event.gallery.length > 0
-                        ? event.gallery
-                        : (event.bannerUrl || event.imageUrl || event.image || event.mediaUrl)
-                        ? [event.bannerUrl || event.imageUrl || event.image || event.mediaUrl!]
-                        : [];
+              <div className="space-y-8 sm:space-y-10 opacity-100 visible">
+                {pastEvents.map((event) => {
+                  const gallery =
+                    event.galleryUrls && event.galleryUrls.length > 0
+                      ? event.galleryUrls
+                      : event.gallery && event.gallery.length > 0
+                      ? event.gallery
+                      : (event.bannerUrl || event.imageUrl || event.image || event.mediaUrl)
+                      ? [event.bannerUrl || event.imageUrl || event.image || event.mediaUrl!]
+                      : [];
 
-                    return (
-                      <motion.div
-                        key={event.id}
-                        variants={cardSlideUpVariants}
-                        layout
-                        onClick={() => {
-                          setSelectedEvent(event);
-                          setModalInitialMode("detail");
-                        }}
-                        className="bento-card group relative rounded-3xl p-6 sm:p-8 overflow-hidden cursor-pointer"
-                      >
+                  return (
+                    <div
+                      key={event.id}
+                      onClick={() => {
+                        setSelectedEvent(event);
+                        setModalInitialMode("detail");
+                      }}
+                      className="bento-card group relative rounded-3xl p-6 sm:p-8 overflow-hidden cursor-pointer opacity-100 visible transform-none transition-all duration-300"
+                    >
                         {/* Top-Right Ambient Glow */}
                         <div className="bento-glow" />
 
@@ -1178,11 +1277,10 @@ export default function Home() {
                             </div>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     );
                   })}
-                </AnimatePresence>
-              </motion.div>
+              </div>
             )
           )}
         </div>
@@ -1272,18 +1370,12 @@ export default function Home() {
           ========================================================================= */}
       <section
         id="team-section"
-        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20"
+        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20 opacity-100 visible"
       >
         <div id="team" className="absolute -top-24 pointer-events-none" />
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 25, filter: "blur(8px)" }}
-            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            viewport={{ once: true, margin: "-40px" }}
-            transition={{ duration: 0.85, ease: [0.16, 1, 0.3, 1] }}
-            className="text-center max-w-3xl mx-auto mb-14"
-          >
+          <div className="text-center max-w-3xl mx-auto mb-14 opacity-100 visible">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-950/30 text-[11px] sm:text-xs font-mono text-purple-300 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
               <span>TESA STUDENT COUNCIL • 2025–2026 TENURE</span>
@@ -1322,11 +1414,11 @@ export default function Home() {
                 </button>
               ))}
             </div>
-          </motion.div>
+          </div>
 
           {/* Staggered Bento Team Grid or Pulsing Skeleton */}
           {isDataLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 justify-items-center">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 justify-items-center opacity-100 visible">
               {[1, 2, 3].map((n) => (
                 <div
                   key={`team-skel-${n}`}
@@ -1344,126 +1436,96 @@ export default function Home() {
                 </div>
               ))}
             </div>
-          ) : filteredTeam.length === 0 ? (
-            <div className="py-16 px-6 text-center rounded-3xl border border-white/10 bg-[#0b0c10]/70 backdrop-blur-xl shadow-2xl max-w-xl mx-auto">
+          ) : filteredTeamMembers.length === 0 ? (
+            <div className="py-16 px-6 text-center rounded-3xl border border-white/10 bg-[#0b0c10]/80 backdrop-blur-2xl shadow-2xl max-w-xl mx-auto opacity-100 visible">
               <div className="w-14 h-14 mx-auto mb-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl text-purple-300">
                 👥
               </div>
               <h3 className="text-lg font-mono font-bold text-white mb-1.5">
-                No Members Found in this Category
+                No members listed in this division yet
               </h3>
               <p className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md mx-auto mb-5">
-                There are currently no council members listed in this category.
+                There are currently no council members listed in this division.
               </p>
               <button
                 onClick={() => setTeamCategoryFilter("all")}
                 className="px-5 py-2.5 rounded-full text-xs font-mono font-semibold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] cursor-pointer inline-flex items-center gap-2"
               >
-                <span>← View All Members</span>
+                <span>Show All Members</span>
                 <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px]">
-                  {teamList.length}
+                  {teamMembers.length}
                 </span>
               </button>
             </div>
           ) : (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-30px" }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 justify-items-center"
-            >
-              <AnimatePresence mode="popLayout">
-                {filteredTeam.map((member) => (
-                  <motion.div
-                    key={member.id}
-                    variants={cardSlideUpVariants}
-                    layout
-                    onClick={() => setSelectedMember(member)}
-                    className="bento-card group relative flex flex-col justify-between rounded-3xl p-5 sm:p-6 overflow-hidden cursor-pointer w-full max-w-sm"
-                  >
-                    {/* Top-Right Ambient Glow on Hover */}
-                    <div className="bento-glow" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 justify-items-center opacity-100 visible">
+              {filteredTeamMembers.map((member) => (
+                <div
+                  key={member.id}
+                  onClick={() => setSelectedMember(member)}
+                  className="bento-card group relative flex flex-col justify-between rounded-3xl p-5 sm:p-6 overflow-hidden cursor-pointer w-full max-w-sm opacity-100 visible transform-none transition-all duration-300"
+                >
+                  {/* Top-Right Ambient Glow on Hover */}
+                  <div className="bento-glow" />
 
-                    <div className="relative z-10 flex flex-col justify-between h-full">
-                      <div>
-                        {/* Member Portrait Frame with aspect-[4/5] portrait ratio & object-top */}
-                        <div className="relative w-full aspect-[4/5] sm:h-80 mb-4 rounded-2xl border border-white/10 bg-zinc-900 overflow-hidden group-hover:border-purple-500/50 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
-                          {(member.photoUrl || member.imageUrl || member.image) ? (
-                            <div className="relative w-full h-full">
-                              <img
-                                src={getOptimizedAvatarUrl(member.photoUrl || member.imageUrl || member.image)}
-                                alt={member.name}
-                                className="w-full h-full object-cover object-top contrast-105 group-hover:scale-105 transition-all duration-700 ease-out"
-                                loading="lazy"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-transparent to-transparent pointer-events-none" />
-                              <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
-                            </div>
-                          ) : (
-                            <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-[#0b0c10] to-purple-950/40 flex flex-col items-center justify-center p-4 text-center">
-                              <div className="w-14 h-14 rounded-xl border border-purple-500/40 bg-purple-950/40 flex items-center justify-center font-mono text-xl font-black text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.25)] mb-2">
-                                {member.photoPlaceholder || "TE"}
-                              </div>
-                              <span className="text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
-                                PORTRAIT ARCHIVE
-                              </span>
-                            </div>
-                          )}
+                  <div className="relative z-10 flex flex-col justify-between h-full">
+                    <div>
+                      {/* Member Portrait Frame with aspect-[4/5] portrait ratio & object-top */}
+                      <div className="relative w-full aspect-[4/5] sm:h-80 mb-4 rounded-2xl border border-white/10 bg-zinc-900 overflow-hidden group-hover:border-purple-500/50 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                        <TeamMemberAvatar member={member} />
 
-                          {/* Member Year Badge */}
-                          <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-purple-300 border border-purple-500/30 shadow-md">
-                            {member.year}
-                          </span>
+                        {/* Member Year Badge */}
+                        <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-purple-300 border border-purple-500/30 shadow-md">
+                          {member.year}
+                        </span>
 
-                          {/* Accent glow line at bottom of photo */}
-                          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
+                        {/* Accent glow line at bottom of photo */}
+                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
+                      </div>
+
+                      {/* Name & Role Designation */}
+                      <div className="mb-2.5">
+                        <div className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-[9px] font-mono text-purple-300 uppercase tracking-wider mb-1.5">
+                          {(member.role || "").replace(/coordianator/gi, "Coordinator")}
                         </div>
-
-                        {/* Name & Role Designation */}
-                        <div className="mb-2.5">
-                          <div className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-[9px] font-mono text-purple-300 uppercase tracking-wider mb-1.5">
-                            {(member.role || "").replace(/coordianator/gi, "Coordinator")}
-                          </div>
-                          <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-purple-300 transition-colors tracking-tight">
-                            {member.name}
-                          </h3>
-                          <p className="text-[11px] font-mono text-zinc-400 mt-0.5 truncate">
-                            {(member.designation || "").replace(/coordianator/gi, "Coordinator")}
-                          </p>
-                        </div>
-
-                        {/* Bio Description */}
-                        <p className="text-xs text-zinc-300 leading-relaxed mb-3 line-clamp-2">
-                          {member.bio}
+                        <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-purple-300 transition-colors tracking-tight">
+                          {member.name}
+                        </h3>
+                        <p className="text-[11px] font-mono text-zinc-400 mt-0.5 truncate">
+                          {(member.designation || "").replace(/coordianator/gi, "Coordinator")}
                         </p>
                       </div>
 
-                      {/* Lower: Focus Area & Skills Badges */}
-                      <div className="pt-2.5 border-t border-white/[0.08]">
-                        <div className="text-[9px] font-mono text-purple-400/90 uppercase tracking-wider mb-1.5 truncate">
-                          FOCUS: {member.specialization}
-                        </div>
-                        <div className="flex flex-wrap gap-1 mb-2">
-                          {member.skills.slice(0, 3).map((skill, sIdx) => (
-                            <span
-                              key={sIdx}
-                              className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-white/[0.03] text-zinc-300 border border-white/10"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center justify-between text-[9px] font-mono text-purple-400/80 group-hover:text-purple-300 transition-colors pt-1.5 border-t border-white/[0.04]">
-                          <span>VIEW MEMBER DOSSIER</span>
-                          <span>→</span>
-                        </div>
+                      {/* Bio Description */}
+                      <p className="text-xs text-zinc-300 leading-relaxed mb-3 line-clamp-2">
+                        {member.bio}
+                      </p>
+                    </div>
+
+                    {/* Lower: Focus Area & Skills Badges */}
+                    <div className="pt-2.5 border-t border-white/[0.08]">
+                      <div className="text-[9px] font-mono text-purple-400/90 uppercase tracking-wider mb-1.5 truncate">
+                        FOCUS: {member.specialization}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {(member.skills || []).slice(0, 3).map((skill, sIdx) => (
+                          <span
+                            key={sIdx}
+                            className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-white/[0.03] text-zinc-300 border border-white/10"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between text-[9px] font-mono text-purple-400/80 group-hover:text-purple-300 transition-colors pt-1.5 border-t border-white/[0.04]">
+                        <span>VIEW MEMBER DOSSIER</span>
+                        <span>→</span>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </motion.div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </section>

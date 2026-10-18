@@ -10,12 +10,14 @@ interface NavbarProps {
   onOpenRegister: () => void;
   onOpenVerifiedList?: () => void;
   onOpenContact?: () => void;
+  className?: string;
 }
 
 export default function Navbar({
   onOpenRegister,
   onOpenVerifiedList,
   onOpenContact,
+  className,
 }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -66,11 +68,11 @@ export default function Navbar({
 
   return (
     <>
-      {/* Floating Pill-Shaped Frosted Glass Navbar (reveals when scrolled below Hero) */}
+      {/* Floating Pill-Shaped Glass Navbar with High-Opacity Background */}
       <header
-        className={`fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-5xl rounded-full transition-all duration-400 ease-out ${
+        className={`fixed top-0 sm:top-4 left-0 sm:left-1/2 sm:-translate-x-1/2 z-50 w-full sm:w-[95%] max-w-5xl sm:rounded-full transition-all duration-300 ease-out bg-[#090614]/95 backdrop-blur-2xl border-b border-white/15 shadow-[0_10px_30px_rgba(0,0,0,0.85)] px-4 sm:px-6 py-2.5 ${className || ""} ${
           isScrolled
-            ? "opacity-100 pointer-events-auto translate-y-0 glass-pill-navbar px-3.5 sm:px-6 py-2 sm:py-2.5 shadow-[0_15px_45px_rgba(0,0,0,0.85),0_0_30px_rgba(255,255,255,0.08)] border border-white/20"
+            ? "opacity-100 pointer-events-auto translate-y-0"
             : "opacity-0 pointer-events-none -translate-y-8"
         }`}
       >
@@ -226,7 +228,7 @@ export default function Navbar({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -16, scale: 0.96 }}
               transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-              className="fixed top-20 left-4 right-4 z-50 md:hidden rounded-3xl glass-modal-panel p-5 shadow-[0_25px_50px_rgba(0,0,0,0.9),0_0_40px_rgba(124,58,237,0.35)]"
+              className="fixed top-16 left-4 right-4 z-50 md:hidden rounded-3xl bg-[#090614]/95 backdrop-blur-2xl border border-white/15 p-5 shadow-[0_10px_30px_rgba(0,0,0,0.85)]"
             >
               <div className="flex flex-col gap-2">
                 <div className="flex items-center gap-3 px-2 py-1 mb-1 pb-3 border-b border-white/10">

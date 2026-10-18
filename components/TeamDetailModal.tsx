@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { getOptimizedAvatarUrl } from "@/lib/cloudinary";
@@ -11,13 +11,14 @@ export interface TeamMember {
   role: string;
   designation: string;
   year: string;
-  category: "core" | "technical" | "events" | "outreach";
+  category: "core" | "technical" | "events" | "outreach" | string;
   bio: string;
   specialization: string;
   skills: string[];
   photoPlaceholder: string;
   photoUrl?: string;
   accentColor: string;
+  [key: string]: any;
 }
 
 interface TeamDetailModalProps {
@@ -26,6 +27,12 @@ interface TeamDetailModalProps {
 }
 
 export default function TeamDetailModal({ member, onClose }: TeamDetailModalProps) {
+  const [photoError, setPhotoError] = useState(false);
+
+  useEffect(() => {
+    setPhotoError(false);
+  }, [member?.id]);
+
   // Listen for Escape key to close modal smoothly
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -104,28 +111,33 @@ export default function TeamDetailModal({ member, onClose }: TeamDetailModalProp
             <div className="flex flex-col sm:flex-row gap-6 items-start">
               {/* Large Rectangular Portrait Photo */}
               <div className="relative w-full sm:w-60 aspect-[4/5] sm:h-80 rounded-2xl border border-white/10 bg-zinc-900 overflow-hidden shrink-0 shadow-[0_15px_35px_rgba(0,0,0,0.85)] group">
-                {(member.photoUrl || (member as any).imageUrl || (member as any).image) ? (
+                {(member.photoUrl || (member as any).imageUrl || (member as any).image) && !photoError ? (
                   <div className="relative w-full h-full">
-                    <Image
+                    <img
                       src={getOptimizedAvatarUrl(member.photoUrl || (member as any).imageUrl || (member as any).image)}
                       alt={member.name}
-                      fill
-                      sizes="(max-width: 640px) 100vw, 240px"
+                      onError={() => setPhotoError(true)}
                       className="w-full h-full object-cover object-top contrast-105 hover:scale-105 transition-all duration-500"
-                      unoptimized={String(member.photoUrl || (member as any).imageUrl || "").includes("res.cloudinary.com") || String(member.photoUrl || "").startsWith("data:")}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/20 to-transparent pointer-events-none" />
                     <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
                   </div>
                 ) : (
-                  <div className="relative w-full h-full bg-gradient-to-br from-zinc-950 via-[#0b0c10] to-purple-950/40 flex flex-col items-center justify-center p-4 text-center">
-                    <div className="w-16 h-16 rounded-2xl border border-purple-500/40 bg-purple-950/40 flex items-center justify-center font-mono text-2xl font-black text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.25)] mb-2">
-                      {member.photoPlaceholder || "TE"}
-                    </div>
-                    <span className="text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
+                  <div className="relative w-full h-full bg-gradient-to-br from-purple-900/80 to-indigo-950 flex flex-col items-center justify-center p-4 text-center select-none">
+                    <span className="text-4xl font-bold text-white tracking-wider drop-shadow-md">
+                      {(() => {
+                        const ph = (member.photoPlaceholder || "").trim();
+                        if (ph && ph.length <= 3 && !ph.includes("http")) return ph.toUpperCase();
+                        const parts = (member.name || "").trim().split(/\s+/).filter(Boolean);
+                        if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+                        return (member.name || "TE").slice(0, 2).toUpperCase();
+                      })()}
+                    </span>
+                    <span className="text-[9px] font-mono tracking-widest text-purple-300/80 uppercase mt-2 font-normal">
                       PORTRAIT ARCHIVE
                     </span>
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050508]/80 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
                   </div>
                 )}
 
