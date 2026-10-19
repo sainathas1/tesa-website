@@ -477,6 +477,7 @@ export default function Home() {
   // State for events & team data (Live synchronized from Firestore)
   const [eventsList, setEventsList] = useState<EventItem[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const allTeamMembers = teamMembers;
   const teamList = teamMembers;
   const setTeamList = setTeamMembers;
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -484,7 +485,9 @@ export default function Home() {
   // Filter states
   const [eventTab, setEventTab] = useState<"upcoming" | "past">("upcoming");
   const [upcomingSubFilter, setUpcomingSubFilter] = useState<"all" | "open" | "upcoming">("all");
-  const [teamCategoryFilter, setTeamCategoryFilter] = useState<string>("all");
+  const [activeTeamTab, setActiveTeamTab] = useState<string>("ALL MEMBERS");
+  const teamCategoryFilter = activeTeamTab;
+  const setTeamCategoryFilter = setActiveTeamTab;
 
   // Registration & Event Modal interactive states
   const [modalInitialMode, setModalInitialMode] = useState<"detail" | "register" | "verifiedList">("detail");
@@ -698,99 +701,59 @@ export default function Home() {
       ? upcomingEvents
       : upcomingEvents.filter((e) => e.status === upcomingSubFilter);
 
-  // Smart Category + Role Keyword Filtering
-  const isMatchCategory = (m: TeamMember, cat: string) => {
-    if (!cat || cat === "all" || cat.toLowerCase() === "all members") return true;
-
-    const filter = cat.toLowerCase().trim();
-    const memberCat = (m.category || "").toLowerCase().trim();
-    const roleFields = `${m.role || ""} ${(m as any).position || ""} ${(m as any).focus || ""} ${m.designation || ""} ${m.specialization || ""}`.toLowerCase();
-
-    // 1. CORE COUNCIL: Matches if category is Core Council OR role contains president, vice-president, secretary, treasurer, or council.
-    if (filter === "core" || filter.includes("core") || filter.includes("council")) {
-      const isCatMatch = memberCat.includes("core") || memberCat.includes("council");
-      const isRoleMatch =
-        roleFields.includes("president") ||
-        roleFields.includes("vice-president") ||
-        roleFields.includes("vice president") ||
-        roleFields.includes("secretary") ||
-        roleFields.includes("treasurer") ||
-        roleFields.includes("council");
-      return isCatMatch || isRoleMatch;
-    }
-
-    // 2. EVENTS & HACKATHONS: Matches if category is Events & Hackathons OR role contains event, logistics, operation, decoration, cultural, sports, discipline, or hackathon.
-    if (filter === "events" || filter.includes("event") || filter.includes("hackathon") || filter.includes("hack")) {
-      const isCatMatch =
-        memberCat.includes("event") ||
-        memberCat.includes("hackathon") ||
-        memberCat.includes("hack");
-      const isRoleMatch =
-        roleFields.includes("event") ||
-        roleFields.includes("logistics") ||
-        roleFields.includes("operation") ||
-        roleFields.includes("decoration") ||
-        roleFields.includes("cultural") ||
-        roleFields.includes("sports") ||
-        roleFields.includes("discipline") ||
-        roleFields.includes("hackathon");
-      return isCatMatch || isRoleMatch;
-    }
-
-    // 3. PUBLIC RELATIONS: Matches if category is Public Relations OR role contains public, relation, sponsorship, alumni, media, pr, marketing, or outreach.
-    if (
-      filter === "outreach" ||
-      filter === "pr" ||
-      filter.includes("public") ||
-      filter.includes("relation") ||
-      filter.includes("outreach")
-    ) {
-      const isCatMatch =
-        memberCat.includes("public") ||
-        memberCat.includes("relation") ||
-        memberCat.includes("outreach") ||
-        memberCat.includes("pr") ||
-        memberCat.includes("media") ||
-        memberCat.includes("sponsorship") ||
-        memberCat.includes("alumni");
-      const isRoleMatch =
-        roleFields.includes("public") ||
-        roleFields.includes("relation") ||
-        roleFields.includes("sponsorship") ||
-        roleFields.includes("alumni") ||
-        roleFields.includes("media") ||
-        roleFields.includes("pr") ||
-        roleFields.includes("marketing") ||
-        roleFields.includes("outreach");
-      return isCatMatch || isRoleMatch;
-    }
-
-    // 4. TECHNICAL & RESEARCH: Matches if category is Technical & Research OR role contains technical, research, tech, web, developer, design, or innovation.
-    if (filter === "technical" || filter.includes("tech") || filter.includes("research")) {
-      const isCatMatch =
-        memberCat.includes("technical") ||
-        memberCat.includes("research") ||
-        memberCat.includes("tech");
-      const isRoleMatch =
-        roleFields.includes("technical") ||
-        roleFields.includes("research") ||
-        roleFields.includes("tech") ||
-        roleFields.includes("web") ||
-        roleFields.includes("developer") ||
-        roleFields.includes("design") ||
-        roleFields.includes("innovation");
-      return isCatMatch || isRoleMatch;
-    }
-
-    return memberCat === filter || roleFields.includes(filter);
-  };
-
+  // Strict Category + Role Keyword Filtering (Excludes focus, department, and bio)
   const filteredTeamMembers = useMemo(() => {
-    if (!teamCategoryFilter || teamCategoryFilter === "all" || teamCategoryFilter.toLowerCase() === "all members") {
-      return teamMembers;
+    if (!activeTeamTab || activeTeamTab.toUpperCase() === "ALL MEMBERS" || activeTeamTab.toUpperCase() === "ALL") {
+      return allTeamMembers;
     }
-    return teamMembers.filter((m) => isMatchCategory(m, teamCategoryFilter));
-  }, [teamMembers, teamCategoryFilter]);
+
+    const tab = activeTeamTab.toUpperCase().trim();
+
+    return allTeamMembers.filter((member) => {
+      // ONLY check category and role/position title — NEVER check focus, department, or bio!
+      const category = (member.category || "").toLowerCase().trim();
+      const role = (member.role || member.position || member.title || "").toLowerCase().trim();
+
+      if (tab === "CORE COUNCIL" || tab === "CORE") {
+        return (
+          category === "core council" ||
+          category === "core" ||
+          /\b(president|vice-president|vice president|secretary|treasurer)\b/i.test(role)
+        );
+      }
+
+      if (tab === "TECHNICAL & RESEARCH" || tab === "TECHNICAL") {
+        // Strictly check role title (ignore "Textile Technology" in focus/bio)
+        const cleanRole = role.replace(/textile\s+technology/gi, "").replace(/b\.?\s*tech/gi, "");
+        return (
+          category === "technical & research" ||
+          category === "technical" ||
+          /\b(technical|research|web|developer|software|coding|it|innovation|ai)\b/i.test(cleanRole)
+        );
+      }
+
+      if (tab === "PUBLIC RELATIONS" || tab === "PR" || tab === "OUTREACH") {
+        // Strictly match PR, Media, Sponsorship & Alumni roles (no loose "pr" substring)
+        return (
+          category === "public relations" ||
+          category === "outreach" ||
+          category === "pr" ||
+          /\b(public relations|publicity|media|sponsorship|alumni|outreach|marketing|social media)\b/i.test(role)
+        );
+      }
+
+      if (tab === "EVENTS & HACKATHONS" || tab === "EVENTS") {
+        return (
+          category === "events & hackathons" ||
+          category === "events" ||
+          category === "hackathons" ||
+          /\b(event|events|hackathon|logistics|operation|operations|decoration|cultural|sports|discipline)\b/i.test(role)
+        );
+      }
+
+      return category === tab.toLowerCase();
+    });
+  }, [allTeamMembers, activeTeamTab]);
 
   const filteredTeam = filteredTeamMembers;
 
@@ -1395,17 +1358,17 @@ export default function Home() {
             {/* Interactive Category Filter Pills */}
             <div className="mt-7 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 text-xs font-mono">
               {[
-                { id: "all", label: "ALL MEMBERS" },
-                { id: "core", label: "CORE COUNCIL" },
-                { id: "technical", label: "TECHNICAL & RESEARCH" },
-                { id: "events", label: "EVENTS & HACKATHONS" },
-                { id: "outreach", label: "PUBLIC RELATIONS" },
+                { id: "ALL MEMBERS", label: "ALL MEMBERS" },
+                { id: "CORE COUNCIL", label: "CORE COUNCIL" },
+                { id: "TECHNICAL & RESEARCH", label: "TECHNICAL & RESEARCH" },
+                { id: "EVENTS & HACKATHONS", label: "EVENTS & HACKATHONS" },
+                { id: "PUBLIC RELATIONS", label: "PUBLIC RELATIONS" },
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setTeamCategoryFilter(tab.id)}
+                  onClick={() => setActiveTeamTab(tab.id)}
                   className={`min-h-[38px] sm:min-h-[42px] inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border text-[11px] sm:text-xs transition-all duration-200 cursor-pointer ${
-                    teamCategoryFilter === tab.id
+                    activeTeamTab === tab.id
                       ? "bg-purple-600 text-white border-purple-400 font-bold shadow-[0_0_20px_rgba(168,85,247,0.45)]"
                       : "bg-white/[0.02] text-zinc-300 border-white/10 hover:border-purple-500/40 hover:text-white"
                   }`}
@@ -1448,12 +1411,12 @@ export default function Home() {
                 There are currently no council members listed in this division.
               </p>
               <button
-                onClick={() => setTeamCategoryFilter("all")}
+                onClick={() => setActiveTeamTab("ALL MEMBERS")}
                 className="px-5 py-2.5 rounded-full text-xs font-mono font-semibold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] cursor-pointer inline-flex items-center gap-2"
               >
                 <span>Show All Members</span>
                 <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px]">
-                  {teamMembers.length}
+                  {allTeamMembers.length}
                 </span>
               </button>
             </div>
