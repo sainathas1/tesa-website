@@ -9,6 +9,7 @@ import { db } from "@/lib/firebase";
 import Navbar from "@/components/Navbar";
 import AuroraBackground from "@/components/AuroraBackground";
 import TeamDetailModal from "@/components/TeamDetailModal";
+import FacultyDetailModal from "@/components/FacultyDetailModal";
 import EventDetailModal, { CustomFormField, isConcludedEvent } from "@/components/EventDetailModal";
 import TextilePortalHero from "@/components/TextilePortalHero";
 import ContactModal, {
@@ -17,6 +18,12 @@ import ContactModal, {
   LinkedInLogoIcon,
 } from "@/components/ContactModal";
 import GlassFolder from "@/components/ui/glass-folder-cards";
+import {
+  DEFAULT_FACULTY,
+  DEFAULT_GALLERY_PHOTOS,
+  type FacultyMember,
+  type GalleryPhoto,
+} from "@/lib/tesa-cabinets-data";
 
 /**
  * Cloudinary Face-Detection Avatar Optimization Helper
@@ -483,6 +490,11 @@ export default function Home() {
   const setTeamList = setTeamMembers;
   const [isDataLoading, setIsDataLoading] = useState(true);
 
+  // Faculty of Textile Technology & Gallery States (Live synchronized from Firestore)
+  const [facultyList, setFacultyList] = useState<FacultyMember[]>(DEFAULT_FACULTY);
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>(DEFAULT_GALLERY_PHOTOS);
+  const [selectedFaculty, setSelectedFaculty] = useState<FacultyMember | null>(null);
+
   // Filter states
   const [eventTab, setEventTab] = useState<"upcoming" | "past">("upcoming");
   const [upcomingSubFilter, setUpcomingSubFilter] = useState<"all" | "open" | "upcoming">("all");
@@ -501,7 +513,7 @@ export default function Home() {
   // Contact Us Modal interactive state
   const [isContactOpen, setIsContactOpen] = useState(false);
 
-  // Live real-time synchronization with Firestore (collection: 'events', 'team_members')
+  // Live real-time synchronization with Firestore (collection: 'events', 'team_members', 'faculty', 'gallery_photos')
   useEffect(() => {
     // 1. Initial cached population from localStorage for instantaneous first render
     try {
@@ -519,6 +531,22 @@ export default function Home() {
         const parsedTeam = JSON.parse(cachedTeam);
         if (Array.isArray(parsedTeam) && parsedTeam.length > 0) {
           setTeamMembers(parsedTeam);
+        }
+      }
+
+      const cachedFaculty = localStorage.getItem("tesa_faculty");
+      if (cachedFaculty !== null) {
+        const parsedFaculty = JSON.parse(cachedFaculty);
+        if (Array.isArray(parsedFaculty) && parsedFaculty.length > 0) {
+          setFacultyList(parsedFaculty);
+        }
+      }
+
+      const cachedGallery = localStorage.getItem("tesa_gallery_photos");
+      if (cachedGallery !== null) {
+        const parsedGallery = JSON.parse(cachedGallery);
+        if (Array.isArray(parsedGallery) && parsedGallery.length > 0) {
+          setGalleryPhotos(parsedGallery);
         }
       }
     } catch {
@@ -632,29 +660,125 @@ export default function Home() {
       }
     );
 
+    // 4. Real-Time Faculty Listener (collection: 'faculty')
+    const unsubFaculty = onSnapshot(
+      collection(db, "faculty"),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteFaculty: FacultyMember[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data();
+            remoteFaculty.push({
+              id: d.id,
+              name: data.name || "Faculty Member",
+              designation: data.designation || "Professor",
+              qualification: data.qualification || "",
+              specialization: data.specialization || "Textile Technology",
+              experience: data.experience || "",
+              email: data.email || "",
+              researchFocus: data.researchFocus || [],
+              photoUrl: data.photoUrl || data.imageUrl || data.image || "",
+              bio: data.bio || "",
+              createdAt: data.createdAt || null,
+            });
+          });
+          setFacultyList(remoteFaculty);
+          try {
+            localStorage.setItem("tesa_faculty", JSON.stringify(remoteFaculty));
+          } catch {}
+        }
+      },
+      (err) => {
+        console.warn("Firestore faculty onSnapshot error:", err);
+      }
+    );
+
+    // 5. Real-Time Gallery Photos Listener (collection: 'gallery_photos')
+    const unsubGallery = onSnapshot(
+      collection(db, "gallery_photos"),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteGallery: GalleryPhoto[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data();
+            const photoUrl = data.url || data.imageUrl || data.image || "";
+            if (photoUrl) {
+              remoteGallery.push({
+                id: d.id,
+                title: data.title || "Untitled Still",
+                url: photoUrl,
+                category: data.category || "Exhibition",
+                date: data.date || "",
+                caption: data.caption || "",
+                createdAt: data.createdAt || null,
+              });
+            }
+          });
+          remoteGallery.sort((a, b) => {
+            const ta = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+            const tb = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+            return tb - ta;
+          });
+          if (remoteGallery.length > 0) {
+            setGalleryPhotos(remoteGallery);
+            try {
+              localStorage.setItem("tesa_gallery_photos", JSON.stringify(remoteGallery));
+            } catch {}
+          }
+        }
+      },
+      (err) => {
+        console.warn("Firestore gallery_photos onSnapshot error:", err);
+      }
+    );
+
     const timeoutId = setTimeout(() => {
       setIsDataLoading(false);
       setTeamMembers((prev) => (prev.length > 0 ? prev : DEFAULT_TEAM));
       setEventsList((prev) => (prev.length > 0 ? prev : DEFAULT_EVENTS));
+      setFacultyList((prev) => (prev.length > 0 ? prev : DEFAULT_FACULTY));
+      setGalleryPhotos((prev) => (prev.length > 0 ? prev : DEFAULT_GALLERY_PHOTOS));
     }, 1500);
 
     return () => {
       unsubEvents();
       unsubTeam();
+      unsubFaculty();
+      unsubGallery();
       clearTimeout(timeoutId);
     };
   }, []);
 
-  // Keyboard escape handler for lightbox
+  const handlePrevLightbox = () => {
+    if (!lightboxImage || galleryPhotos.length === 0) return;
+    const currentIdx = lightboxImage.index - 1;
+    const prevIdx = (currentIdx - 1 + galleryPhotos.length) % galleryPhotos.length;
+    const p = galleryPhotos[prevIdx];
+    setLightboxImage({ url: p.url, title: p.title, index: prevIdx + 1 });
+  };
+
+  const handleNextLightbox = () => {
+    if (!lightboxImage || galleryPhotos.length === 0) return;
+    const currentIdx = lightboxImage.index - 1;
+    const nextIdx = (currentIdx + 1) % galleryPhotos.length;
+    const p = galleryPhotos[nextIdx];
+    setLightboxImage({ url: p.url, title: p.title, index: nextIdx + 1 });
+  };
+
+  // Keyboard navigation handler for lightbox (Escape to close, Left/Right arrows to flip)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && lightboxImage) {
         setLightboxImage(null);
+      } else if (e.key === "ArrowLeft" && lightboxImage) {
+        handlePrevLightbox();
+      } else if (e.key === "ArrowRight" && lightboxImage) {
+        handleNextLightbox();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightboxImage]);
+  }, [lightboxImage, galleryPhotos]);
 
   const handleOpenRegistration = (eventTitle: string = "TEXPLORER 2026") => {
     const matched =
@@ -1353,182 +1477,15 @@ export default function Home() {
       </div>
 
       {/* =========================================================================
-          SECTION 4: BENTO-GRID TESA TEAM SECTION
-          ========================================================================= */}
-      <section
-        id="team-section"
-        className="relative py-24 sm:py-32 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20 opacity-100 visible"
-      >
-        <div id="team" className="absolute -top-24 pointer-events-none" />
-        <div className="max-w-7xl mx-auto">
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto mb-14 opacity-100 visible">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-purple-500/30 bg-purple-950/30 text-[11px] sm:text-xs font-mono text-purple-300 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-              <span>TESA STUDENT COUNCIL • 2025–2026 TENURE</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight text-white">
-              MEET THE{" "}
-              <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-rose-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(168,85,247,0.35)]">
-                TESA TEAM
-              </span>
-            </h2>
-
-            <p className="mt-3.5 text-sm sm:text-base text-zinc-400 font-normal leading-relaxed">
-              The visionary student leaders, researchers, and coordinators driving textile engineering excellence and technological innovation at SGGSIE&amp;T.
-            </p>
-
-            {/* Interactive Category Filter Pills */}
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 text-xs font-mono">
-              {[
-                { id: "ALL MEMBERS", label: "ALL MEMBERS" },
-                { id: "CORE COUNCIL", label: "CORE COUNCIL" },
-                { id: "TECHNICAL & RESEARCH", label: "TECHNICAL & RESEARCH" },
-                { id: "EVENTS & HACKATHONS", label: "EVENTS & HACKATHONS" },
-                { id: "PUBLIC RELATIONS", label: "PUBLIC RELATIONS" },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTeamTab(tab.id)}
-                  className={`min-h-[38px] sm:min-h-[42px] inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl border text-[11px] sm:text-xs transition-all duration-200 cursor-pointer ${
-                    activeTeamTab === tab.id
-                      ? "bg-purple-600 text-white border-purple-400 font-bold shadow-[0_0_20px_rgba(168,85,247,0.45)]"
-                      : "bg-white/[0.02] text-zinc-300 border-white/10 hover:border-purple-500/40 hover:text-white"
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Staggered Bento Team Grid or Pulsing Skeleton */}
-          {isDataLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 justify-items-center opacity-100 visible">
-              {[1, 2, 3].map((n) => (
-                <div
-                  key={`team-skel-${n}`}
-                  className="bento-card relative flex flex-col justify-between rounded-3xl p-5 overflow-hidden animate-pulse min-h-[440px] w-full max-w-sm"
-                >
-                  <div>
-                    <div className="relative w-full aspect-[4/5] sm:h-80 mb-4 rounded-2xl bg-zinc-900 overflow-hidden" />
-                    <div className="h-4 w-20 rounded bg-white/5 mb-2" />
-                    <div className="h-5 w-36 rounded bg-white/10 mb-2" />
-                    <div className="h-3.5 w-28 rounded bg-white/5 mb-3" />
-                  </div>
-                  <div className="pt-3 border-t border-white/[0.08] space-y-2">
-                    <div className="h-3 w-24 rounded bg-white/5" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : filteredTeamMembers.length === 0 ? (
-            <div className="py-16 px-6 text-center rounded-3xl border border-white/10 bg-[#0b0c10]/80 backdrop-blur-2xl shadow-2xl max-w-xl mx-auto opacity-100 visible">
-              <div className="w-14 h-14 mx-auto mb-3.5 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-2xl text-purple-300">
-                👥
-              </div>
-              <h3 className="text-lg font-mono font-bold text-white mb-1.5">
-                No members listed in this division yet
-              </h3>
-              <p className="text-xs sm:text-sm text-zinc-400 font-sans max-w-md mx-auto mb-5">
-                There are currently no council members listed in this division.
-              </p>
-              <button
-                onClick={() => setActiveTeamTab("ALL MEMBERS")}
-                className="px-5 py-2.5 rounded-full text-xs font-mono font-semibold bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-[0_0_20px_rgba(168,85,247,0.4)] cursor-pointer inline-flex items-center gap-2"
-              >
-                <span>Show All Members</span>
-                <span className="px-2 py-0.5 rounded-full bg-white/20 text-[10px]">
-                  {allTeamMembers.length}
-                </span>
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 justify-items-center opacity-100 visible">
-              {filteredTeamMembers.map((member) => (
-                <div
-                  key={member.id}
-                  onClick={() => setSelectedMember(member)}
-                  className="bento-card group relative flex flex-col justify-between rounded-3xl p-5 sm:p-6 overflow-hidden cursor-pointer w-full max-w-sm opacity-100 visible transform-none transition-all duration-300"
-                >
-                  {/* Top-Right Ambient Glow on Hover */}
-                  <div className="bento-glow" />
-
-                  <div className="relative z-10 flex flex-col justify-between h-full">
-                    <div>
-                      {/* Member Portrait Frame with aspect-[4/5] portrait ratio & object-top */}
-                      <div className="relative w-full aspect-[4/5] sm:h-80 mb-4 rounded-2xl border border-white/10 bg-zinc-900 overflow-hidden group-hover:border-purple-500/50 transition-all duration-500 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
-                        <TeamMemberAvatar member={member} />
-
-                        {/* Member Year Badge */}
-                        <span className="absolute bottom-2.5 right-2.5 z-10 text-[9px] font-mono px-2 py-0.5 rounded-full bg-black/80 backdrop-blur-md text-purple-300 border border-purple-500/30 shadow-md">
-                          {member.year}
-                        </span>
-
-                        {/* Accent glow line at bottom of photo */}
-                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/60 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
-                      </div>
-
-                      {/* Name & Role Designation */}
-                      <div className="mb-2.5">
-                        <div className="inline-block px-2.5 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/30 text-[9px] font-mono text-purple-300 uppercase tracking-wider mb-1.5">
-                          {(member.role || "").replace(/coordianator/gi, "Coordinator")}
-                        </div>
-                        <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-purple-300 transition-colors tracking-tight">
-                          {member.name}
-                        </h3>
-                        <p className="text-[11px] font-mono text-zinc-400 mt-0.5 truncate">
-                          {(member.designation || "").replace(/coordianator/gi, "Coordinator")}
-                        </p>
-                      </div>
-
-                      {/* Bio Description */}
-                      <p className="text-xs text-zinc-300 leading-relaxed mb-3 line-clamp-2">
-                        {member.bio}
-                      </p>
-                    </div>
-
-                    {/* Lower: Focus Area & Skills Badges */}
-                    <div className="pt-2.5 border-t border-white/[0.08]">
-                      <div className="text-[9px] font-mono text-purple-400/90 uppercase tracking-wider mb-1.5 truncate">
-                        FOCUS: {member.specialization}
-                      </div>
-                      <div className="flex flex-wrap gap-1 mb-2">
-                        {(member.skills || []).slice(0, 3).map((skill, sIdx) => (
-                          <span
-                            key={sIdx}
-                            className="text-[9px] font-mono px-2 py-0.5 rounded-md bg-white/[0.03] text-zinc-300 border border-white/10"
-                          >
-                            {skill}
-                          </span>
-                        ))}
-                      </div>
-                      <div className="flex items-center justify-between text-[9px] font-mono text-purple-400/80 group-hover:text-purple-300 transition-colors pt-1.5 border-t border-white/[0.04]">
-                        <span>VIEW MEMBER DOSSIER</span>
-                        <span>→</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Subtle Studio Accent Divider */}
-      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="h-px w-full bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
-      </div>
-
-      {/* =========================================================================
-          SECTION 5: TESA DIGITAL ARCHIVES & INTERACTIVE DOSSIERS
+          SECTION 4: TESA LIVING ARCHIVES & INTERACTIVE DOSSIERS (3 3D FOLDERS)
           ========================================================================= */}
       <section
         id="archives-section"
         className="relative py-20 sm:py-28 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20 overflow-hidden"
       >
+        <div id="team-section" className="absolute -top-24 pointer-events-none" />
+        <div id="team" className="absolute -top-24 pointer-events-none" />
+
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
@@ -1538,95 +1495,145 @@ export default function Home() {
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-              THE TESA VAULT: CONCLAVES &amp;{" "}
+              THE TESA VAULT: COUNCIL, FACULTY &amp;{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-300 to-indigo-300">
-                LIVING DOSSIERS
+                GALLERY
               </span>
             </h2>
 
             <p className="mt-3.5 text-sm sm:text-base text-zinc-400 font-normal leading-relaxed">
-              Interactive frosted glass cabinets cataloging our concluded national symposiums and active council dossiers. Click any document inside a folder to inspect the complete record.
+              Interactive frosted glass cabinets cataloging the student council, esteemed department faculty, and visual archives. Hover to lean any folder, click to fan open, and select any document to inspect the complete record.
             </p>
           </div>
 
-          {/* Interactive 3D Glass Folder Display */}
+          {/* Interactive 3D Glass Folder Display: Exactly 3 Folders */}
           <div className="relative flex flex-col items-center justify-center">
-            <div className="relative grid max-w-[1180px] grid-cols-1 items-end justify-items-center gap-x-14 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
-              {/* Folder 1: Concluded Conclaves & Past Events */}
+            <div className="relative grid max-w-5xl grid-cols-1 items-end justify-items-center gap-x-12 gap-y-14 md:grid-cols-2 lg:grid-cols-3">
+              {/* Folder 1: TESA Team (Council Members & Student Leads) */}
               <GlassFolder
-                label="Past Conclaves"
-                art="ember"
-                seed={5}
-                appearDelay={0}
-                files={resolvedPastEvents.slice(0, 4).map((ev) => ({
-                  name: ev.title,
-                  meta: `${ev.category} · ${ev.date}`,
-                  image: ev.mediaUrl || ev.bannerUrl || ev.imageUrl || undefined,
-                  art: !ev.mediaUrl ? "ember" : undefined,
-                }))}
-                onFileSelect={(_, idx) => {
-                  const ev = resolvedPastEvents[idx];
-                  if (ev) {
-                    setSelectedEvent({ ...ev, isPastSection: true, _isPast: true });
-                    setModalInitialMode("detail");
-                  }
-                }}
-              />
-
-              {/* Folder 2: Core Council Executives */}
-              <GlassFolder
-                label="Council Executives"
+                label="TESA Team"
+                meta="Council & Leads"
                 art="aurora"
                 seed={18}
                 action="more"
                 labelPlacement="top-left"
-                appearDelay={140}
-                files={coreCouncilMembers.slice(0, 4).map((member) => ({
+                appearDelay={0}
+                files={teamMembers.slice(0, 5).map((member) => ({
                   name: member.name,
-                  meta: `${member.role} · ${member.year}`,
+                  meta: `${member.role} · ${member.year || "Council"}`,
                   image: member.photoUrl || member.imageUrl || undefined,
                   art: !member.photoUrl ? "aurora" : undefined,
                 }))}
                 onFileSelect={(_, idx) => {
-                  const member = coreCouncilMembers[idx];
+                  const member = teamMembers[idx];
                   if (member) {
                     setSelectedMember(member);
                   }
                 }}
                 menu={[
-                  { label: "View All Council Members", onSelect: () => setActiveTeamTab("CORE COUNCIL") },
-                  { label: "Council Roster 2025–26", onSelect: () => setActiveTeamTab("ALL MEMBERS") },
+                  {
+                    label: "Inspect First Council Lead",
+                    onSelect: () => {
+                      if (teamMembers.length > 0) setSelectedMember(teamMembers[0]);
+                    },
+                  },
+                  {
+                    label: "Digital Dossiers Cabinet",
+                    onSelect: () => {
+                      window.open("/archives", "_blank");
+                    },
+                  },
                 ]}
               />
 
-              {/* Folder 3: Technical & Research Leads */}
+              {/* Folder 2: Faculty of Textile Technology (Professors & Mentors) */}
               <GlassFolder
-                label="Technical & Research"
-                meta="Innovation Leads"
-                tone="dark"
+                label="Faculty of Textile Tech"
+                meta="Professors & Mentors"
                 art="verdant"
                 seed={23}
-                action="none"
-                labelPlacement="top-right"
-                appearDelay={280}
-                files={techAndLeadsMembers.slice(0, 4).map((member) => ({
-                  name: member.name,
-                  meta: `${member.role} · ${member.specialization || "Textiles"}`,
-                  image: member.photoUrl || member.imageUrl || undefined,
-                  art: !member.photoUrl ? "verdant" : undefined,
+                action="more"
+                labelPlacement="bottom-left"
+                appearDelay={140}
+                files={facultyList.slice(0, 5).map((fac) => ({
+                  name: fac.name,
+                  meta: fac.designation,
+                  image: fac.photoUrl || fac.imageUrl || undefined,
+                  art: !fac.photoUrl ? "verdant" : undefined,
                 }))}
                 onFileSelect={(_, idx) => {
-                  const member = techAndLeadsMembers[idx];
-                  if (member) {
-                    setSelectedMember(member);
+                  const fac = facultyList[idx];
+                  if (fac) {
+                    setSelectedFaculty(fac);
                   }
                 }}
+                menu={[
+                  {
+                    label: "Inspect Head of Department",
+                    onSelect: () => {
+                      if (facultyList.length > 0) setSelectedFaculty(facultyList[0]);
+                    },
+                  },
+                  {
+                    label: "Department Directory",
+                    onSelect: () => {
+                      window.open("/archives", "_blank");
+                    },
+                  },
+                ]}
+              />
+
+              {/* Folder 3: TESA Gallery (Visual Chronicles, Events & Stills) */}
+              <GlassFolder
+                label="TESA Gallery"
+                meta="Living Stills & Media"
+                art="glacier"
+                seed={41}
+                action="more"
+                labelPlacement="top-right"
+                appearDelay={280}
+                files={galleryPhotos.slice(0, 5).map((photo) => ({
+                  name: photo.title,
+                  meta: photo.category ? `${photo.category} · ${photo.date || "Archive"}` : photo.date || "Photo Still",
+                  image: photo.url,
+                  art: !photo.url ? "glacier" : undefined,
+                }))}
+                onFileSelect={(_, idx) => {
+                  const photo = galleryPhotos[idx];
+                  if (photo) {
+                    setLightboxImage({
+                      url: photo.url,
+                      title: photo.title,
+                      index: idx + 1,
+                    });
+                  }
+                }}
+                menu={[
+                  {
+                    label: "Open Fullscreen Stills",
+                    onSelect: () => {
+                      if (galleryPhotos.length > 0) {
+                        setLightboxImage({
+                          url: galleryPhotos[0].url,
+                          title: galleryPhotos[0].title,
+                          index: 1,
+                        });
+                      }
+                    },
+                  },
+                  {
+                    label: "Manage in Admin Portal",
+                    onSelect: () => {
+                      window.open("/admin", "_blank");
+                    },
+                  },
+                ]}
               />
             </div>
 
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
               <span className="font-mono text-[11px] tracking-[0.18em] text-zinc-500 uppercase">
-                Hover to lean · Click to fan open · Click file to view dossier
+                Hover to lean · Click to fan open · Click item to inspect dossier
               </span>
               <Link
                 href="/archives"
@@ -1662,21 +1669,21 @@ export default function Home() {
               {/* Top Bar with Title & Close Button */}
               <div className="w-full flex items-center justify-between pb-3 sm:pb-4 font-mono text-xs text-zinc-400 gap-2">
                 <div className="flex items-center gap-2 min-w-0 pr-2">
-                  <span className="w-2 h-2 rounded-full bg-purple-400 shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 shrink-0" />
                   <span className="text-white font-bold truncate max-w-[150px] sm:max-w-md">
                     {lightboxImage.title}
                   </span>
-                  <span className="hidden sm:inline shrink-0">• Archival Photo #{lightboxImage.index}</span>
+                  <span className="hidden sm:inline shrink-0">• Photo #{lightboxImage.index} of {galleryPhotos.length}</span>
                 </div>
                 <button
                   onClick={() => setLightboxImage(null)}
                   className="shrink-0 px-3 sm:px-3.5 py-1.5 rounded-full bg-white/[0.08] hover:bg-white/[0.15] text-white transition-colors cursor-pointer text-xs"
                 >
-                  ✕ Close
+                  ✕ Close (Esc)
                 </button>
               </div>
 
-              {/* Main Expanded Image */}
+              {/* Main Expanded Image with Left / Right Navigation */}
               <div className="relative w-full h-[65vh] sm:h-[75vh] rounded-3xl overflow-hidden border border-white/15 bg-black shadow-[0_0_80px_rgba(0,0,0,0.9)]">
                 <Image
                   src={lightboxImage.url}
@@ -1686,6 +1693,28 @@ export default function Home() {
                   sizes="100vw"
                   className="object-contain"
                 />
+
+                {/* Previous Image Button */}
+                {galleryPhotos.length > 1 && (
+                  <button
+                    onClick={handlePrevLightbox}
+                    aria-label="Previous photo"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-xl text-lg"
+                  >
+                    ‹
+                  </button>
+                )}
+
+                {/* Next Image Button */}
+                {galleryPhotos.length > 1 && (
+                  <button
+                    onClick={handleNextLightbox}
+                    aria-label="Next photo"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/60 hover:bg-black/90 border border-white/20 text-white flex items-center justify-center transition-all cursor-pointer backdrop-blur-md shadow-xl text-lg"
+                  >
+                    ›
+                  </button>
+                )}
               </div>
             </motion.div>
           </div>
@@ -1698,6 +1727,14 @@ export default function Home() {
       <TeamDetailModal
         member={selectedMember}
         onClose={() => setSelectedMember(null)}
+      />
+
+      {/* =========================================================================
+          INTERACTIVE FACULTY MEMBER DETAIL MODAL
+          ========================================================================= */}
+      <FacultyDetailModal
+        faculty={selectedFaculty}
+        onClose={() => setSelectedFaculty(null)}
       />
 
       {/* =========================================================================

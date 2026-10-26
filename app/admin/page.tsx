@@ -28,6 +28,12 @@ import AuroraBackground from "@/components/AuroraBackground";
 import GlassFolder from "@/components/ui/glass-folder-cards";
 import { isConcludedEvent } from "@/components/EventDetailModal";
 import * as XLSX from "xlsx";
+import {
+  DEFAULT_FACULTY,
+  DEFAULT_GALLERY_PHOTOS,
+  type FacultyMember,
+  type GalleryPhoto,
+} from "@/lib/tesa-cabinets-data";
 
 // ============================================================================
 // DATA INTERFACES & SCHEMAS (Synced with Minimalist Architecture)
@@ -423,7 +429,47 @@ export default function AdminDashboardPage() {
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
   // Default active tab is "team" (Manage TESA Team is #1)
-  const [activeTab, setActiveTab] = useState<"team" | "events" | "registrations" | "archives" | "all">("team");
+  const [activeTab, setActiveTab] = useState<"team" | "faculty" | "gallery" | "events" | "registrations" | "archives" | "all">("team");
+
+  // --------------------------------------------------------------------------
+  // STATE: FACULTY OF TEXTILE TECHNOLOGY
+  // --------------------------------------------------------------------------
+  const [facultyList, setFacultyList] = useState<FacultyMember[]>(DEFAULT_FACULTY);
+  const [isFacultyModalOpen, setIsFacultyModalOpen] = useState<boolean>(false);
+  const [isUploadingFacultyPhoto, setIsUploadingFacultyPhoto] = useState<boolean>(false);
+  const [isSubmittingFaculty, setIsSubmittingFaculty] = useState<boolean>(false);
+  const [editingFacultyMember, setEditingFacultyMember] = useState<FacultyMember | null>(null);
+  const [facultyForm, setFacultyForm] = useState<FacultyMember>({
+    id: "",
+    name: "",
+    designation: "Professor & Head of Department",
+    qualification: "",
+    specialization: "",
+    experience: "",
+    email: "",
+    researchFocus: "",
+    photoUrl: "",
+    bio: "",
+  });
+  const facultyFileInputRef = useRef<HTMLInputElement>(null);
+
+  // --------------------------------------------------------------------------
+  // STATE: TESA GALLERY (VISUAL ARCHIVES & STILLS)
+  // --------------------------------------------------------------------------
+  const [galleryList, setGalleryList] = useState<GalleryPhoto[]>(DEFAULT_GALLERY_PHOTOS);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState<boolean>(false);
+  const [isUploadingGalleryPhoto, setIsUploadingGalleryPhoto] = useState<boolean>(false);
+  const [isSubmittingGalleryPhoto, setIsSubmittingGalleryPhoto] = useState<boolean>(false);
+  const [editingGalleryPhoto, setEditingGalleryPhoto] = useState<GalleryPhoto | null>(null);
+  const [galleryForm, setGalleryForm] = useState<GalleryPhoto>({
+    id: "",
+    title: "",
+    url: "",
+    category: "National Conclave",
+    date: "",
+    caption: "",
+  });
+  const galleryPhotoFileInputRef = useRef<HTMLInputElement>(null);
 
   // Connectivity state for Firestore
   const [firestoreStatus, setFirestoreStatus] = useState<
@@ -752,8 +798,21 @@ export default function AdminDashboardPage() {
     return () => unsubscribe();
   }, []);
 
-  // Real-time synchronization with Firestore ('events', 'team_members', 'event_registrations')
+  // Real-time synchronization with Firestore ('events', 'team_members', 'faculty', 'gallery_photos', 'event_registrations')
   useEffect(() => {
+    try {
+      const cachedFaculty = localStorage.getItem("tesa_faculty");
+      if (cachedFaculty) {
+        const parsed = JSON.parse(cachedFaculty);
+        if (Array.isArray(parsed) && parsed.length > 0) setFacultyList(parsed);
+      }
+      const cachedGallery = localStorage.getItem("tesa_gallery_photos");
+      if (cachedGallery) {
+        const parsed = JSON.parse(cachedGallery);
+        if (Array.isArray(parsed) && parsed.length > 0) setGalleryList(parsed);
+      }
+    } catch {}
+
     if (!isFirebaseConfigured) return;
 
     // 1. Live Events Listener (collection: 'events')
@@ -912,10 +971,80 @@ export default function AdminDashboardPage() {
       }
     );
 
+    // 4. Live Faculty Listener (collection: 'faculty')
+    const unsubFaculty = onSnapshot(
+      collection(db, "faculty"),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteFaculty: FacultyMember[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data();
+            remoteFaculty.push({
+              id: d.id,
+              name: data.name || "Faculty Member",
+              designation: data.designation || "Professor",
+              qualification: data.qualification || "",
+              specialization: data.specialization || "Textile Technology",
+              experience: data.experience || "",
+              email: data.email || "",
+              researchFocus: data.researchFocus || [],
+              photoUrl: data.photoUrl || data.imageUrl || data.image || "",
+              bio: data.bio || "",
+              createdAt: data.createdAt || null,
+            });
+          });
+          setFacultyList(remoteFaculty);
+          try { localStorage.setItem("tesa_faculty", JSON.stringify(remoteFaculty)); } catch {}
+        }
+      },
+      (err) => {
+        console.warn("Live faculty listener error:", err);
+      }
+    );
+
+    // 5. Live Gallery Photos Listener (collection: 'gallery_photos')
+    const unsubGallery = onSnapshot(
+      collection(db, "gallery_photos"),
+      (snapshot) => {
+        if (!snapshot.empty) {
+          const remoteGallery: GalleryPhoto[] = [];
+          snapshot.forEach((d) => {
+            const data = d.data();
+            const photoUrl = data.url || data.imageUrl || data.image || "";
+            if (photoUrl) {
+              remoteGallery.push({
+                id: d.id,
+                title: data.title || "Untitled Still",
+                url: photoUrl,
+                category: data.category || "Exhibition",
+                date: data.date || "",
+                caption: data.caption || "",
+                createdAt: data.createdAt || null,
+              });
+            }
+          });
+          remoteGallery.sort((a, b) => {
+            const ta = a.createdAt?.seconds ? a.createdAt.seconds * 1000 : 0;
+            const tb = b.createdAt?.seconds ? b.createdAt.seconds * 1000 : 0;
+            return tb - ta;
+          });
+          if (remoteGallery.length > 0) {
+            setGalleryList(remoteGallery);
+            try { localStorage.setItem("tesa_gallery_photos", JSON.stringify(remoteGallery)); } catch {}
+          }
+        }
+      },
+      (err) => {
+        console.warn("Live gallery_photos listener error:", err);
+      }
+    );
+
     return () => {
       unsubEvents();
       unsubTeam();
       unsubRegs();
+      unsubFaculty();
+      unsubGallery();
     };
   }, []);
 
@@ -1062,7 +1191,23 @@ export default function AdminDashboardPage() {
         }, { merge: true });
       }
 
-      showToast("Successfully seeded real documents to Firestore! Both portals synchronized.", "success");
+      for (const fac of DEFAULT_FACULTY) {
+        await setDoc(doc(db, "faculty", fac.id), {
+          ...fac,
+          createdAt: serverTimestamp(),
+          addedBy: user?.email || "admin",
+        }, { merge: true });
+      }
+
+      for (const photo of DEFAULT_GALLERY_PHOTOS) {
+        await setDoc(doc(db, "gallery_photos", photo.id), {
+          ...photo,
+          createdAt: serverTimestamp(),
+          addedBy: user?.email || "admin",
+        }, { merge: true });
+      }
+
+      showToast("Successfully seeded real documents (Events, Team, Faculty & Gallery) to Firestore! Portals synchronized.", "success");
     } catch (err: any) {
       console.error("Seed error:", err);
       showToast("Seed error: " + (err?.message || "Check Firestore rules"), "error");
@@ -1241,6 +1386,260 @@ export default function AdminDashboardPage() {
     } catch (e) {}
 
     showToast(`Removed council member ${name}.`);
+  };
+
+  // --------------------------------------------------------------------------
+  // FACULTY OF TEXTILE TECHNOLOGY HANDLERS
+  // --------------------------------------------------------------------------
+  const handleOpenAddFacultyModal = () => {
+    setEditingFacultyMember(null);
+    setFacultyForm({
+      id: "",
+      name: "",
+      designation: "Professor",
+      qualification: "",
+      specialization: "",
+      experience: "",
+      email: "",
+      researchFocus: "",
+      photoUrl: "",
+      bio: "",
+    });
+    setIsFacultyModalOpen(true);
+  };
+
+  const handleOpenEditFacultyModal = (f: FacultyMember) => {
+    setEditingFacultyMember(f);
+    const researchStr = Array.isArray(f.researchFocus)
+      ? f.researchFocus.join(", ")
+      : typeof f.researchFocus === "string"
+      ? f.researchFocus
+      : "";
+    setFacultyForm({
+      ...f,
+      researchFocus: researchStr,
+      photoUrl: f.photoUrl || f.imageUrl || f.image || "",
+    });
+    setIsFacultyModalOpen(true);
+  };
+
+  const handleFacultyPhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      showToast("Photo exceeds 8MB limit. Please upload a smaller image.", "error");
+      return;
+    }
+
+    try {
+      setIsUploadingFacultyPhoto(true);
+      showToast("Uploading Media... Sending faculty photo to Cloudinary...", "info");
+      const url = await uploadToCloudinary(file);
+      setFacultyForm((prev) => ({ ...prev, photoUrl: url }));
+      showToast("Faculty portrait uploaded to Cloudinary successfully!");
+    } catch (err: any) {
+      console.error("Cloudinary faculty photo upload error:", err);
+      showToast(err?.message || "Could not upload photo to Cloudinary.", "error");
+    } finally {
+      setIsUploadingFacultyPhoto(false);
+    }
+  };
+
+  const handleSaveFaculty = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFirebaseConfigured) {
+      showToast("Error: Firebase is not configured.", "error");
+      return;
+    }
+    if (!facultyForm.name.trim() || !facultyForm.designation.trim()) {
+      showToast("Please provide Faculty Name and Academic Designation.", "error");
+      return;
+    }
+
+    setIsSubmittingFaculty(true);
+    try {
+      const researchArray = typeof facultyForm.researchFocus === "string"
+        ? (facultyForm.researchFocus as string).split(",").map((s) => s.trim()).filter(Boolean)
+        : Array.isArray(facultyForm.researchFocus)
+        ? facultyForm.researchFocus
+        : [];
+
+      const photo = facultyForm.photoUrl || facultyForm.imageUrl || facultyForm.image || "";
+      const payload: FacultyMember = {
+        ...facultyForm,
+        id: editingFacultyMember?.id || facultyForm.id || `fac-${Date.now()}`,
+        researchFocus: researchArray,
+        photoUrl: photo,
+        imageUrl: photo,
+        image: photo,
+      };
+
+      if (editingFacultyMember?.id) {
+        const updated = facultyList.map((f) => (f.id === editingFacultyMember.id ? payload : f));
+        setFacultyList(updated);
+        localStorage.setItem("tesa_faculty", JSON.stringify(updated));
+
+        await setDoc(doc(db, "faculty", editingFacultyMember.id), {
+          ...payload,
+          updatedAt: serverTimestamp(),
+          authorEmail: user?.email || "admin",
+        }, { merge: true });
+
+        showToast(`Updated faculty dossier for ${payload.name}!`);
+      } else {
+        const updated = [payload, ...facultyList];
+        setFacultyList(updated);
+        localStorage.setItem("tesa_faculty", JSON.stringify(updated));
+
+        const docRef = await addDoc(collection(db, "faculty"), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          addedBy: user?.email || "admin",
+        });
+        payload.id = docRef.id;
+
+        showToast(`Added ${payload.name} to Faculty of Textile Technology!`);
+      }
+
+      setIsFacultyModalOpen(false);
+    } catch (err: any) {
+      console.error("Save faculty error:", err);
+      showToast(err?.message || "Failed to save faculty record.", "error");
+    } finally {
+      setIsSubmittingFaculty(false);
+    }
+  };
+
+  const handleDeleteFaculty = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove ${name} from the Faculty Directory?`)) return;
+
+    const filtered = facultyList.filter((f) => f.id !== id);
+    setFacultyList(filtered);
+    localStorage.setItem("tesa_faculty", JSON.stringify(filtered));
+
+    try {
+      await deleteDoc(doc(db, "faculty", id));
+    } catch (e) {
+      console.warn("Deleted from localStorage, Firestore sync will retry.");
+    }
+
+    showToast(`Removed faculty member ${name}.`);
+  };
+
+  // --------------------------------------------------------------------------
+  // TESA GALLERY HANDLERS
+  // --------------------------------------------------------------------------
+  const handleOpenAddGalleryModal = () => {
+    setEditingGalleryPhoto(null);
+    setGalleryForm({
+      id: "",
+      title: "",
+      url: "",
+      category: "National Conclave",
+      date: "",
+      caption: "",
+    });
+    setIsGalleryModalOpen(true);
+  };
+
+  const handleOpenEditGalleryModal = (photo: GalleryPhoto) => {
+    setEditingGalleryPhoto(photo);
+    setGalleryForm({ ...photo });
+    setIsGalleryModalOpen(true);
+  };
+
+  const handleGalleryPhotoFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      showToast("Media exceeds 10MB limit. Please upload a smaller image.", "error");
+      return;
+    }
+
+    try {
+      setIsUploadingGalleryPhoto(true);
+      showToast("Uploading Media... Sending gallery photo to Cloudinary...", "info");
+      const url = await uploadToCloudinary(file);
+      setGalleryForm((prev) => ({ ...prev, url }));
+      showToast("Photo uploaded to Cloudinary successfully!");
+    } catch (err: any) {
+      console.error("Cloudinary gallery upload error:", err);
+      showToast(err?.message || "Could not upload image to Cloudinary.", "error");
+    } finally {
+      setIsUploadingGalleryPhoto(false);
+    }
+  };
+
+  const handleSaveGalleryPhoto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFirebaseConfigured) {
+      showToast("Error: Firebase is not configured.", "error");
+      return;
+    }
+    if (!galleryForm.title.trim() || !galleryForm.url.trim()) {
+      showToast("Please provide Photo Title and Image URL.", "error");
+      return;
+    }
+
+    setIsSubmittingGalleryPhoto(true);
+    try {
+      const payload: GalleryPhoto = {
+        ...galleryForm,
+        id: editingGalleryPhoto?.id || galleryForm.id || `gal-${Date.now()}`,
+      };
+
+      if (editingGalleryPhoto?.id) {
+        const updated = galleryList.map((p) => (p.id === editingGalleryPhoto.id ? payload : p));
+        setGalleryList(updated);
+        localStorage.setItem("tesa_gallery_photos", JSON.stringify(updated));
+
+        await setDoc(doc(db, "gallery_photos", editingGalleryPhoto.id), {
+          ...payload,
+          updatedAt: serverTimestamp(),
+          authorEmail: user?.email || "admin",
+        }, { merge: true });
+
+        showToast(`Updated gallery photo "${payload.title}"!`);
+      } else {
+        const updated = [payload, ...galleryList];
+        setGalleryList(updated);
+        localStorage.setItem("tesa_gallery_photos", JSON.stringify(updated));
+
+        const docRef = await addDoc(collection(db, "gallery_photos"), {
+          ...payload,
+          createdAt: serverTimestamp(),
+          addedBy: user?.email || "admin",
+        });
+        payload.id = docRef.id;
+
+        showToast(`Added "${payload.title}" to TESA Gallery!`);
+      }
+
+      setIsGalleryModalOpen(false);
+    } catch (err: any) {
+      console.error("Save gallery photo error:", err);
+      showToast(err?.message || "Failed to save photo.", "error");
+    } finally {
+      setIsSubmittingGalleryPhoto(false);
+    }
+  };
+
+  const handleDeleteGalleryPhoto = async (id: string, title: string) => {
+    if (!confirm(`Are you sure you want to delete "${title}" from the gallery?`)) return;
+
+    const filtered = galleryList.filter((p) => p.id !== id);
+    setGalleryList(filtered);
+    localStorage.setItem("tesa_gallery_photos", JSON.stringify(filtered));
+
+    try {
+      await deleteDoc(doc(db, "gallery_photos", id));
+    } catch (e) {
+      console.warn("Deleted from localStorage, Firestore sync will retry.");
+    }
+
+    showToast(`Removed "${title}" from Gallery.`);
   };
 
   const isMatchAdminCategory = (m: TeamMember, cat: string) => {
@@ -2063,9 +2462,11 @@ export default function AdminDashboardPage() {
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             {[
               { id: "team", label: "TEAM", fullLabel: "MANAGE TESA TEAM", icon: "👥", count: teamList.length },
+              { id: "faculty", label: "FACULTY", fullLabel: "MANAGE FACULTY", icon: "🎓", count: facultyList.length },
+              { id: "gallery", label: "GALLERY", fullLabel: "MANAGE GALLERY", icon: "📸", count: galleryList.length },
               { id: "events", label: "EVENTS", fullLabel: "MANAGE EVENTS", icon: "📅", count: eventsList.length },
               { id: "registrations", label: "REGISTRATIONS", fullLabel: "MANAGE REGISTRATIONS", icon: "📋", count: registrations.length },
-              { id: "archives", label: "ARCHIVES", fullLabel: "LIVING DOSSIERS", icon: "🗂️", count: eventsList.filter((e) => isConcludedEvent(e)).length + teamList.length },
+              { id: "archives", label: "ARCHIVES", fullLabel: "LIVING DOSSIERS", icon: "🗂️", count: 3 },
               { id: "all", label: "ALL", fullLabel: "STACKED VIEW", icon: "🌟", count: null },
             ].map((tab) => (
               <button
@@ -3236,7 +3637,239 @@ export default function AdminDashboardPage() {
         )}
 
         {/* =====================================================================
-            SECTION 4 — LIVING ARCHIVES & HERITAGE CABINET PREVIEW
+            SECTION: MANAGE FACULTY OF TEXTILE TECHNOLOGY
+            ===================================================================== */}
+        {(activeTab === "faculty" || activeTab === "all") && (
+          <section id="section-faculty" className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl glass-card">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/30 bg-emerald-950/40 text-[11px] font-mono text-emerald-300 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>FACULTY WING • DEPARTMENT OF TEXTILE TECH</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Manage Faculty of Textile Technology
+                </h2>
+                <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  Professors, research advisors, and laboratory mentors displayed in Folder 2 (Faculty of Textile Tech). Add, edit credentials, upload portraits, or update academic profiles.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleOpenAddFacultyModal}
+                  className="glow-button-primary px-5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.35)] flex items-center gap-2 cursor-pointer"
+                >
+                  <span>+</span>
+                  <span>Add Faculty Member</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Faculty Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {facultyList.map((faculty) => {
+                const photo = faculty.photoUrl || faculty.imageUrl || faculty.image || "";
+                const researchTags = typeof faculty.researchFocus === "string"
+                  ? (faculty.researchFocus as string).split(",").map((s) => s.trim()).filter(Boolean)
+                  : Array.isArray(faculty.researchFocus)
+                  ? faculty.researchFocus
+                  : [];
+
+                return (
+                  <div
+                    key={faculty.id}
+                    className="p-5 rounded-2xl glass-card flex flex-col justify-between border border-white/10 hover:border-emerald-500/40 transition-all group"
+                  >
+                    <div>
+                      {/* Top Header: Photo & Designation */}
+                      <div className="flex items-start gap-4 mb-4">
+                        <div className="relative w-16 h-20 rounded-xl overflow-hidden bg-zinc-900 border border-white/10 shrink-0 shadow-md">
+                          {photo ? (
+                            <Image
+                              src={photo}
+                              alt={faculty.name}
+                              fill
+                              unoptimized
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center font-mono font-bold text-emerald-400 bg-emerald-950/50 text-sm">
+                              {faculty.name
+                                .replace(/^Dr\.\s*|^Prof\.\s*/i, "")
+                                .split(" ")
+                                .map((n) => n[0])
+                                .slice(0, 2)
+                                .join("") || "FC"}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <span className="inline-block px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-[9px] font-mono text-emerald-300 font-semibold uppercase mb-1">
+                            {faculty.designation}
+                          </span>
+                          <h3 className="text-sm font-bold text-white group-hover:text-emerald-300 transition-colors line-clamp-1">
+                            {faculty.name}
+                          </h3>
+                          <p className="text-[11px] font-mono text-zinc-400 line-clamp-1 mt-0.5">
+                            🎓 {faculty.qualification}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Domain Specialization */}
+                      {faculty.specialization && (
+                        <p className="text-xs text-zinc-300 line-clamp-2 mb-3 bg-white/[0.02] p-2.5 rounded-lg border border-white/5">
+                          <span className="text-zinc-500 font-mono text-[10px] block">DOMAIN:</span>
+                          {faculty.specialization}
+                        </p>
+                      )}
+
+                      {/* Research Tags */}
+                      {researchTags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {researchTags.slice(0, 3).map((tag, tIdx) => (
+                            <span
+                              key={tIdx}
+                              className="px-2 py-0.5 rounded text-[9px] font-mono bg-emerald-950/40 text-emerald-300 border border-emerald-500/20"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Bottom Action Footer */}
+                    <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between text-xs">
+                      <span className="text-[10px] font-mono text-zinc-500 truncate max-w-[150px]">
+                        {faculty.email}
+                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditFacultyModal(faculty)}
+                          className="px-2.5 py-1 rounded-lg bg-white/[0.05] hover:bg-white/10 text-white text-[11px] font-mono transition-colors cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteFaculty(faculty.id, faculty.name)}
+                          className="px-2.5 py-1 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 text-[11px] font-mono transition-colors cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* =====================================================================
+            SECTION: MANAGE TESA GALLERY PHOTOS
+            ===================================================================== */}
+        {(activeTab === "gallery" || activeTab === "all") && (
+          <section id="section-gallery" className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl glass-card">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-950/40 text-[11px] font-mono text-cyan-300 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <span>VISUAL STILLS • LIVING MEDIA VAULT</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Manage TESA Gallery Photos
+                </h2>
+                <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  Curate national conclave photography, weaving laboratory operations, smart textile prototypes, and department milestones shown inside Folder 3 (TESA Gallery).
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleOpenAddGalleryModal}
+                  className="glow-button-primary px-5 py-2.5 rounded-xl text-xs font-mono font-bold uppercase tracking-wider bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.35)] flex items-center gap-2 cursor-pointer"
+                >
+                  <span>+</span>
+                  <span>Add Photo to Gallery</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Gallery Photos Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {galleryList.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="p-4 rounded-2xl glass-card flex flex-col justify-between border border-white/10 hover:border-cyan-500/40 transition-all group overflow-hidden"
+                >
+                  <div>
+                    {/* Thumbnail Frame */}
+                    <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-black border border-white/10 mb-3 shadow-md group-hover:scale-[1.01] transition-transform">
+                      {photo.url ? (
+                        <Image
+                          src={photo.url}
+                          alt={photo.title}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-zinc-600 text-xs font-mono">
+                          No Image Attached
+                        </div>
+                      )}
+                      <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[9px] font-mono text-cyan-300 border border-cyan-500/30">
+                        {photo.category || "Exhibition"}
+                      </div>
+                      {photo.date && (
+                        <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-md text-[9px] font-mono text-zinc-300 border border-white/10">
+                          {photo.date}
+                        </div>
+                      )}
+                    </div>
+
+                    <h3 className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors line-clamp-1 mb-1">
+                      {photo.title}
+                    </h3>
+                    {photo.caption && (
+                      <p className="text-xs text-zinc-400 line-clamp-2 leading-relaxed">
+                        {photo.caption}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Actions Footer */}
+                  <div className="pt-3 mt-3 border-t border-white/[0.08] flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEditGalleryModal(photo)}
+                      className="px-3 py-1 rounded-lg bg-white/[0.05] hover:bg-white/10 text-white text-[11px] font-mono transition-colors cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteGalleryPhoto(photo.id, photo.title)}
+                      className="px-3 py-1 rounded-lg bg-red-950/40 hover:bg-red-900/60 text-red-300 text-[11px] font-mono transition-colors cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* =====================================================================
+            SECTION 4 — LIVING ARCHIVES & HERITAGE CABINET PREVIEW (3 FOLDERS)
             ===================================================================== */}
         {(activeTab === "archives" || activeTab === "all") && (
           <section id="section-archives" className="space-y-6">
@@ -3244,13 +3877,13 @@ export default function AdminDashboardPage() {
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 text-[11px] font-mono text-purple-300 mb-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-                  <span>ATELIER DOSSIERS • VAULT PREVIEW</span>
+                  <span>ATELIER DOSSIERS • 3 CABINETS PREVIEW</span>
                 </div>
                 <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
-                  Living Archives &amp; Dossiers
+                  Living Archives &amp; 3D Cabinets
                 </h2>
                 <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
-                  Real-time preview of the frosted glass folder cards displaying concluded department conclaves and active council member dossiers.
+                  Real-time preview of the 3 interactive frosted glass folders: TESA Team, Faculty of Textile Technology, and TESA Gallery.
                 </p>
               </div>
 
@@ -3272,71 +3905,58 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            {/* Interactive 3D Folder Cards Display */}
+            {/* Interactive 3D Folder Cards Display: Exactly 3 Folders */}
             <div className="p-8 sm:p-12 rounded-3xl bg-[#08080c]/80 border border-white/10 backdrop-blur-2xl flex flex-col items-center justify-center">
-              <div className="grid max-w-[1180px] grid-cols-1 items-end justify-items-center gap-x-14 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
-                {/* Past Conclaves Folder */}
+              <div className="grid max-w-5xl grid-cols-1 items-end justify-items-center gap-x-12 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
+                {/* Folder 1: TESA Team */}
                 <GlassFolder
-                  label="Past Conclaves"
-                  art="ember"
-                  seed={5}
-                  files={eventsList.filter((e) => isConcludedEvent(e)).slice(0, 4).map((ev) => ({
-                    name: ev.title,
-                    meta: `${ev.category} · ${ev.date}`,
-                    image: ev.mediaUrl || ev.bannerUrl || ev.imageUrl || undefined,
-                    art: !ev.mediaUrl ? "ember" : undefined,
+                  label="TESA Team"
+                  meta="Council & Leads"
+                  art="aurora"
+                  seed={18}
+                  files={teamList.slice(0, 5).map((m) => ({
+                    name: m.name,
+                    meta: `${m.role} · ${m.year}`,
+                    image: m.photoUrl || m.imageUrl || undefined,
+                    art: !m.photoUrl ? "aurora" : undefined,
                   }))}
                 />
 
-                {/* Council Executives Folder */}
+                {/* Folder 2: Faculty of Textile Technology */}
                 <GlassFolder
-                  label="Council Executives"
-                  art="aurora"
-                  seed={18}
-                  action="more"
-                  labelPlacement="top-left"
-                  files={teamList
-                    .filter((m) => {
-                      const cat = (m.category || "").toLowerCase();
-                      const role = (m.role || "").toLowerCase();
-                      return cat.includes("core") || /\b(president|vice|secretary|treasurer)\b/i.test(role);
-                    })
-                    .slice(0, 4)
-                    .map((m) => ({
-                      name: m.name,
-                      meta: `${m.role} · ${m.year}`,
-                      image: m.photoUrl || m.imageUrl || undefined,
-                      art: !m.photoUrl ? "aurora" : undefined,
-                    }))}
-                />
-
-                {/* Technical Leads Folder */}
-                <GlassFolder
-                  label="Technical & Research"
-                  meta="Innovation Leads"
-                  tone="dark"
+                  label="Faculty of Textile Tech"
+                  meta="Professors & Mentors"
                   art="verdant"
                   seed={23}
-                  action="none"
+                  action="more"
+                  labelPlacement="bottom-left"
+                  files={facultyList.slice(0, 5).map((fac) => ({
+                    name: fac.name,
+                    meta: fac.designation,
+                    image: fac.photoUrl || fac.imageUrl || undefined,
+                    art: !fac.photoUrl ? "verdant" : undefined,
+                  }))}
+                />
+
+                {/* Folder 3: TESA Gallery */}
+                <GlassFolder
+                  label="TESA Gallery"
+                  meta="Living Stills & Media"
+                  art="glacier"
+                  seed={41}
+                  action="more"
                   labelPlacement="top-right"
-                  files={teamList
-                    .filter((m) => {
-                      const cat = (m.category || "").toLowerCase();
-                      const role = (m.role || "").toLowerCase();
-                      return !cat.includes("core") && !/\b(president|vice president|general secretary)\b/i.test(role);
-                    })
-                    .slice(0, 4)
-                    .map((m) => ({
-                      name: m.name,
-                      meta: `${m.role} · ${m.specialization || "Textiles"}`,
-                      image: m.photoUrl || m.imageUrl || undefined,
-                      art: !m.photoUrl ? "verdant" : undefined,
-                    }))}
+                  files={galleryList.slice(0, 5).map((photo) => ({
+                    name: photo.title,
+                    meta: photo.category ? `${photo.category} · ${photo.date}` : photo.date,
+                    image: photo.url,
+                    art: !photo.url ? "glacier" : undefined,
+                  }))}
                 />
               </div>
 
               <div className="mt-8 text-center text-xs font-mono text-zinc-500">
-                Interactive preview synchronized with live Firestore data. Hover to lean · Click to inspect.
+                Interactive preview synchronized with live Firestore data. Hover to lean · Click to fan open.
               </div>
             </div>
           </section>
@@ -3599,6 +4219,488 @@ export default function AdminDashboardPage() {
                     "Save Changes"
                   ) : (
                     "Create Member"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =======================================================================
+          MODAL: ADD / EDIT FACULTY MEMBER
+          ======================================================================= */}
+      {isFacultyModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-hidden">
+          <div className="relative w-full max-w-4xl max-h-[85vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden text-xs">
+            {/* Sticky Top Header */}
+            <div className="shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016]">
+              <div className="flex items-center gap-2.5">
+                <span className="text-[10px] text-emerald-400 uppercase tracking-widest font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20">
+                  FACULTY DIRECTORY • TEXTILE TECHNOLOGY
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-white">
+                  {editingFacultyMember ? "Edit Faculty Dossier" : "Add Faculty Member"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsFacultyModalOpen(false)}
+                className="w-8 h-8 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveFaculty} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-5">
+                {/* 1. Portrait Photo & Upload */}
+                <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
+                  <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wide block">
+                    1. Faculty Portrait Photo
+                  </span>
+
+                  <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-start">
+                    <div className="relative w-36 aspect-[3/4] rounded-2xl border border-white/10 bg-zinc-950 overflow-hidden shrink-0 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                      {facultyForm.photoUrl ? (
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={facultyForm.photoUrl}
+                            alt="Preview"
+                            fill
+                            unoptimized
+                            className="object-cover contrast-105"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent pointer-events-none" />
+                          <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 text-zinc-500">
+                          <span className="text-2xl mb-1">👨‍🏫</span>
+                          <span className="text-[10px] leading-tight">No Photo Attached</span>
+                        </div>
+                      )}
+
+                      {isUploadingFacultyPhoto && (
+                        <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-[10px] text-emerald-300">
+                          <div className="w-5 h-5 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin mb-1" />
+                          <span>Uploading Media...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 w-full space-y-3">
+                      <div>
+                        <label className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">
+                          Upload Portrait to Cloudinary:
+                        </label>
+                        <input
+                          ref={facultyFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFacultyPhotoFileChange}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => facultyFileInputRef.current?.click()}
+                          disabled={isUploadingFacultyPhoto}
+                          className="w-full py-2.5 px-3 rounded-xl border border-dashed border-emerald-500/40 hover:border-emerald-500/70 bg-emerald-950/20 hover:bg-emerald-950/40 text-emerald-300 text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>{isUploadingFacultyPhoto ? "Uploading Media to Cloudinary..." : "Choose Local Image"}</span>
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">
+                          Or Direct Image URL (Cloudinary / Unsplash / Web):
+                        </label>
+                        <input
+                          type="url"
+                          placeholder="https://images.unsplash.com/... or https://res.cloudinary.com/..."
+                          value={facultyForm.photoUrl || ""}
+                          onChange={(e) => setFacultyForm({ ...facultyForm, photoUrl: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Core Academic Credentials */}
+                <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
+                  <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wide block">
+                    2. Academic Profile &amp; Credentials
+                  </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Full Name <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Dr. Ravindra V. Adivarekar"
+                        value={facultyForm.name}
+                        onChange={(e) => setFacultyForm({ ...facultyForm, name: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Academic Designation <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Professor &amp; Head of Department"
+                        value={facultyForm.designation}
+                        onChange={(e) => setFacultyForm({ ...facultyForm, designation: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Highest Qualification
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Ph.D. (Tech.), M.Sc. (Tech.)"
+                        value={facultyForm.qualification || ""}
+                        onChange={(e) => setFacultyForm({ ...facultyForm, qualification: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Academic &amp; Industry Experience
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 30+ Years Academic &amp; Industry"
+                        value={facultyForm.experience || ""}
+                        onChange={(e) => setFacultyForm({ ...facultyForm, experience: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Institutional Email Address
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="e.g. rv.adivarekar@ictmumbai.edu.in"
+                        value={facultyForm.email || ""}
+                        onChange={(e) => setFacultyForm({ ...facultyForm, email: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Primary Domain Specialization
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Textile Chemistry, Wet Processing &amp; Enzymes"
+                        value={facultyForm.specialization || ""}
+                        onChange={(e) => setFacultyForm({ ...facultyForm, specialization: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Research Focus & Dossier Bio */}
+                <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
+                  <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wide block">
+                    3. Research Focus &amp; Mentorship Overview
+                  </span>
+
+                  <div>
+                    <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                      Research Focus Tags (comma-separated):
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Enzymes in Processing, Natural Colorants, Green Chemistry, Advanced Finishing"
+                      value={typeof facultyForm.researchFocus === "string" ? facultyForm.researchFocus : Array.isArray(facultyForm.researchFocus) ? facultyForm.researchFocus.join(", ") : ""}
+                      onChange={(e) => setFacultyForm({ ...facultyForm, researchFocus: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                      Academic Bio &amp; Mentorship Overview:
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Comprehensive background on departmental leadership, industry advisory, publications, and student mentorship..."
+                      value={facultyForm.bio || ""}
+                      onChange={(e) => setFacultyForm({ ...facultyForm, bio: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-emerald-500/50 font-mono text-xs leading-relaxed"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky Bottom Action Bar */}
+              <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsFacultyModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!isFirebaseConfigured || isUploadingFacultyPhoto || isSubmittingFaculty}
+                  className={`glow-button-primary px-5 py-2.5 rounded-xl font-semibold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                    !isFirebaseConfigured
+                      ? "bg-red-950/70 border border-red-500/40 text-red-300 cursor-not-allowed opacity-75"
+                      : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.35)] cursor-pointer disabled:opacity-50"
+                  }`}
+                >
+                  {!isFirebaseConfigured ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-red-400" />
+                      <span>Database Disconnected</span>
+                    </>
+                  ) : (isUploadingFacultyPhoto || isSubmittingFaculty) ? (
+                    <>
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>{isUploadingFacultyPhoto ? "Uploading Media..." : "Saving Faculty..."}</span>
+                    </>
+                  ) : editingFacultyMember ? (
+                    "Save Faculty Changes"
+                  ) : (
+                    "Add Faculty Member"
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =======================================================================
+          MODAL: ADD / EDIT GALLERY PHOTO
+          ======================================================================= */}
+      {isGalleryModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-hidden">
+          <div className="relative w-full max-w-3xl max-h-[85vh] flex flex-col bg-[#0b0c10] border border-white/15 rounded-2xl shadow-2xl overflow-hidden text-xs">
+            {/* Sticky Top Header */}
+            <div className="shrink-0 px-5 py-3.5 border-b border-white/10 flex items-center justify-between bg-[#0f1016]">
+              <div className="flex items-center gap-2.5">
+                <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/20">
+                  TESA GALLERY • LIVING ARCHIVES
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-white">
+                  {editingGalleryPhoto ? "Edit Gallery Media" : "Add Living Still / Media"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsGalleryModalOpen(false)}
+                className="w-8 h-8 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveGalleryPhoto} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              {/* Scrollable Form Body */}
+              <div className="flex-1 overflow-y-auto p-5 custom-scrollbar space-y-5">
+                {/* 1. Media Preview & Upload */}
+                <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
+                  <span className="text-xs font-semibold text-cyan-300 uppercase tracking-wide block">
+                    1. Photographic Media / Still
+                  </span>
+
+                  <div className="flex flex-col sm:flex-row gap-5 items-center sm:items-start">
+                    <div className="relative w-48 aspect-video rounded-2xl border border-white/10 bg-zinc-950 overflow-hidden shrink-0 shadow-[0_10px_25px_rgba(0,0,0,0.8)]">
+                      {galleryForm.url ? (
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={galleryForm.url}
+                            alt="Preview"
+                            fill
+                            unoptimized
+                            className="object-cover contrast-105"
+                          />
+                          <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none rounded-2xl" />
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-center p-3 text-zinc-500">
+                          <span className="text-2xl mb-1">🖼️</span>
+                          <span className="text-[10px] leading-tight">No Media Selected</span>
+                        </div>
+                      )}
+
+                      {isUploadingGalleryPhoto && (
+                        <div className="absolute inset-0 bg-black/85 flex flex-col items-center justify-center text-[10px] text-cyan-300">
+                          <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin mb-1" />
+                          <span>Uploading Media...</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 w-full space-y-3">
+                      <div>
+                        <label className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">
+                          Upload Media to Cloudinary:
+                        </label>
+                        <input
+                          ref={galleryPhotoFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleGalleryPhotoFileChange}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => galleryPhotoFileInputRef.current?.click()}
+                          disabled={isUploadingGalleryPhoto}
+                          className="w-full py-2.5 px-3 rounded-xl border border-dashed border-cyan-500/40 hover:border-cyan-500/70 bg-cyan-950/20 hover:bg-cyan-950/40 text-cyan-300 text-xs font-mono transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          <svg className="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span>{isUploadingGalleryPhoto ? "Uploading Media to Cloudinary..." : "Choose Local Media"}</span>
+                        </button>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] text-zinc-400 block mb-1.5 uppercase font-medium">
+                          Or Direct Image URL:
+                        </label>
+                        <input
+                          type="url"
+                          required
+                          placeholder="https://images.unsplash.com/... or https://res.cloudinary.com/..."
+                          value={galleryForm.url}
+                          onChange={(e) => setGalleryForm({ ...galleryForm, url: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Media Metadata & Context */}
+                <div className="p-4 rounded-2xl border border-white/[0.08] bg-white/[0.02] space-y-4">
+                  <span className="text-xs font-semibold text-cyan-300 uppercase tracking-wide block">
+                    2. Media Metadata &amp; Archival Context
+                  </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Photo Title <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. National Textile Conclave 2025 Opening"
+                        value={galleryForm.title}
+                        onChange={(e) => setGalleryForm({ ...galleryForm, title: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 font-mono text-xs"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Category Classification
+                      </label>
+                      <select
+                        value={galleryForm.category || "National Conclave"}
+                        onChange={(e) => setGalleryForm({ ...galleryForm, category: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white focus:outline-none focus:border-cyan-500/50 font-mono text-xs"
+                      >
+                        <option value="National Conclave" className="bg-zinc-900 text-white">National Conclave</option>
+                        <option value="Weaving Laboratory" className="bg-zinc-900 text-white">Weaving Laboratory</option>
+                        <option value="Smart Fabrics R&amp;D" className="bg-zinc-900 text-white">Smart Fabrics R&amp;D</option>
+                        <option value="Chemical Studio" className="bg-zinc-900 text-white">Chemical Studio</option>
+                        <option value="Council Assembly" className="bg-zinc-900 text-white">Council Assembly</option>
+                        <option value="CAD Innovation" className="bg-zinc-900 text-white">CAD Innovation</option>
+                        <option value="Exhibition" className="bg-zinc-900 text-white">Exhibition</option>
+                        <option value="Industrial Visit" className="bg-zinc-900 text-white">Industrial Visit</option>
+                        <option value="Other" className="bg-zinc-900 text-white">Other</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                        Date / Academic Period
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. February 2025 or 2024-2025"
+                        value={galleryForm.date || ""}
+                        onChange={(e) => setGalleryForm({ ...galleryForm, date: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-zinc-400 block mb-1 uppercase font-medium">
+                      Archival Caption &amp; Story
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Story behind the still, keynote moments, participating students, or research achievements..."
+                      value={galleryForm.caption || ""}
+                      onChange={(e) => setGalleryForm({ ...galleryForm, caption: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-white/10 text-white placeholder-zinc-600 focus:outline-none focus:border-cyan-500/50 font-mono text-xs leading-relaxed"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Sticky Bottom Action Bar */}
+              <div className="shrink-0 px-5 py-3.5 border-t border-white/10 bg-[#0f1016] flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsGalleryModalOpen(false)}
+                  className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/10 text-zinc-300 transition-colors cursor-pointer text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!isFirebaseConfigured || isUploadingGalleryPhoto || isSubmittingGalleryPhoto}
+                  className={`glow-button-primary px-5 py-2.5 rounded-xl font-semibold uppercase tracking-wider transition-all flex items-center gap-2 ${
+                    !isFirebaseConfigured
+                      ? "bg-red-950/70 border border-red-500/40 text-red-300 cursor-not-allowed opacity-75"
+                      : "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-[0_0_20px_rgba(6,182,212,0.35)] cursor-pointer disabled:opacity-50"
+                  }`}
+                >
+                  {!isFirebaseConfigured ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-red-400" />
+                      <span>Database Disconnected</span>
+                    </>
+                  ) : (isUploadingGalleryPhoto || isSubmittingGalleryPhoto) ? (
+                    <>
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>{isUploadingGalleryPhoto ? "Uploading Media..." : "Saving Photo..."}</span>
+                    </>
+                  ) : editingGalleryPhoto ? (
+                    "Save Media Changes"
+                  ) : (
+                    "Publish to Gallery"
                   )}
                 </button>
               </div>

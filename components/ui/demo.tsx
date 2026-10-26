@@ -1,11 +1,13 @@
 "use client"
 
 import GlassFolder from "@/components/ui/glass-folder-cards"
+import { DEFAULT_FACULTY, DEFAULT_GALLERY_PHOTOS } from "@/lib/tesa-cabinets-data"
 
 /**
- * Three folders on a dotted desk: milk glass over a long-exposure print with a
- * key that adds files, a plain archive with a menu, and smoked glass over red
- * ink. Hover one to lean its glass toward you, click it to open it.
+ * Three interactive 3D folders on a dotted atelier desk:
+ * 1. TESA Team (Aurora back-panel with student executive profiles)
+ * 2. Faculty of Textile Technology (Verdant back-panel with professor dossiers)
+ * 3. TESA Gallery (Glacier back-panel with high-res event stills & conclave archives)
  */
 export default function GlassFolderCardsDemo() {
   return (
@@ -21,66 +23,85 @@ export default function GlassFolderCardsDemo() {
           backgroundSize: "22px 22px",
         }}
       />
-      <div className="relative grid max-w-[1180px] grid-cols-1 items-end justify-items-center gap-x-14 gap-y-10 md:grid-cols-2 xl:grid-cols-3">
+      <div className="relative grid max-w-5xl grid-cols-1 items-end justify-items-center gap-x-12 gap-y-12 md:grid-cols-2 lg:grid-cols-3">
+        {/* Folder 1: TESA Team */}
         <GlassFolder
-          label="My Files"
+          label="TESA Team"
+          meta="Council & Leads"
           art="aurora"
-          seed={3}
+          seed={18}
           appearDelay={0}
           files={[
             {
-              name: "Textile Weave",
-              meta: "JPG · 3.2 MB",
-              image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80",
+              name: "Aditya Deshmukh",
+              meta: "President · Final Year",
+              image: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600&auto=format&fit=crop&q=80",
             },
-            { name: "Moodboard", meta: "24 images", art: "dusk" },
-            { name: "Design Brief.pdf", meta: "PDF · 1.2 MB" },
+            {
+              name: "Snehal Verma",
+              meta: "Vice President · Final Year",
+              image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+            },
+            {
+              name: "Rohit Patil",
+              meta: "General Secretary · Third Year",
+              image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80",
+            },
+            {
+              name: "Pooja Kulkarni",
+              meta: "Treasurer · Third Year",
+              image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
+            },
+          ]}
+          menu={[
+            { label: "Council Roster 2025–26" },
+            { label: "Executive Charter" },
           ]}
         />
+
+        {/* Folder 2: Faculty of Textile Technology */}
         <GlassFolder
-          label="Archives"
-          art="none"
+          label="Faculty of Textile Tech"
+          meta="Professors & Mentors"
+          art="verdant"
           action="more"
-          labelPlacement="top-left"
+          labelPlacement="bottom-left"
           appearDelay={140}
-          files={[
-            {
-              name: "Lookbook 2024",
-              meta: "38 images",
-              image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&auto=format&fit=crop&q=80",
-            },
-            { name: "Invoices", meta: "12 PDFs" },
-            {
-              name: "Shoot — Lisbon",
-              meta: "RAW · 2.1 GB",
-              image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80",
-            },
-            { name: "Contract.pdf", meta: "PDF · 320 KB" },
+          files={DEFAULT_FACULTY.slice(0, 4).map((fac) => ({
+            name: fac.name,
+            meta: fac.designation,
+            image: fac.photoUrl,
+            art: !fac.photoUrl ? "verdant" : undefined,
+          }))}
+          menu={[
+            { label: "View HOD Dossier" },
+            { label: "Research Advisory Council" },
           ]}
-          menu={[{ label: "Rename" }, { label: "Share…" }, { label: "Move to Trash", danger: true }]}
         />
+
+        {/* Folder 3: TESA Gallery */}
         <GlassFolder
-          label="My Files"
-          meta="Wed 19 Aug"
-          tone="dark"
-          art="ember"
-          seed={11}
-          action="none"
+          label="TESA Gallery"
+          meta="Living Stills & Media"
+          art="glacier"
+          seed={41}
+          action="more"
           labelPlacement="top-right"
           appearDelay={280}
-          files={[
-            {
-              name: "Smart Textiles",
-              meta: "64 images",
-              image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
-            },
-            { name: "Edit notes", meta: "TXT · 4 KB" },
-            { name: "Grade v3", meta: "DRX · 18 MB", art: "aurora" },
+          files={DEFAULT_GALLERY_PHOTOS.slice(0, 4).map((photo) => ({
+            name: photo.title,
+            meta: photo.category ? `${photo.category} · ${photo.date}` : photo.date,
+            image: photo.url,
+            art: !photo.url ? "glacier" : undefined,
+          }))}
+          menu={[
+            { label: "Open Gallery Lookbook" },
+            { label: "TEXPLORER Archives" },
           ]}
         />
       </div>
       <p className="relative mt-14 font-mono text-[11px] tracking-[0.18em] text-muted-foreground uppercase">
-        Hover to lean · Click to open · + to add
+        Hover to lean · Click to fan open · Click file to view dossier
       </p>
     </div>
   )
