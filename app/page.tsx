@@ -697,6 +697,29 @@ export default function Home() {
   const upcomingEvents = eventsList.filter((ev) => !isPast(ev));
   const pastEvents = eventsList.filter((ev) => isPast(ev));
 
+  // Core Council & Technical Leads for the Living Dossier Folders
+  const coreCouncilMembers = useMemo(() => {
+    return allTeamMembers.filter((m) => {
+      const cat = (m.category || "").toLowerCase();
+      const role = (m.role || "").toLowerCase();
+      return (
+        cat === "core" ||
+        cat === "core council" ||
+        /\b(president|vice-president|vice president|secretary|treasurer)\b/i.test(role)
+      );
+    });
+  }, [allTeamMembers]);
+
+  const techAndLeadsMembers = useMemo(() => {
+    return allTeamMembers.filter((m) => !coreCouncilMembers.some((c) => c.id === m.id));
+  }, [allTeamMembers, coreCouncilMembers]);
+
+  const resolvedPastEvents = useMemo(() => {
+    const list = eventsList.filter((e) => isPast(e));
+    if (list.length > 0) return list;
+    return DEFAULT_EVENTS.filter((e) => isPast(e) || e.eventStatus === "Concluded" || e.status === "closed");
+  }, [eventsList]);
+
   const displayedUpcomingEvents =
     upcomingSubFilter === "all"
       ? upcomingEvents
@@ -1509,95 +1532,101 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           {/* Section Header */}
           <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-[10px] font-mono tracking-widest text-purple-300 uppercase mb-3.5 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-[10px] font-mono tracking-widest text-purple-300 uppercase mb-3.5 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
               <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
-              <span>ATELIER DOSSIER CABINET</span>
+              <span>ATELIER LIVING CODEX &amp; HERITAGE VAULT</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
-              DEPARTMENT ARCHIVES &amp;{" "}
+              THE TESA VAULT: CONCLAVES &amp;{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-300 to-indigo-300">
-                LOOKBOOKS
+                LIVING DOSSIERS
               </span>
             </h2>
 
             <p className="mt-3.5 text-sm sm:text-base text-zinc-400 font-normal leading-relaxed">
-              Explore interactive student-authored research papers, technical textile briefs, and festival lookbooks encased in frosted glassmorphism dossiers.
+              Interactive frosted glass cabinets cataloging our concluded national symposiums and active council dossiers. Click any document inside a folder to inspect the complete record.
             </p>
           </div>
 
           {/* Interactive 3D Glass Folder Display */}
           <div className="relative flex flex-col items-center justify-center">
             <div className="relative grid max-w-[1180px] grid-cols-1 items-end justify-items-center gap-x-14 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
+              {/* Folder 1: Concluded Conclaves & Past Events */}
               <GlassFolder
-                label="Textile Syllabi"
-                art="aurora"
-                seed={3}
+                label="Past Conclaves"
+                art="ember"
+                seed={5}
                 appearDelay={0}
-                files={[
-                  {
-                    name: "Weave Technology",
-                    meta: "PDF · 3.2 MB",
-                    image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80",
-                  },
-                  { name: "Fiber Science Lab Notes", meta: "DOC · 850 KB", art: "verdant" },
-                  { name: "Yarn Geometry Dossier", meta: "PDF · 2.1 MB" },
-                  { name: "Textile Chemistry.pdf", meta: "PDF · 1.4 MB" },
-                ]}
+                files={resolvedPastEvents.slice(0, 4).map((ev) => ({
+                  name: ev.title,
+                  meta: `${ev.category} · ${ev.date}`,
+                  image: ev.mediaUrl || ev.bannerUrl || ev.imageUrl || undefined,
+                  art: !ev.mediaUrl ? "ember" : undefined,
+                }))}
+                onFileSelect={(_, idx) => {
+                  const ev = resolvedPastEvents[idx];
+                  if (ev) {
+                    setSelectedEvent({ ...ev, isPastSection: true, _isPast: true });
+                    setModalInitialMode("detail");
+                  }
+                }}
               />
 
+              {/* Folder 2: Core Council Executives */}
               <GlassFolder
-                label="Atelier Lookbook"
-                art="none"
+                label="Council Executives"
+                art="aurora"
+                seed={18}
                 action="more"
                 labelPlacement="top-left"
                 appearDelay={140}
-                files={[
-                  {
-                    name: "Fest Lookbook 2024",
-                    meta: "38 photos",
-                    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&auto=format&fit=crop&q=80",
-                  },
-                  { name: "Apparel Showcase", meta: "12 PDFs" },
-                  {
-                    name: "Fashion Show Highlights",
-                    meta: "RAW · 2.1 GB",
-                    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80",
-                  },
-                  { name: "Sponsorship Deck.pdf", meta: "PDF · 480 KB" },
-                ]}
+                files={coreCouncilMembers.slice(0, 4).map((member) => ({
+                  name: member.name,
+                  meta: `${member.role} · ${member.year}`,
+                  image: member.photoUrl || member.imageUrl || undefined,
+                  art: !member.photoUrl ? "aurora" : undefined,
+                }))}
+                onFileSelect={(_, idx) => {
+                  const member = coreCouncilMembers[idx];
+                  if (member) {
+                    setSelectedMember(member);
+                  }
+                }}
                 menu={[
-                  { label: "Share Lookbook" },
-                  { label: "View Full Gallery" },
-                  { label: "Report Issue", danger: true },
+                  { label: "View All Council Members", onSelect: () => setActiveTeamTab("CORE COUNCIL") },
+                  { label: "Council Roster 2025–26", onSelect: () => setActiveTeamTab("ALL MEMBERS") },
                 ]}
               />
 
+              {/* Folder 3: Technical & Research Leads */}
               <GlassFolder
-                label="Smart Textiles"
-                meta="Vol. 2026"
+                label="Technical & Research"
+                meta="Innovation Leads"
                 tone="dark"
-                art="ember"
-                seed={11}
+                art="verdant"
+                seed={23}
                 action="none"
                 labelPlacement="top-right"
                 appearDelay={280}
-                files={[
-                  {
-                    name: "Smart Garment Sensors",
-                    meta: "64 pages",
-                    image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
-                  },
-                  { name: "Conductive Thread Specs", meta: "TXT · 8 KB" },
-                  { name: "Nanofiber Matrix v3", meta: "DRX · 18 MB", art: "aurora" },
-                  { name: "Electrospun Fiber.pdf", meta: "PDF · 1.8 MB" },
-                ]}
+                files={techAndLeadsMembers.slice(0, 4).map((member) => ({
+                  name: member.name,
+                  meta: `${member.role} · ${member.specialization || "Textiles"}`,
+                  image: member.photoUrl || member.imageUrl || undefined,
+                  art: !member.photoUrl ? "verdant" : undefined,
+                }))}
+                onFileSelect={(_, idx) => {
+                  const member = techAndLeadsMembers[idx];
+                  if (member) {
+                    setSelectedMember(member);
+                  }
+                }}
               />
             </div>
 
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
               <span className="font-mono text-[11px] tracking-[0.18em] text-zinc-500 uppercase">
-                Hover to lean · Click to fan open · + to add document
+                Hover to lean · Click to fan open · Click file to view dossier
               </span>
               <Link
                 href="/archives"

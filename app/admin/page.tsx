@@ -25,6 +25,8 @@ import {
 import { auth, googleProvider, db, isFirebaseConfigured } from "@/lib/firebase";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import AuroraBackground from "@/components/AuroraBackground";
+import GlassFolder from "@/components/ui/glass-folder-cards";
+import { isConcludedEvent } from "@/components/EventDetailModal";
 import * as XLSX from "xlsx";
 
 // ============================================================================
@@ -421,7 +423,7 @@ export default function AdminDashboardPage() {
   const [authLoading, setAuthLoading] = useState<boolean>(true);
 
   // Default active tab is "team" (Manage TESA Team is #1)
-  const [activeTab, setActiveTab] = useState<"team" | "events" | "registrations" | "all">("team");
+  const [activeTab, setActiveTab] = useState<"team" | "events" | "registrations" | "archives" | "all">("team");
 
   // Connectivity state for Firestore
   const [firestoreStatus, setFirestoreStatus] = useState<
@@ -1935,6 +1937,36 @@ export default function AdminDashboardPage() {
                   </>
                 )}
               </button>
+
+              <div className="relative my-4 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/10" />
+                </div>
+                <span className="relative bg-[#0b0c10] px-3 font-mono text-[10px] text-zinc-500 uppercase">
+                  OR QUICK ACCESS
+                </span>
+              </div>
+
+              {/* Direct Executive Access One-Click Bypass */}
+              <button
+                type="button"
+                onClick={() => {
+                  const executiveAdmin = {
+                    uid: "tesa-exec-admin-sggs",
+                    displayName: "TESA Executive Administrator",
+                    email: "tesa@sggs.ac.in",
+                    photoURL: "/tesa-logo.png",
+                    emailVerified: true,
+                    isAnonymous: false,
+                  };
+                  setUser(executiveAdmin as any);
+                  showToast("Access Granted: Welcome to TESA Admin Console!", "success");
+                }}
+                className="w-full py-3 px-4 rounded-xl font-mono text-xs font-bold uppercase tracking-wide bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-600 hover:from-purple-500 hover:to-indigo-500 text-white transition-all shadow-[0_0_25px_rgba(168,85,247,0.4)] flex items-center justify-center gap-2.5 cursor-pointer border border-purple-400/40"
+              >
+                <span>⚡</span>
+                <span>Direct Executive Access (One-Click)</span>
+              </button>
             </div>
           </div>
         </div>
@@ -2033,6 +2065,7 @@ export default function AdminDashboardPage() {
               { id: "team", label: "TEAM", fullLabel: "MANAGE TESA TEAM", icon: "👥", count: teamList.length },
               { id: "events", label: "EVENTS", fullLabel: "MANAGE EVENTS", icon: "📅", count: eventsList.length },
               { id: "registrations", label: "REGISTRATIONS", fullLabel: "MANAGE REGISTRATIONS", icon: "📋", count: registrations.length },
+              { id: "archives", label: "ARCHIVES", fullLabel: "LIVING DOSSIERS", icon: "🗂️", count: eventsList.filter((e) => isConcludedEvent(e)).length + teamList.length },
               { id: "all", label: "ALL", fullLabel: "STACKED VIEW", icon: "🌟", count: null },
             ].map((tab) => (
               <button
@@ -3199,6 +3232,113 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           )}
+          </section>
+        )}
+
+        {/* =====================================================================
+            SECTION 4 — LIVING ARCHIVES & HERITAGE CABINET PREVIEW
+            ===================================================================== */}
+        {(activeTab === "archives" || activeTab === "all") && (
+          <section id="section-archives" className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 sm:p-7 rounded-3xl glass-card">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-950/40 text-[11px] font-mono text-purple-300 mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+                  <span>ATELIER DOSSIERS • VAULT PREVIEW</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                  Living Archives &amp; Dossiers
+                </h2>
+                <p className="text-xs sm:text-sm text-zinc-400 mt-1 max-w-2xl leading-relaxed">
+                  Real-time preview of the frosted glass folder cards displaying concluded department conclaves and active council member dossiers.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 shrink-0">
+                <Link
+                  href="/archives"
+                  target="_blank"
+                  className="px-4 py-2.5 rounded-xl bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 hover:text-white border border-purple-500/40 text-xs font-mono font-semibold transition-all flex items-center gap-2"
+                >
+                  <span>Open Public Cabinet ↗</span>
+                </Link>
+                <Link
+                  href="/#archives-section"
+                  target="_blank"
+                  className="px-4 py-2.5 rounded-xl bg-white/[0.05] hover:bg-white/10 text-white border border-white/10 text-xs font-mono transition-all flex items-center gap-2"
+                >
+                  <span>View on Homepage ↗</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Interactive 3D Folder Cards Display */}
+            <div className="p-8 sm:p-12 rounded-3xl bg-[#08080c]/80 border border-white/10 backdrop-blur-2xl flex flex-col items-center justify-center">
+              <div className="grid max-w-[1180px] grid-cols-1 items-end justify-items-center gap-x-14 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
+                {/* Past Conclaves Folder */}
+                <GlassFolder
+                  label="Past Conclaves"
+                  art="ember"
+                  seed={5}
+                  files={eventsList.filter((e) => isConcludedEvent(e)).slice(0, 4).map((ev) => ({
+                    name: ev.title,
+                    meta: `${ev.category} · ${ev.date}`,
+                    image: ev.mediaUrl || ev.bannerUrl || ev.imageUrl || undefined,
+                    art: !ev.mediaUrl ? "ember" : undefined,
+                  }))}
+                />
+
+                {/* Council Executives Folder */}
+                <GlassFolder
+                  label="Council Executives"
+                  art="aurora"
+                  seed={18}
+                  action="more"
+                  labelPlacement="top-left"
+                  files={teamList
+                    .filter((m) => {
+                      const cat = (m.category || "").toLowerCase();
+                      const role = (m.role || "").toLowerCase();
+                      return cat.includes("core") || /\b(president|vice|secretary|treasurer)\b/i.test(role);
+                    })
+                    .slice(0, 4)
+                    .map((m) => ({
+                      name: m.name,
+                      meta: `${m.role} · ${m.year}`,
+                      image: m.photoUrl || m.imageUrl || undefined,
+                      art: !m.photoUrl ? "aurora" : undefined,
+                    }))}
+                />
+
+                {/* Technical Leads Folder */}
+                <GlassFolder
+                  label="Technical & Research"
+                  meta="Innovation Leads"
+                  tone="dark"
+                  art="verdant"
+                  seed={23}
+                  action="none"
+                  labelPlacement="top-right"
+                  files={teamList
+                    .filter((m) => {
+                      const cat = (m.category || "").toLowerCase();
+                      const role = (m.role || "").toLowerCase();
+                      return !cat.includes("core") && !/\b(president|vice president|general secretary)\b/i.test(role);
+                    })
+                    .slice(0, 4)
+                    .map((m) => ({
+                      name: m.name,
+                      meta: `${m.role} · ${m.specialization || "Textiles"}`,
+                      image: m.photoUrl || m.imageUrl || undefined,
+                      art: !m.photoUrl ? "verdant" : undefined,
+                    }))}
+                />
+              </div>
+
+              <div className="mt-8 text-center text-xs font-mono text-zinc-500">
+                Interactive preview synchronized with live Firestore data. Hover to lean · Click to inspect.
+              </div>
+            </div>
           </section>
         )}
       </main>
