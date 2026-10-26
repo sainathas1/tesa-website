@@ -35,11 +35,13 @@
 :root {
   --background: #090807;
   --foreground: #ffffff;
+  --muted-foreground: #a1a1aa;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
   --font-sans: "SF Pro", Arial, sans-serif;
   --font-mono: var(--font-geist-mono);
 }

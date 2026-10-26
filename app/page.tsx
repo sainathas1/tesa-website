@@ -16,6 +16,7 @@ import ContactModal, {
   InstagramLogoIcon,
   LinkedInLogoIcon,
 } from "@/components/ContactModal";
+import GlassFolder from "@/components/ui/glass-folder-cards";
 
 /**
  * Cloudinary Face-Detection Avatar Optimization Helper
@@ -1493,6 +1494,122 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Subtle Studio Accent Divider */}
+      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+      </div>
+
+      {/* =========================================================================
+          SECTION 5: TESA DIGITAL ARCHIVES & INTERACTIVE DOSSIERS
+          ========================================================================= */}
+      <section
+        id="archives-section"
+        className="relative py-20 sm:py-28 px-4 sm:px-6 lg:px-8 z-10 scroll-mt-20 overflow-hidden"
+      >
+        <div className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-[10px] font-mono tracking-widest text-purple-300 uppercase mb-3.5 shadow-[0_0_15px_rgba(168,85,247,0.15)]">
+              <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" />
+              <span>ATELIER DOSSIER CABINET</span>
+            </div>
+
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white leading-tight">
+              DEPARTMENT ARCHIVES &amp;{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-300 to-indigo-300">
+                LOOKBOOKS
+              </span>
+            </h2>
+
+            <p className="mt-3.5 text-sm sm:text-base text-zinc-400 font-normal leading-relaxed">
+              Explore interactive student-authored research papers, technical textile briefs, and festival lookbooks encased in frosted glassmorphism dossiers.
+            </p>
+          </div>
+
+          {/* Interactive 3D Glass Folder Display */}
+          <div className="relative flex flex-col items-center justify-center">
+            <div className="relative grid max-w-[1180px] grid-cols-1 items-end justify-items-center gap-x-14 gap-y-12 md:grid-cols-2 xl:grid-cols-3">
+              <GlassFolder
+                label="Textile Syllabi"
+                art="aurora"
+                seed={3}
+                appearDelay={0}
+                files={[
+                  {
+                    name: "Weave Technology",
+                    meta: "PDF · 3.2 MB",
+                    image: "https://images.unsplash.com/photo-1579783900882-c0d3dad7b119?w=600&auto=format&fit=crop&q=80",
+                  },
+                  { name: "Fiber Science Lab Notes", meta: "DOC · 850 KB", art: "verdant" },
+                  { name: "Yarn Geometry Dossier", meta: "PDF · 2.1 MB" },
+                  { name: "Textile Chemistry.pdf", meta: "PDF · 1.4 MB" },
+                ]}
+              />
+
+              <GlassFolder
+                label="Atelier Lookbook"
+                art="none"
+                action="more"
+                labelPlacement="top-left"
+                appearDelay={140}
+                files={[
+                  {
+                    name: "Fest Lookbook 2024",
+                    meta: "38 photos",
+                    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=600&auto=format&fit=crop&q=80",
+                  },
+                  { name: "Apparel Showcase", meta: "12 PDFs" },
+                  {
+                    name: "Fashion Show Highlights",
+                    meta: "RAW · 2.1 GB",
+                    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format&fit=crop&q=80",
+                  },
+                  { name: "Sponsorship Deck.pdf", meta: "PDF · 480 KB" },
+                ]}
+                menu={[
+                  { label: "Share Lookbook" },
+                  { label: "View Full Gallery" },
+                  { label: "Report Issue", danger: true },
+                ]}
+              />
+
+              <GlassFolder
+                label="Smart Textiles"
+                meta="Vol. 2026"
+                tone="dark"
+                art="ember"
+                seed={11}
+                action="none"
+                labelPlacement="top-right"
+                appearDelay={280}
+                files={[
+                  {
+                    name: "Smart Garment Sensors",
+                    meta: "64 pages",
+                    image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80",
+                  },
+                  { name: "Conductive Thread Specs", meta: "TXT · 8 KB" },
+                  { name: "Nanofiber Matrix v3", meta: "DRX · 18 MB", art: "aurora" },
+                  { name: "Electrospun Fiber.pdf", meta: "PDF · 1.8 MB" },
+                ]}
+              />
+            </div>
+
+            <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <span className="font-mono text-[11px] tracking-[0.18em] text-zinc-500 uppercase">
+                Hover to lean · Click to fan open · + to add document
+              </span>
+              <Link
+                href="/archives"
+                className="px-4 py-1.5 rounded-full text-xs font-mono bg-purple-600/20 hover:bg-purple-600/40 text-purple-300 hover:text-white border border-purple-500/40 transition-all shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+              >
+                Open Fullscreen Cabinet →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* =========================================================================
           INTERACTIVE FULLSCREEN LIGHTBOX MODAL FOR GALLERY PHOTOS
           ========================================================================= */}
@@ -1691,6 +1808,9 @@ export default function Home() {
               </a>
               <a href="#team-section" className="hover:text-white transition-colors cursor-pointer">
                 TESA Team
+              </a>
+              <a href="#archives-section" className="hover:text-white transition-colors cursor-pointer">
+                Archives
               </a>
               <button
                 type="button"

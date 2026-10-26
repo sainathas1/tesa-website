@@ -28,7 +28,7 @@ export default function Navbar({
       setIsScrolled(window.scrollY > 250);
 
       // Detect current section in view
-      const sections = ["hero-experience", "events-section", "verified-section", "team-section"];
+      const sections = ["hero-experience", "events-section", "verified-section", "team-section", "archives-section"];
       const scrollPosition = window.scrollY + 200;
       for (const section of sections) {
         const el = document.getElementById(section);
@@ -64,6 +64,7 @@ export default function Navbar({
     { label: "Events", id: "events-section" },
     { label: "Verified List", id: "verified-section" },
     { label: "TESA Team", id: "team-section" },
+    { label: "Archives", id: "archives-section" },
   ];
 
   return (
